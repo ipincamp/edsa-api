@@ -26,19 +26,24 @@ class AuthController extends Controller
      */
     public function signUp(RequestSignUp $req): \Illuminate\Http\JsonResponse
     {
-        $credentials = $req->safe()->only(['name', 'email', 'password']);
-        $credentials['password'] = bcrypt($credentials['password']);
-        $user = User::create($credentials);
-        $token = $user->createToken('auth_up')->plainTextToken;
+        try {
+            $credentials = $req->safe()->only(['name', 'email', 'password']);
+            $credentials['password'] = bcrypt($credentials['password']);
+            $user = User::create($credentials);
+            $token = $user->createToken('auth_up')->plainTextToken;
 
-        return response()->json([
-            'status' => true,
-            'message' => 'Registration successful',
-            'data' => [
-                'user' => $user,
-                'token' => $token,
-            ],
-        ], 201);
+            /* Successfully */
+            return response()->json([
+                'status' => true,
+                'message' => 'Registration successful',
+                'data' => [
+                    'user' => $user,
+                    'token' => $token,
+                ],
+            ], 201);
+        } catch (\Exception $e) {
+            throw $e;
+        }
     }
 
     /**
@@ -54,24 +59,30 @@ class AuthController extends Controller
      */
     public function signIn(RequestSignIn $req): \Illuminate\Http\JsonResponse
     {
-        $credentials = $req->safe()->only(['email', 'password']);
+        try {
+            $credentials = $req->safe()->only(['email', 'password']);
 
-        if (! Auth::attempt($credentials)) {
+            if (! Auth::attempt($credentials)) {
+                /* Invalid credentials */
+                return response()->json([
+                    'status' => false,
+                    'message' => 'The provided credentials do not match our records.',
+                    'data' => null,
+                ], 401);
+            }
+
+            /* Successfully */
             return response()->json([
-                'status' => false,
-                'message' => 'The provided credentials do not match our records.',
-                'data' => null,
-            ], 401);
+                'status' => true,
+                'message' => 'Login successful',
+                'data' => [
+                    'user' => $req->user(),
+                    'token' => $req->user()->createToken('auth_in')->plainTextToken,
+                ],
+            ], 200);
+        } catch (\Exception $e) {
+            throw $e;
         }
-
-        return response()->json([
-            'status' => true,
-            'message' => 'Login successful',
-            'data' => [
-                'user' => $req->user(),
-                'token' => $req->user()->createToken('auth_in')->plainTextToken,
-            ],
-        ], 200);
     }
 
     /**
@@ -87,12 +98,17 @@ class AuthController extends Controller
      */
     public function signOut(Request $req)
     {
-        $req->user()->currentAccessToken()->delete();
+        try {
+            $req->user()->currentAccessToken()->delete();
 
-        return response()->json([
-            'status' => true,
-            'message' => 'Logout successful',
-            'data' => null,
-        ], 200);
+            /* Successfully */
+            return response()->json([
+                'status' => true,
+                'message' => 'Logout successful',
+                'data' => null,
+            ], 200);
+        } catch (\Exception $e) {
+            throw $e;
+        }
     }
 }
