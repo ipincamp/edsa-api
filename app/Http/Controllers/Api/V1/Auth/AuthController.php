@@ -63,7 +63,12 @@ class AuthController extends Controller
             $credentials = $req->safe()->only(['email', 'password']);
 
             if (! Auth::attempt($credentials)) {
-                /* Invalid credentials */
+                /**
+                 * Invalid credentials
+                 *
+                 * @status 401
+                 * @body {"status": false, "message": "The provided credentials do not match our records.", "data": null}
+                 */
                 return response()->json([
                     'status' => false,
                     'message' => 'The provided credentials do not match our records.',
