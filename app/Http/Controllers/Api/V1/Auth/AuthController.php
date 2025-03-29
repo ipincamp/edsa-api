@@ -6,15 +6,25 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Auth\RequestSignIn;
 use App\Http\Requests\Auth\RequestSignUp;
 use App\Models\User;
+use Dedoc\Scramble\Attributes\Group;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
+#[Group('Auth')]
 class AuthController extends Controller
 {
     /**
      * Register
+     *
+     * Create a new user and return the user data along with an access token.
+     *
+     * @operationId signUp
+     * @unauthenticated
+     * @param RequestSignUp $req
+     *
+     * @return \Illuminate\Http\JsonResponse
      */
-    public function signUp(RequestSignUp $req)
+    public function signUp(RequestSignUp $req): \Illuminate\Http\JsonResponse
     {
         $credentials = $req->safe()->only(['name', 'email', 'password']);
         $credentials['password'] = bcrypt($credentials['password']);
@@ -33,6 +43,14 @@ class AuthController extends Controller
 
     /**
      * Login
+     *
+     * Authenticate a user and return the user data along with an access token.
+     *
+     * @operationId signIn
+     * @unauthenticated
+     * @param RequestSignIn $req
+     *
+     * @return \Illuminate\Http\JsonResponse
      */
     public function signIn(RequestSignIn $req): \Illuminate\Http\JsonResponse
     {
@@ -58,6 +76,14 @@ class AuthController extends Controller
 
     /**
      * Logout
+     *
+     * Revoke the user's access token.
+     *
+     * @operationId signOut
+     * @authenticated
+     * @param Request $req
+     *
+     * @return \Illuminate\Http\JsonResponse
      */
     public function signOut(Request $req)
     {
