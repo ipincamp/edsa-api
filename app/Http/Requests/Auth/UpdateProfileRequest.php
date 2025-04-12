@@ -4,7 +4,7 @@ namespace App\Http\Requests\Auth;
 
 use Illuminate\Foundation\Http\FormRequest;
 
-class RequestSignUp extends FormRequest
+class UpdateProfileRequest extends FormRequest
 {
     /**
      * Get the validation rules that apply to the request.
@@ -13,10 +13,11 @@ class RequestSignUp extends FormRequest
      */
     public function rules(): array
     {
+        $id = optional($this->user())->id;
+
         return [
-            'name' => ['required', 'string', 'min:3', 'max:50'],
-            'email' => ['required', 'email', 'unique:users,email'],
-            'password' => ['required', 'string', 'min:8', 'confirmed'],
+            'name' => ['required', 'string', 'max:50'],
+            'username' => ['required', 'string', 'min:3', 'max:20', 'unique:users,username,' . ($id ?? 'null')],
         ];
     }
 }
