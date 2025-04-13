@@ -46,9 +46,9 @@ class AuthController extends Controller
                 ], 401);
             }
 
-            $token = $request->user()->createToken('auth_in')->plainTextToken;
+            $token = $request->user()->createToken('auth_in', ['*'], now()->addDay())->plainTextToken;
 
-            /* Successfully */
+            /** Expired token issued for 1 day since creation */
             return response()->json([
                 'status' => true,
                 'message' => 'Login successful',
