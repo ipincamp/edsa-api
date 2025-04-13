@@ -29,8 +29,8 @@ class AppServiceProvider extends ServiceProvider
                 return Str::startsWith($route->uri, 'api/v1');
             })
             ->expose(
-                ui: '/docs/v1',
-                document: '/docs/v1/openapi.json',
+                ui: 'api/docs/v1',
+                document: 'api/docs/v1/openapi.json',
             )
             ->withDocumentTransformers(function (OpenApi $openApi) {
                 $openApi->secure(
