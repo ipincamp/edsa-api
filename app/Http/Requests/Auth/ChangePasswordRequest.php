@@ -4,6 +4,13 @@ namespace App\Http\Requests\Auth;
 
 use Illuminate\Foundation\Http\FormRequest;
 
+/**
+ * Change Password Request Form
+ *
+ * - Use this request to validate the change password form.
+ * - The regex pattern allows:
+ * > letters (a-z A-Z) , numbers (0-9) , dots (.) , underscores (_) , hyphens (-)
+ */
 class ChangePasswordRequest extends FormRequest
 {
     /**

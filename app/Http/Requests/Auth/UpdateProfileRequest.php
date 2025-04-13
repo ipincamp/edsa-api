@@ -4,6 +4,13 @@ namespace App\Http\Requests\Auth;
 
 use Illuminate\Foundation\Http\FormRequest;
 
+/**
+ * Update Profile Request Form
+ *
+ * - Use this request to validate the update profile form.
+ * - The regex pattern allowed for `username`:
+ * > letters (a-z A-Z) , numbers (0-9) , dots (.) , at (@)
+ */
 class UpdateProfileRequest extends FormRequest
 {
     /**
@@ -17,7 +24,7 @@ class UpdateProfileRequest extends FormRequest
 
         return [
             'name' => ['required', 'string', 'max:50'],
-            'username' => ['required', 'string', 'min:3', 'max:20', 'unique:users,username,' . ($id ?? 'null')],
+            'username' => ['required', 'string', 'min:3', 'max:20', 'regex:/^[a-zA-Z0-9.@]+$/', 'unique:users,username,' . ($id ?? 'null')],
         ];
     }
 }
