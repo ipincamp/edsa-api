@@ -35,7 +35,8 @@ class StudentResource extends Resource
                 Forms\Components\TextInput::make('password')
                     ->password()
                     ->required()
-                    ->maxLength(255),
+                    ->maxLength(255)
+                    ->visibleOn('create'),
             ]);
     }
 
@@ -49,12 +50,17 @@ class StudentResource extends Resource
                     ->searchable()
                     ->copyable()
                     ->copyMessage('Copied to clipboard'),
+                // TODO: group name
             ])
             ->filters([
                 Tables\Filters\TrashedFilter::make(),
             ])
             ->actions([
                 Tables\Actions\EditAction::make(),
+                Tables\Actions\Action::make('Password')
+                    ->color('success')
+                    ->icon('heroicon-o-key')
+                    ->url(fn(Student $record): string =>  self::getUrl('password', ['record' => $record->id])),
                 Tables\Actions\DeleteAction::make(),
                 Tables\Actions\ForceDeleteAction::make(),
                 Tables\Actions\RestoreAction::make(),
@@ -72,6 +78,7 @@ class StudentResource extends Resource
     {
         return [
             'index' => Pages\ManageStudents::route('/'),
+            'password' => Pages\ChangePasswordStudent::route('/{record}/password'),
         ];
     }
 
