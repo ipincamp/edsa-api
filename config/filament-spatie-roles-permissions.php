@@ -175,7 +175,7 @@ return [
          *
          * Note: If you are changing the "permission_name" , It's recommended to run with --clean to avoid duplications
          */
-        'permission_name' => 'return $permissionAffix . \' \' . Str::lower($modelName);',
+        'permission_name' => 'return $permissionAffix . \'-\' . Str::lower($modelName);',
 
         /*
          * Permissions will be generated for the models associated with the respective Filament Resources
@@ -212,7 +212,8 @@ return [
          * Define any other permission that should be synced with the DB
          */
         'custom_permissions' => [
-            //'view-log'
+            'change-password-self',
+            'update-profile-self',
         ],
 
         'user_model' => \App\Models\User::class,
