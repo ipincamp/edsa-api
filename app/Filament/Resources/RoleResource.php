@@ -23,6 +23,8 @@ class RoleResource extends Resource
     protected static ?string $navigationGroup = 'Settings';
     protected static ?string $navigationLabel = 'Permissions';
     protected static ?string $label = 'Permission';
+    protected static ?string $pluralLabel = 'Manage Permissions';
+    protected static ?string $slug = 'permissions';
 
     public static function form(Form $form): Form
     {
@@ -67,6 +69,9 @@ class RoleResource extends Resource
                     ->copyable()
                     ->copyMessage('Copied!')
                     ->searchable(),
+                Tables\Columns\TextColumn::make('permission_count')
+                    ->label('Permissions')
+                    ->getStateUsing(fn($record) => $record->permissions->count()),
             ])
             ->actions([
                 Tables\Actions\EditAction::make()

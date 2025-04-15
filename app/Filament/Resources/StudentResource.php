@@ -21,6 +21,7 @@ class StudentResource extends Resource
     protected static ?string $navigationGroup = 'Users';
     protected static ?string $navigationLabel = 'Students';
     protected static ?string $label = 'Student';
+    protected static ?string $pluralLabel = 'Data Students';
 
     public static function form(Form $form): Form
     {
@@ -30,12 +31,16 @@ class StudentResource extends Resource
                     ->required()
                     ->maxLength(255),
                 Forms\Components\TextInput::make('username')
+                    ->required()
+                    ->unique(ignoreRecord: true)
                     ->maxLength(255)
                     ->default(null),
                 Forms\Components\TextInput::make('password')
+                    ->columnSpanFull()
                     ->password()
                     ->required()
                     ->maxLength(255)
+                    ->revealable()
                     ->visibleOn('create'),
             ]);
     }
