@@ -53,7 +53,8 @@ class AuthController extends Controller
                 'status' => true,
                 'message' => 'Login successful',
                 'data' => [
-                    'user' => $request->user(),
+                    'user' => $request->user()->only(['id', 'name', 'created_at', 'updated_at']),
+                    'role' => $request->user()->getRoleNames()->first(),
                     'token' => $token,
                 ],
             ], 200);

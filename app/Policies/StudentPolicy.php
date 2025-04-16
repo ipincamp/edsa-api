@@ -13,7 +13,7 @@ class StudentPolicy
      */
     public function viewAny(User $user): bool
     {
-        return $user->checkPermissionTo('view-any-student');
+        return $user->checkPermissionTo('View any Student');
     }
 
     /**
@@ -21,7 +21,7 @@ class StudentPolicy
      */
     public function view(User $user, Student $student): bool
     {
-        return $user->checkPermissionTo('view-student');
+        return $user->checkPermissionTo('View Student');
     }
 
     /**
@@ -29,7 +29,7 @@ class StudentPolicy
      */
     public function create(User $user): bool
     {
-        return $user->checkPermissionTo('create-student');
+        return $user->checkPermissionTo('Create Student');
     }
 
     /**
@@ -37,7 +37,7 @@ class StudentPolicy
      */
     public function update(User $user, Student $student): bool
     {
-        return $user->checkPermissionTo('update-student');
+        return $user->checkPermissionTo('Update Student');
     }
 
     /**
@@ -45,7 +45,7 @@ class StudentPolicy
      */
     public function delete(User $user, Student $student): bool
     {
-        return $user->checkPermissionTo('delete-student');
+        return $user->checkPermissionTo('Delete Student');
     }
 
     /**
@@ -53,7 +53,7 @@ class StudentPolicy
      */
     public function deleteAny(User $user): bool
     {
-        return $user->checkPermissionTo('delete-any-student');
+        return $user->checkPermissionTo('Delete any Student');
     }
 
     /**
@@ -61,7 +61,7 @@ class StudentPolicy
      */
     public function restore(User $user, Student $student): bool
     {
-        return $user->checkPermissionTo('restore-student');
+        return $user->checkPermissionTo('Restore Student');
     }
 
     /**
@@ -69,7 +69,7 @@ class StudentPolicy
      */
     public function restoreAny(User $user): bool
     {
-        return $user->checkPermissionTo('restore-any-student');
+        return $user->checkPermissionTo('Restore any Student');
     }
 
     /**
@@ -77,7 +77,7 @@ class StudentPolicy
      */
     public function replicate(User $user, Student $student): bool
     {
-        return $user->checkPermissionTo('replicate-student');
+        return $user->checkPermissionTo('Replicate Student');
     }
 
     /**
@@ -85,7 +85,7 @@ class StudentPolicy
      */
     public function reorder(User $user): bool
     {
-        return $user->checkPermissionTo('reorder-student');
+        return $user->checkPermissionTo('Reorder Student');
     }
 
     /**
@@ -93,7 +93,7 @@ class StudentPolicy
      */
     public function forceDelete(User $user, Student $student): bool
     {
-        return $user->checkPermissionTo('force-delete-student');
+        return $user->checkPermissionTo('Permanently delete Student');
     }
 
     /**
@@ -101,6 +101,6 @@ class StudentPolicy
      */
     public function forceDeleteAny(User $user): bool
     {
-        return $user->checkPermissionTo('force-delete-any-student');
+        return $user->checkPermissionTo('Permanently delete any Student');
     }
 }

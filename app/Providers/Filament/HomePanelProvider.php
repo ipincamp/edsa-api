@@ -57,7 +57,10 @@ class HomePanelProvider extends PanelProvider
                 Authenticate::class,
             ])
             ->plugins([
-                ActivitylogPlugin::make(),
+                ActivitylogPlugin::make()
+                    ->authorize(
+                        fn() => auth()->user()->isSuperAdmin(),
+                    ),
             ]);
     }
 }

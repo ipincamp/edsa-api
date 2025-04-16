@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\Auth;
 
+use App\Enums\PermissionEnum as PE;
 use Illuminate\Foundation\Http\FormRequest;
 
 /**
@@ -20,7 +21,7 @@ class ChangePasswordRequest extends FormRequest
      */
     public function authorize(): bool
     {
-        return $this->user()->checkPermissionTo('change-password-self');
+        return $this->user()->checkPermissionTo(PE::CHANGE_PASSWORD_SELF->value);
     }
 
     /**

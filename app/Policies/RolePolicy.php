@@ -13,7 +13,7 @@ class RolePolicy
      */
     public function viewAny(User $user): bool
     {
-        return $user->checkPermissionTo('view-any-role');
+        return $user->checkPermissionTo('View any Role');
     }
 
     /**
@@ -21,7 +21,7 @@ class RolePolicy
      */
     public function view(User $user, Role $role): bool
     {
-        return $user->checkPermissionTo('view-role');
+        return $user->checkPermissionTo('View Role');
     }
 
     /**
@@ -29,7 +29,7 @@ class RolePolicy
      */
     public function create(User $user): bool
     {
-        return $user->checkPermissionTo('create-role');
+        return $user->checkPermissionTo('Create Role');
     }
 
     /**
@@ -37,7 +37,7 @@ class RolePolicy
      */
     public function update(User $user, Role $role): bool
     {
-        return $user->checkPermissionTo('update-role');
+        return $user->checkPermissionTo('Update Role');
     }
 
     /**
@@ -45,7 +45,7 @@ class RolePolicy
      */
     public function delete(User $user, Role $role): bool
     {
-        return $user->checkPermissionTo('delete-role');
+        return $user->checkPermissionTo('Delete Role');
     }
 
     /**
@@ -53,7 +53,7 @@ class RolePolicy
      */
     public function deleteAny(User $user): bool
     {
-        return $user->checkPermissionTo('delete-any-role');
+        return $user->checkPermissionTo('Delete any Role');
     }
 
     /**
@@ -61,7 +61,7 @@ class RolePolicy
      */
     public function restore(User $user, Role $role): bool
     {
-        return $user->checkPermissionTo('restore-role');
+        return $user->checkPermissionTo('Restore Role');
     }
 
     /**
@@ -69,7 +69,7 @@ class RolePolicy
      */
     public function restoreAny(User $user): bool
     {
-        return $user->checkPermissionTo('restore-any-role');
+        return $user->checkPermissionTo('Restore any Role');
     }
 
     /**
@@ -77,7 +77,7 @@ class RolePolicy
      */
     public function replicate(User $user, Role $role): bool
     {
-        return $user->checkPermissionTo('replicate-role');
+        return $user->checkPermissionTo('Replicate Role');
     }
 
     /**
@@ -85,7 +85,7 @@ class RolePolicy
      */
     public function reorder(User $user): bool
     {
-        return $user->checkPermissionTo('reorder-role');
+        return $user->checkPermissionTo('Reorder Role');
     }
 
     /**
@@ -93,7 +93,7 @@ class RolePolicy
      */
     public function forceDelete(User $user, Role $role): bool
     {
-        return $user->checkPermissionTo('force-delete-role');
+        return $user->checkPermissionTo('Permanently delete Role');
     }
 
     /**
@@ -101,6 +101,6 @@ class RolePolicy
      */
     public function forceDeleteAny(User $user): bool
     {
-        return $user->checkPermissionTo('force-delete-any-role');
+        return $user->checkPermissionTo('Permanently delete any Role');
     }
 }

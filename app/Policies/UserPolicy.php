@@ -13,7 +13,7 @@ class UserPolicy
      */
     public function viewAny(User $user): bool
     {
-        return $user->checkPermissionTo('view-any-user');
+        return $user->checkPermissionTo('View any User');
     }
 
     /**
@@ -21,7 +21,7 @@ class UserPolicy
      */
     public function view(User $user, User $model): bool
     {
-        return $user->checkPermissionTo('view-user');
+        return $user->checkPermissionTo('View User');
     }
 
     /**
@@ -29,7 +29,7 @@ class UserPolicy
      */
     public function create(User $user): bool
     {
-        return $user->checkPermissionTo('create-user');
+        return $user->checkPermissionTo('Create User');
     }
 
     /**
@@ -37,7 +37,7 @@ class UserPolicy
      */
     public function update(User $user, User $model): bool
     {
-        return $user->checkPermissionTo('update-user');
+        return $user->checkPermissionTo('Update User');
     }
 
     /**
@@ -45,7 +45,7 @@ class UserPolicy
      */
     public function delete(User $user, User $model): bool
     {
-        return $user->checkPermissionTo('delete-user');
+        return $user->checkPermissionTo('Delete User');
     }
 
     /**
@@ -53,7 +53,7 @@ class UserPolicy
      */
     public function deleteAny(User $user): bool
     {
-        return $user->checkPermissionTo('delete-any-user');
+        return $user->checkPermissionTo('Delete any User');
     }
 
     /**
@@ -61,7 +61,7 @@ class UserPolicy
      */
     public function restore(User $user, User $model): bool
     {
-        return $user->checkPermissionTo('restore-user');
+        return $user->checkPermissionTo('Restore User');
     }
 
     /**
@@ -69,7 +69,7 @@ class UserPolicy
      */
     public function restoreAny(User $user): bool
     {
-        return $user->checkPermissionTo('restore-any-user');
+        return $user->checkPermissionTo('Restore any User');
     }
 
     /**
@@ -77,7 +77,7 @@ class UserPolicy
      */
     public function replicate(User $user, User $model): bool
     {
-        return $user->checkPermissionTo('replicate-user');
+        return $user->checkPermissionTo('Replicate User');
     }
 
     /**
@@ -85,7 +85,7 @@ class UserPolicy
      */
     public function reorder(User $user): bool
     {
-        return $user->checkPermissionTo('reorder-user');
+        return $user->checkPermissionTo('Reorder User');
     }
 
     /**
@@ -93,7 +93,7 @@ class UserPolicy
      */
     public function forceDelete(User $user, User $model): bool
     {
-        return $user->checkPermissionTo('force-delete-user');
+        return $user->checkPermissionTo('Permanently delete User');
     }
 
     /**
@@ -101,6 +101,6 @@ class UserPolicy
      */
     public function forceDeleteAny(User $user): bool
     {
-        return $user->checkPermissionTo('force-delete-any-user');
+        return $user->checkPermissionTo('Permanently delete any User');
     }
 }

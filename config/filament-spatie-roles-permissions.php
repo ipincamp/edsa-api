@@ -1,5 +1,7 @@
 <?php
 
+use App\Enums\PermissionEnum as PE;
+
 return [
 
     'resources' => [
@@ -151,18 +153,18 @@ return [
              * Permissions Aligned with Policies.
              * DO NOT change the keys unless the genericPolicy.stub is published and altered accordingly
              */
-            'viewAnyPermission' => 'view-any',
-            'viewPermission' => 'view',
-            'createPermission' => 'create',
-            'updatePermission' => 'update',
-            'deletePermission' => 'delete',
-            'deleteAnyPermission' => 'delete-any',
-            'replicatePermission' => 'replicate',
-            'restorePermission' => 'restore',
-            'restoreAnyPermission' => 'restore-any',
-            'reorderPermission' => 'reorder',
-            'forceDeletePermission' => 'force-delete',
-            'forceDeleteAnyPermission' => 'force-delete-any',
+            'viewAnyPermission' => 'View any',
+            'viewPermission' => 'View',
+            'createPermission' => 'Create',
+            'updatePermission' => 'Update',
+            'deletePermission' => 'Delete',
+            'deleteAnyPermission' => 'Delete any',
+            'replicatePermission' => 'Replicate',
+            'restorePermission' => 'Restore',
+            'restoreAnyPermission' => 'Restore any',
+            'reorderPermission' => 'Reorder',
+            'forceDeletePermission' => 'Permanently delete',
+            'forceDeleteAnyPermission' => 'Permanently delete any',
         ],
 
         /*
@@ -175,7 +177,7 @@ return [
          *
          * Note: If you are changing the "permission_name" , It's recommended to run with --clean to avoid duplications
          */
-        'permission_name' => 'return $permissionAffix . \'-\' . Str::lower($modelName);',
+        'permission_name' => 'return $permissionAffix . \' \' . $modelName;',
 
         /*
          * Permissions will be generated for the models associated with the respective Filament Resources
@@ -212,8 +214,10 @@ return [
          * Define any other permission that should be synced with the DB
          */
         'custom_permissions' => [
-            'change-password-self',
-            'update-profile-self',
+            PE::CHANGE_PASSWORD_SELF->value,
+            PE::UPDATE_PROFILE_SELF->value,
+            PE::CHANGE_PASSWORD_OTHER->value,
+            PE::UPDATE_PROFILE_OTHER->value,
         ],
 
         'user_model' => \App\Models\User::class,
