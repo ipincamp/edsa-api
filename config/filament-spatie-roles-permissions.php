@@ -216,8 +216,7 @@ return [
         'custom_permissions' => [
             PE::CHANGE_PASSWORD_SELF->value,
             PE::UPDATE_PROFILE_SELF->value,
-            PE::CHANGE_PASSWORD_OTHER->value,
-            PE::UPDATE_PROFILE_OTHER->value,
+            PE::CHANGE_PASSWORD_STUDENT->value,
         ],
 
         'user_model' => \App\Models\User::class,

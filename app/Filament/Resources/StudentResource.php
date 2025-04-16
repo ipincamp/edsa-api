@@ -2,9 +2,11 @@
 
 namespace App\Filament\Resources;
 
+use App\Enums\PermissionEnum as PE;
 use App\Filament\Resources\StudentResource\Pages;
 use App\Filament\Resources\StudentResource\RelationManagers;
 use App\Models\Student;
+use App\Traits\AuthorizeTrait;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
@@ -16,6 +18,8 @@ use Rmsramos\Activitylog\RelationManagers\ActivitylogRelationManager;
 
 class StudentResource extends Resource
 {
+    use AuthorizeTrait;
+
     protected static ?string $model = Student::class;
 
     protected static ?string $navigationIcon = 'heroicon-o-users';
@@ -66,6 +70,7 @@ class StudentResource extends Resource
                 Tables\Actions\Action::make('Password')
                     ->color('success')
                     ->icon('heroicon-o-key')
+                    ->authorize(fn () => static::grant(PE::CHANGE_PASSWORD_STUDENT->value))
                     ->url(fn(Student $record): string =>  self::getUrl('password', ['record' => $record->id])),
                 Tables\Actions\DeleteAction::make(),
                 Tables\Actions\ForceDeleteAction::make(),
