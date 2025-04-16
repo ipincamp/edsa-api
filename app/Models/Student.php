@@ -5,9 +5,13 @@ namespace App\Models;
 use App\Enums\RoleEnum;
 use Illuminate\Database\Eloquent\Builder;
 use Spatie\Permission\Models\Role;
+use Spatie\Activitylog\LogOptions;
+use Spatie\Activitylog\Traits\LogsActivity;
 
 class Student extends User
 {
+    use LogsActivity;
+
     protected $table = 'users';
 
     /*
@@ -32,5 +36,15 @@ class Student extends User
         static::addGlobalScope('student', function (Builder $builder) {
             $builder->whereNotNull('username');
         });
+    }
+
+    public function getActivitylogOptions(): LogOptions
+    {
+        return LogOptions::defaults()
+            ->logOnly(['name', 'username', 'password'])
+            ->dontSubmitEmptyLogs()
+            ->useLogName('student')
+            ->setDescriptionForEvent(fn(string $eventName) => "Student has been {$eventName}")
+            ->logOnlyDirty();
     }
 }

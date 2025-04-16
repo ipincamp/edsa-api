@@ -13,6 +13,7 @@ use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
+use Rmsramos\Activitylog\RelationManagers\ActivitylogRelationManager;
 use Spatie\Permission\Models\Permission;
 
 class RoleResource extends Resource
@@ -46,8 +47,25 @@ class RoleResource extends Resource
                             return [$id => ucwords(str_replace('-', ' ', $name))];
                         });
                     })
-                    ->afterStateUpdated(function (callable $set, $state) {
+                    ->afterStateUpdated(function (callable $set, $state, $record) {
                         $set('permissions', $state);
+
+                        if ($record) {
+                            activity('permissions')
+                                ->performedOn($record)
+                                ->event('updated')
+                                ->withProperties([
+                                    'attributes' => [
+                                        'name' => $record->name,
+                                        'permissions' => Permission::whereIn('id', $state)->pluck('name')->toArray(),
+                                    ],
+                                    'old' => [
+                                        'name' => $record->name,
+                                        'permissions' => $record->permissions->pluck('name')->toArray(),
+                                    ],
+                                ])
+                                ->log('Updated permissions');
+                        }
                     }),
             ]);
     }
@@ -83,7 +101,7 @@ class RoleResource extends Resource
     public static function getRelations(): array
     {
         return [
-            //
+            ActivitylogRelationManager::class,
         ];
     }
 
