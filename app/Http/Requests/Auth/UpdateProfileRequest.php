@@ -3,6 +3,7 @@
 namespace App\Http\Requests\Auth;
 
 use App\Enums\PermissionEnum as PE;
+use App\Traits\AuthorizeTrait;
 use Illuminate\Foundation\Http\FormRequest;
 
 /**
@@ -14,6 +15,8 @@ use Illuminate\Foundation\Http\FormRequest;
  */
 class UpdateProfileRequest extends FormRequest
 {
+    use AuthorizeTrait;
+
     /**
      * Determine if the user is authorized to make this request.
      *
@@ -21,7 +24,7 @@ class UpdateProfileRequest extends FormRequest
      */
     public function authorize(): bool
     {
-        return $this->user()->checkPermissionTo(PE::UPDATE_PROFILE_SELF->value);
+        return $this->grant(PE::UPDATE_PROFILE_SELF->value);
     }
 
     /**
