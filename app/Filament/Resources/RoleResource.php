@@ -40,13 +40,8 @@ class RoleResource extends Resource
                     ])
                     ->columnSpanFull()
                     ->label('Permissions')
+                    ->bulkToggleable()
                     ->searchable()
-                    ->reactive()
-                    ->options(function () {
-                        return Permission::all()->pluck('name', 'id')->mapWithKeys(function ($name, $id) {
-                            return [$id => ucwords(str_replace('-', ' ', $name))];
-                        });
-                    })
                     ->afterStateUpdated(function (callable $set, $state, $record) {
                         $set('permissions', $state);
 
@@ -56,11 +51,9 @@ class RoleResource extends Resource
                                 ->event('updated')
                                 ->withProperties([
                                     'attributes' => [
-                                        'name' => $record->name,
                                         'permissions' => Permission::whereIn('id', $state)->pluck('name')->toArray(),
                                     ],
                                     'old' => [
-                                        'name' => $record->name,
                                         'permissions' => $record->permissions->pluck('name')->toArray(),
                                     ],
                                 ])
