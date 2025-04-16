@@ -47,6 +47,18 @@ class AuthController extends Controller
             }
 
             $token = $request->user()->createToken('auth_in', ['*'], now()->addDay())->plainTextToken;
+            activity('auth api')
+                ->performedOn($request->user())
+                ->event('login')
+                ->withProperties([
+                    'attributes' => [
+                        'name' => $request->user()->name,
+                        'ip' => $request->ip(),
+                        'user_agent' => $request->userAgent(),
+                        'device' => $request->header('User-Agent'),
+                    ],
+                ])
+                ->log('User logged in');
 
             /** Expired token issued for 1 day since creation */
             return response()->json([
@@ -99,6 +111,18 @@ class AuthController extends Controller
                 'password' => Hash::make($newPassword['new_password']),
             ]);
             $user->save();
+            activity('auth api')
+                ->performedOn($request->user())
+                ->event('change password')
+                ->withProperties([
+                    'attributes' => [
+                        'name' => $request->user()->name,
+                        'ip' => $request->ip(),
+                        'user_agent' => $request->userAgent(),
+                        'device' => $request->header('User-Agent'),
+                    ],
+                ])
+                ->log('User changed password');
 
             /**
              * Password changed successfully
@@ -136,6 +160,26 @@ class AuthController extends Controller
             $user->update($data);
             $user->save();
 
+            activity('auth api')
+                ->performedOn($request->user())
+                ->event('update profile')
+                ->withProperties([
+                    'attributes' => [
+                        'name' => $request->user()->name,
+                        'username' => $request->user()->username,
+                        'email' => $request->user()->email,
+                        'ip' => $request->ip(),
+                        'user_agent' => $request->userAgent(),
+                        'device' => $request->header('User-Agent'),
+                    ],
+                    'old' => [
+                        'name' => $user->getOriginal('name'),
+                        'username' => $user->getOriginal('username'),
+                        'email' => $user->getOriginal('email'),
+                    ],
+                ])
+                ->log('User updated profile');
+
             /* Successfully */
             return response()->json([
                 'status' => true,
@@ -162,6 +206,19 @@ class AuthController extends Controller
     {
         try {
             $request->user()->currentAccessToken()->delete();
+
+            activity('auth api')
+                ->performedOn($request->user())
+                ->event('logout')
+                ->withProperties([
+                    'attributes' => [
+                        'name' => $request->user()->name,
+                        'ip' => $request->ip(),
+                        'user_agent' => $request->userAgent(),
+                        'device' => $request->header('User-Agent'),
+                    ],
+                ])
+                ->log('User logged out');
 
             /* Successfully */
             return response()->json([
