@@ -33,7 +33,6 @@ class GroupResource extends Resource
         ];
 
         return $form
-            // edit data relationship users with group_participants table
             ->schema([
                 Forms\Components\TextInput::make('name')
                     ->required()
@@ -41,44 +40,12 @@ class GroupResource extends Resource
                     ->columnSpanFull()
                     ->label('Name')
                     ->maxLength(255)
-                    ->unique(ignoreRecord: true)
-                    ->afterStateUpdated(function (callable $set, $state, $record) {
-                        if ($record) {
-                            activity('groups')
-                                ->performedOn($record)
-                                ->event('updated')
-                                ->withProperties([
-                                    'attributes' => [
-                                        'name' => $state,
-                                    ],
-                                    'old' => [
-                                        'name' => $record->name,
-                                    ],
-                                ])
-                                ->log('Updated group name');
-                        }
-                    }),
+                    ->unique(ignoreRecord: true),
                 Forms\Components\Textarea::make('description')
                     ->columns($columns)
                     ->columnSpanFull()
                     ->label('Description')
-                    ->maxLength(255)
-                    ->afterStateUpdated(function (callable $set, $state, $record) {
-                        if ($record) {
-                            activity('groups')
-                                ->performedOn($record)
-                                ->event('updated')
-                                ->withProperties([
-                                    'attributes' => [
-                                        'description' => $state,
-                                    ],
-                                    'old' => [
-                                        'description' => $record->description,
-                                    ],
-                                ])
-                                ->log('Updated group description');
-                        }
-                    }),
+                    ->maxLength(255),
             ]);
     }
 
