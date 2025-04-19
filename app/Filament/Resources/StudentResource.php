@@ -38,8 +38,7 @@ class StudentResource extends Resource
                 Forms\Components\TextInput::make('username')
                     ->required()
                     ->unique(ignoreRecord: true)
-                    ->maxLength(255)
-                    ->default(null),
+                    ->maxLength(255),
                 Forms\Components\TextInput::make('password')
                     ->columnSpanFull()
                     ->password()
@@ -70,7 +69,7 @@ class StudentResource extends Resource
                 Tables\Actions\Action::make('Password')
                     ->color('success')
                     ->icon('heroicon-o-key')
-                    ->authorize(fn () => static::grant(PE::CHANGE_PASSWORD_STUDENT->value))
+                    ->authorize(fn() => static::grant(PE::CHANGE_PASSWORD_STUDENT->value))
                     ->url(fn(Student $record): string =>  self::getUrl('password', ['record' => $record->id])),
                 Tables\Actions\DeleteAction::make(),
                 Tables\Actions\ForceDeleteAction::make(),

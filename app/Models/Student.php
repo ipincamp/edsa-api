@@ -33,9 +33,9 @@ class Student extends User
             Role::findByName(RoleEnum::STUDENT->value)->id,
         ));
 
-        static::addGlobalScope('student', function (Builder $builder) {
-            $builder->whereNotNull('username');
-        });
+        static::addGlobalScope('student', fn(Builder $builder) => $builder
+            ->whereNull('email')
+            ->whereNotNull('username'));
     }
 
     public function getActivitylogOptions(): LogOptions

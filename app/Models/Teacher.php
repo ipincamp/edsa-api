@@ -32,9 +32,9 @@ class Teacher extends User
             Role::findByName(RoleEnum::TEACHER->value)->id,
         ));
 
-        static::addGlobalScope('teacher', function (Builder $builder) {
-            $builder->whereNotNull('email');
-        });
+        static::addGlobalScope('teacher', fn(Builder $builder) => $builder
+            ->whereNull('username')
+            ->whereNull('email_verified_at'));
     }
 
     public function getActivitylogOptions(): LogOptions
