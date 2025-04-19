@@ -5,6 +5,7 @@ namespace App\Filament\Resources;
 use App\Enums\PermissionEnum as PE;
 use App\Filament\Resources\TeacherResource\Pages;
 use App\Filament\Resources\TeacherResource\RelationManagers;
+use App\Models\Group;
 use App\Models\Teacher;
 use App\Traits\AuthorizeTrait;
 use Filament\Forms;
@@ -31,28 +32,61 @@ class TeacherResource extends Resource
     {
         return $form
             ->schema([
-                Forms\Components\TextInput::make('name')
-                    ->required()
-                    ->maxLength(255),
-                Forms\Components\TextInput::make('email')
-                    ->required()
-                    ->unique(ignoreRecord: true)
-                    ->maxLength(255)
-                    ->email(),
-                Forms\Components\TextInput::make('password')
-                    ->columnSpanFull()
-                    ->password()
-                    ->required()
-                    ->maxLength(255)
-                    ->revealable()
-                    ->visibleOn('create'),
+                Forms\Components\Wizard::make()
+                    ->steps([
+                        Forms\Components\Wizard\Step::make('Identity')
+                            ->schema([
+                                Forms\Components\TextInput::make('name')
+                                    ->columnSpanFull()
+                                    ->required()
+                                    ->maxLength(255),
+                                Forms\Components\TextInput::make('email')
+                                    ->columnSpanFull()
+                                    ->required()
+                                    ->unique(ignoreRecord: true)
+                                    ->maxLength(255)
+                                    ->email(),
+                                Forms\Components\TextInput::make('password')
+                                    ->columnSpanFull()
+                                    ->password()
+                                    ->required()
+                                    ->maxLength(255)
+                                    ->revealable()
+                                    ->visibleOn('create'),
+                            ]),
+                        Forms\Components\Wizard\Step::make('Groups')
+                            ->schema([
+                                Forms\Components\CheckboxList::make('groups')
+                                    ->columnSpanFull()
+                                    ->relationship('groups', 'name')
+                                    ->required()
+                                    ->label('Groups')
+                                    ->afterStateUpdated(function (callable $set, $state, $record) {
+                                        $set('groups', $state);
+
+                                        if ($record) {
+                                            activity('teacher')
+                                                ->performedOn($record)
+                                                ->event('updated')
+                                                ->withProperties([
+                                                    'attributes' => [
+                                                        'groups' => Group::whereIn('id', $state)->pluck('name')->toArray(),
+                                                    ],
+                                                    'old' => [
+                                                        'groups' => $record->groups->pluck('name')->toArray(),
+                                                    ],
+                                                ])
+                                                ->log('Updated groups');
+                                        }
+                                    }),
+                            ]),
+                    ])
+                    ->columnSpanFull(),
             ]);
     }
 
     public static function table(Table $table): Table
     {
-        // sembunyikan teacher dengan role admin
-
         return $table
             ->columns([
                 Tables\Columns\TextColumn::make('name')
@@ -61,21 +95,29 @@ class TeacherResource extends Resource
                     ->searchable()
                     ->copyable()
                     ->copyMessage('Copied to clipboard'),
-                // TODO: group name
+                Tables\Columns\TextColumn::make('groups')
+                    ->label('Groups')
+                    ->limit(30)
+                    ->getStateUsing(fn(Teacher $record): string => $record->groups ? $record->groups->pluck('name')->implode(', ') : ''),
             ])
             ->filters([
                 Tables\Filters\TrashedFilter::make(),
             ])
             ->actions([
-                Tables\Actions\EditAction::make(),
-                Tables\Actions\Action::make('Password')
-                    ->color('success')
-                    ->icon('heroicon-o-key')
-                    ->authorize(fn() => static::grant(PE::CHANGE_PASSWORD_TEACHER->value))
-                    ->url(fn(Teacher $record): string =>  self::getUrl('password', ['record' => $record->id])),
-                Tables\Actions\DeleteAction::make(),
-                Tables\Actions\ForceDeleteAction::make(),
-                Tables\Actions\RestoreAction::make(),
+                Tables\Actions\ActionGroup::make([
+                    Tables\Actions\EditAction::make()
+                        ->color('warning')
+                        ->icon('heroicon-o-pencil')
+                        ->label('Details'),
+                    Tables\Actions\Action::make('Password')
+                        ->color('success')
+                        ->icon('heroicon-o-key')
+                        ->authorize(fn() => static::grant(PE::CHANGE_PASSWORD_TEACHER->value))
+                        ->url(fn(Teacher $record): string =>  self::getUrl('password', ['record' => $record->id])),
+                    Tables\Actions\DeleteAction::make(),
+                    Tables\Actions\ForceDeleteAction::make(),
+                    Tables\Actions\RestoreAction::make(),
+                ]),
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
