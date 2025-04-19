@@ -5,6 +5,7 @@ namespace App\Filament\Resources;
 use App\Enums\PermissionEnum as PE;
 use App\Filament\Resources\StudentResource\Pages;
 use App\Filament\Resources\StudentResource\RelationManagers;
+use App\Models\Group;
 use App\Models\Student;
 use App\Traits\AuthorizeTrait;
 use Filament\Forms;
@@ -32,20 +33,58 @@ class StudentResource extends Resource
     {
         return $form
             ->schema([
-                Forms\Components\TextInput::make('name')
-                    ->required()
-                    ->maxLength(255),
-                Forms\Components\TextInput::make('username')
-                    ->required()
-                    ->unique(ignoreRecord: true)
-                    ->maxLength(255),
-                Forms\Components\TextInput::make('password')
-                    ->columnSpanFull()
-                    ->password()
-                    ->required()
-                    ->maxLength(255)
-                    ->revealable()
-                    ->visibleOn('create'),
+                Forms\Components\Wizard::make()
+                    ->steps([
+                        Forms\Components\Wizard\Step::make('Identity')
+                            ->schema([
+                                Forms\Components\TextInput::make('name')
+                                    ->columnSpanFull()
+                                    ->required()
+                                    ->maxLength(255),
+                                Forms\Components\TextInput::make('username')
+                                    ->columnSpanFull()
+                                    ->required()
+                                    ->unique(ignoreRecord: true)
+                                    ->maxLength(255),
+                                Forms\Components\TextInput::make('password')
+                                    ->columnSpanFull()
+                                    ->password()
+                                    ->required()
+                                    ->maxLength(255)
+                                    ->revealable()
+                                    ->visibleOn('create'),
+                            ]),
+                        Forms\Components\Wizard\Step::make('Groups')
+                            ->schema([
+                                Forms\Components\Select::make('groups')
+                                    ->columnSpanFull()
+                                    ->relationship('groups', 'name')
+                                    ->required()
+                                    ->multiple(false)
+                                    ->label('Groups')
+                                    ->afterStateUpdated(function (callable $set, $state, $record) {
+                                        $set('groups', $state);
+
+                                        if ($record) {
+                                            activity('student')
+                                                ->performedOn($record)
+                                                ->event('updated')
+                                                ->withProperties([
+                                                    'attributes' => [
+                                                        'name' => $record->name,
+                                                        'groups' => is_array($state) ? Group::whereIn('id', $state)->pluck('name')->toArray() : [],
+                                                    ],
+                                                    'old' => [
+                                                        'name' => $record->name,
+                                                        'groups' => $record->groups->pluck('name')->toArray(),
+                                                    ],
+                                                ])
+                                                ->log('Updated groups');
+                                        }
+                                    }),
+                            ]),
+                    ])
+                    ->columnSpanFull(),
             ]);
     }
 
@@ -59,21 +98,29 @@ class StudentResource extends Resource
                     ->searchable()
                     ->copyable()
                     ->copyMessage('Copied to clipboard'),
-                // TODO: group name
+                Tables\Columns\TextColumn::make('groups')
+                    ->label('Groups')
+                    ->limit(30)
+                    ->getStateUsing(fn(Student $record): string => $record->groups ? $record->groups->pluck('name')->implode(', ') : ''),
             ])
             ->filters([
                 Tables\Filters\TrashedFilter::make(),
             ])
             ->actions([
-                Tables\Actions\EditAction::make(),
-                Tables\Actions\Action::make('Password')
-                    ->color('success')
-                    ->icon('heroicon-o-key')
-                    ->authorize(fn() => static::grant(PE::CHANGE_PASSWORD_STUDENT->value))
-                    ->url(fn(Student $record): string =>  self::getUrl('password', ['record' => $record->id])),
-                Tables\Actions\DeleteAction::make(),
-                Tables\Actions\ForceDeleteAction::make(),
-                Tables\Actions\RestoreAction::make(),
+                Tables\Actions\ActionGroup::make([
+                    Tables\Actions\EditAction::make()
+                        ->color('warning')
+                        ->icon('heroicon-o-pencil')
+                        ->label('Details'),
+                    Tables\Actions\Action::make('Password')
+                        ->color('success')
+                        ->icon('heroicon-o-key')
+                        ->authorize(fn() => static::grant(PE::CHANGE_PASSWORD_STUDENT->value))
+                        ->url(fn(Student $record): string =>  self::getUrl('password', ['record' => $record->id])),
+                    Tables\Actions\DeleteAction::make(),
+                    Tables\Actions\ForceDeleteAction::make(),
+                    Tables\Actions\RestoreAction::make(),
+                ]),
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
@@ -98,12 +145,5 @@ class StudentResource extends Resource
             ->withoutGlobalScopes([
                 SoftDeletingScope::class,
             ]);
-    }
-
-    public static function getRelations(): array
-    {
-        return [
-            ActivitylogRelationManager::class,
-        ];
     }
 }

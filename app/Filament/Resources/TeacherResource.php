@@ -70,9 +70,11 @@ class TeacherResource extends Resource
                                                 ->event('updated')
                                                 ->withProperties([
                                                     'attributes' => [
+                                                        'name' => $record->name,
                                                         'groups' => Group::whereIn('id', $state)->pluck('name')->toArray(),
                                                     ],
                                                     'old' => [
+                                                        'name' => $record->name,
                                                         'groups' => $record->groups->pluck('name')->toArray(),
                                                     ],
                                                 ])
