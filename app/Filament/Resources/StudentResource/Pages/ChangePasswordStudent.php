@@ -106,8 +106,15 @@ class ChangePasswordStudent extends Page implements HasForms
                 ->success()
                 ->title(__('Password updated successfully'))
                 ->send();
+
+            $this->redirect($this->getRedirectUrl());
         } catch (Halt $exception) {
             return;
         }
+    }
+
+    protected function getRedirectUrl(): string
+    {
+        return $this->getResource()::getUrl('index');
     }
 }
