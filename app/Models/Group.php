@@ -43,8 +43,11 @@ class Group extends Model
      */
     public function participants(): BelongsToMany
     {
-        return $this->belongsToMany(User::class, 'group_participants')
-            ->withPivot('role', 'joined_at')
-            ->withTimestamps();
+        return $this->belongsToMany(
+            User::class,
+            'group_participants',
+            'group_id',
+            'user_id',
+        )->withTimestamps();
     }
 }
