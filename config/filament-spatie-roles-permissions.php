@@ -203,7 +203,8 @@ return [
          * Define excluded_models
          */
         'excluded_models' => [
-            //
+            \App\Models\User::class,
+            \App\Models\Role::class,
         ],
 
         'excluded_policy_models' => [
@@ -217,6 +218,7 @@ return [
             PE::CHANGE_PASSWORD_SELF->value,
             PE::UPDATE_PROFILE_SELF->value,
             PE::CHANGE_PASSWORD_STUDENT->value,
+            PE::CHANGE_PASSWORD_TEACHER->value,
         ],
 
         'user_model' => \App\Models\User::class,
