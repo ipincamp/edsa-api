@@ -5,6 +5,8 @@ namespace App\Filament\Resources;
 use App\Filament\Resources\GroupResource\Pages;
 use App\Filament\Resources\GroupResource\RelationManagers;
 use App\Models\Group;
+use App\Models\Student;
+use App\Models\Teacher;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
@@ -34,18 +36,82 @@ class GroupResource extends Resource
 
         return $form
             ->schema([
-                Forms\Components\TextInput::make('name')
-                    ->required()
-                    ->columns($columns)
-                    ->columnSpanFull()
-                    ->label('Name')
-                    ->maxLength(255)
-                    ->unique(ignoreRecord: true),
-                Forms\Components\Textarea::make('description')
-                    ->columns($columns)
-                    ->columnSpanFull()
-                    ->label('Description')
-                    ->maxLength(255),
+                Forms\Components\Wizard::make()
+                    ->steps([
+                        Forms\Components\Wizard\Step::make('Details')
+                            ->schema([
+                                Forms\Components\TextInput::make('name')
+                                    ->columnSpanFull()
+                                    ->columns($columns)
+                                    ->required()
+                                    ->label('Name')
+                                    ->maxLength(255)
+                                    ->unique(ignoreRecord: true),
+                                Forms\Components\Textarea::make('description')
+                                    ->columnSpanFull()
+                                    ->columns($columns)
+                                    ->label('Description')
+                                    ->maxLength(255),
+                            ]),
+                        Forms\Components\Wizard\Step::make('Users')
+                            ->schema([
+                                Forms\Components\CheckboxList::make('teachers')
+                                    ->columns($columns)
+                                    ->relationship('teachers', 'name')
+                                    ->required()
+                                    ->label('Teachers')
+                                    ->bulkToggleable()
+                                    ->afterStateUpdated(function (callable $set, $state, $record) {
+                                        $set('teachers', $state);
+
+                                        if ($record) {
+                                            activity('group')
+                                                ->performedOn($record)
+                                                ->event('updated')
+                                                ->withProperties([
+                                                    'attributes' => [
+                                                        'name' => $record->name,
+                                                        'teachers' => Teacher::whereIn('id', $state)->pluck('name')->toArray(),
+                                                    ],
+                                                    'old' => [
+                                                        'name' => $record->name,
+                                                        'teachers' => $record->teachers->pluck('name')->toArray(),
+                                                    ],
+                                                ])
+                                                ->log('Updated teacher in group');
+                                        }
+                                    }),
+                                Forms\Components\CheckboxList::make('students')
+                                    ->columns($columns)
+                                    ->relationship('students', 'name')
+                                    ->required()
+                                    ->label('Students')
+                                    ->bulkToggleable()
+                                    ->afterStateUpdated(function (callable $set, $state, $record) {
+                                        $set('students', $state);
+
+                                        if ($record) {
+                                            activity('group')
+                                                ->performedOn($record)
+                                                ->event('updated')
+                                                ->withProperties([
+                                                    'attributes' => [
+                                                        'name' => $record->name,
+                                                        'students' => Student::whereIn('id', $state)->pluck('name')->toArray(),
+                                                    ],
+                                                    'old' => [
+                                                        'name' => $record->name,
+                                                        'students' => $record->students->pluck('name')->toArray(),
+                                                    ],
+                                                ])
+                                                ->log('Updated students in group');
+                                        }
+                                    }),
+                            ]),
+                    ])
+                    ->columnSpanFull(),
+
+
             ]);
     }
 
@@ -61,16 +127,23 @@ class GroupResource extends Resource
                     ->label('Description')
                     ->limit(20)
                     ->searchable(),
+                Tables\Columns\TextColumn::make('participants')
+                    ->label('Participants')
+                    ->getStateUsing(function ($record) {
+                        return $record->teachers()->count() + $record->students()->count();
+                    }),
             ])
             ->filters([
                 Tables\Filters\TrashedFilter::make(),
             ])
             ->actions([
-                Tables\Actions\ViewAction::make(),
-                Tables\Actions\EditAction::make(),
-                Tables\Actions\DeleteAction::make(),
-                Tables\Actions\ForceDeleteAction::make(),
-                Tables\Actions\RestoreAction::make(),
+                Tables\Actions\ActionGroup::make([
+                    Tables\Actions\ViewAction::make(),
+                    Tables\Actions\EditAction::make(),
+                    Tables\Actions\DeleteAction::make(),
+                    Tables\Actions\ForceDeleteAction::make(),
+                    Tables\Actions\RestoreAction::make(),
+                ]),
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([

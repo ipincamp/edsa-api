@@ -37,14 +37,29 @@ class Group extends Model
     }
 
     /**
-     * The participants that belong to the Group
+     * The students that belong to the Group
      *
      * @return \Illuminate\Database\Eloquent\Relations\BelongsToMany
      */
-    public function participants(): BelongsToMany
+    public function students(): BelongsToMany
     {
         return $this->belongsToMany(
-            User::class,
+            Student::class,
+            'group_participants',
+            'group_id',
+            'user_id',
+        )->withTimestamps();
+    }
+
+    /**
+     * The teachers that belong to the Group
+     *
+     * @return \Illuminate\Database\Eloquent\Relations\BelongsToMany
+     */
+    public function teachers(): BelongsToMany
+    {
+        return $this->belongsToMany(
+            Teacher::class,
             'group_participants',
             'group_id',
             'user_id',
