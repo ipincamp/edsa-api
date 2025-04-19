@@ -21,9 +21,9 @@ class TeacherResource extends Resource
 
     protected static ?string $model = Teacher::class;
 
-    protected static ?string $navigationIcon = 'heroicon-o-users';
     protected static ?string $navigationGroup = 'Users';
     protected static ?string $navigationLabel = 'Teachers';
+    protected static ?int $navigationSort = 1;
     protected static ?string $label = 'Teacher';
     protected static ?string $pluralLabel = 'Data Teachers';
 

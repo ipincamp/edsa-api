@@ -6,6 +6,8 @@ use App\Models\User;
 use Dedoc\Scramble\Scramble;
 use Dedoc\Scramble\Support\Generator\OpenApi;
 use Dedoc\Scramble\Support\Generator\SecurityScheme;
+use Filament\Facades\Filament;
+use Filament\Navigation\NavigationGroup;
 use Illuminate\Routing\Route;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\ServiceProvider;
@@ -43,5 +45,18 @@ class AppServiceProvider extends ServiceProvider
                     SecurityScheme::http('bearer', 'JWT')
                 );
             });
+
+        Filament::serving(function () {
+            Filament::registerNavigationGroups([
+                NavigationGroup::make()
+                    ->label('Users')
+                    ->icon('heroicon-s-users')
+                    ->collapsed(),
+                NavigationGroup::make()
+                    ->label('Settings')
+                    ->icon('heroicon-s-cog')
+                    ->collapsed(),
+            ]);
+        });
     }
 }

@@ -22,9 +22,9 @@ class StudentResource extends Resource
 
     protected static ?string $model = Student::class;
 
-    protected static ?string $navigationIcon = 'heroicon-o-users';
     protected static ?string $navigationGroup = 'Users';
     protected static ?string $navigationLabel = 'Students';
+    protected static ?int $navigationSort = 2;
     protected static ?string $label = 'Student';
     protected static ?string $pluralLabel = 'Data Students';
 
