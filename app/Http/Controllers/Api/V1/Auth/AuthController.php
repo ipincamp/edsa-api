@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Auth\LoginRequest;
 use App\Http\Requests\Auth\UpdatePasswordRequest;
 use App\Http\Requests\Auth\UpdateProfileRequest;
+use App\Http\Resources\UserResource;
 use Dedoc\Scramble\Attributes\Group;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -67,7 +68,7 @@ class AuthController extends Controller
                 message: 'Login successfully',
                 data: [
                     'token' => $token,
-                    'user' => $user,
+                    'user' => new UserResource($user),
                 ],
             );
         } catch (\Exception $e) {
@@ -94,9 +95,7 @@ class AuthController extends Controller
             /* Successfully */
             return $this->json(
                 message: 'User profile',
-                data: [
-                    'user' => $user,
-                ],
+                data: new UserResource($user),
             );
         } catch (\Exception $e) {
             throw $e;
@@ -207,9 +206,7 @@ class AuthController extends Controller
             /* Successfully */
             return $this->json(
                 message: 'Profile updated successfully',
-                data: [
-                    'user' => $user,
-                ],
+                data: new UserResource($user),
             );
         } catch (\Exception $e) {
             throw $e;
