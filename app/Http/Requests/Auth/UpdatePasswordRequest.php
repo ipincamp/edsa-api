@@ -3,17 +3,18 @@
 namespace App\Http\Requests\Auth;
 
 use App\Enums\PermissionEnum as PE;
-use App\Traits\AuthorizeTrait;
+use App\Traits\Api\AuthorizeTrait;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rules\Password;
 
 /**
- * Change Password Request Form
+ * Update Password Request Form
  *
  * - Use this request to validate the change password form.
  * - The regex pattern allows:
  * > letters (a-z A-Z) , numbers (0-9) , dots (.) , underscores (_) , hyphens (-)
  */
-class ChangePasswordRequest extends FormRequest
+class UpdatePasswordRequest extends FormRequest
 {
     use AuthorizeTrait;
 
@@ -35,8 +36,23 @@ class ChangePasswordRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'current_password' => ['required', 'string', 'min:8', 'max:20'],
-            'new_password' => ['required', 'string', 'regex:/^[a-zA-Z0-9._-]+$/', 'min:8', 'max:20', 'confirmed'],
+            'old_password' => [
+                'required',
+                'string',
+                Password::min(8)
+                    ->max(20)
+                    ->letters()
+                    ->numbers(),
+            ],
+            'new_password' => [
+                'required',
+                'string',
+                Password::min(8)
+                    ->max(20)
+                    ->letters()
+                    ->numbers(),
+                'confirmed'
+            ],
         ];
     }
 }

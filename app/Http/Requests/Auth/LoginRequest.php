@@ -3,13 +3,14 @@
 namespace App\Http\Requests\Auth;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rules\Password;
 
 /**
  * Login Request Form
  *
  * - Use this request to validate the login form.
  * - The regex pattern allowed for the `username` is:
- * > letters (a-z A-Z) , numbers (0-9) , dots (.) , at (@)
+ * > letters (a-z A-Z) , numbers (0-9) , dots (.)
  */
 class LoginRequest extends FormRequest
 {
@@ -21,9 +22,21 @@ class LoginRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'username' => ['required', 'string', 'regex:/^[a-zA-Z0-9.@]+$/', 'min:3', 'max:20'],
-            'password' => ['required', 'string', 'min:8', 'max:20'],
-            'remember' => ['nullable', 'boolean'],
+            'username' => [
+                'required',
+                'string',
+                'regex:/^[a-zA-Z0-9.]+$/',
+                'min:3',
+                'max:20',
+            ],
+            'password' => [
+                'required',
+                'string',
+                Password::min(8)
+                    ->max(20)
+                    ->letters()
+                    ->numbers(),
+            ],
         ];
     }
 }

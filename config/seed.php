@@ -15,19 +15,21 @@ return [
 
     'user' => [
         'admin' => [
-            'name' => env('USER_ADMIN_NAME'),
-            'email' => env('USER_ADMIN_EMAIL'),
-            'password' => env('USER_ADMIN_PASSWORD'),
+            'name' => env('USER_ADMIN_NAME', null),
+            'email' => env('USER_ADMIN_EMAIL', null),
+            'username' => env('USER_ADMIN_USERNAME', null),
+            'password' => env('USER_ADMIN_PASSWORD', null),
         ],
         'teacher' => [
-            'name' => env('USER_TEACHER_NAME'),
-            'email' => env('USER_TEACHER_EMAIL'),
-            'password' => env('USER_TEACHER_PASSWORD'),
+            'name' => env('USER_TEACHER_NAME', null),
+            'email' => env('USER_TEACHER_EMAIL', null),
+            'username' => env('USER_TEACHER_USERNAME', null),
+            'password' => env('USER_TEACHER_PASSWORD', null),
         ],
         'student' => [
-            'name' => env('USER_STUDENT_NAME'),
-            'username' => env('USER_STUDENT_USERNAME'),
-            'password' => env('USER_STUDENT_PASSWORD'),
+            'name' => env('USER_STUDENT_NAME', null),
+            'username' => env('USER_STUDENT_USERNAME', null),
+            'password' => env('USER_STUDENT_PASSWORD', null),
         ],
     ],
 

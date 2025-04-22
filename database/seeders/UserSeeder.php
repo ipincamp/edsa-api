@@ -29,26 +29,32 @@ class UserSeeder extends Seeder
         ]);
 
         // users
-        $admin = User::create([
-            'name' => config('seed.user.admin.name'),
-            'email' => config('seed.user.admin.email'),
-            'email_verified_at' => now(),
-            'password' => bcrypt(config('seed.user.admin.password')),
-        ]);
-        $admin->assignRole($adminRole);
+        if (config('seed.user.admin.email') !== null) {
+            $admin = User::create([
+                'name' => config('seed.user.admin.name'),
+                'email' => config('seed.user.admin.email'),
+                'email_verified_at' => now(),
+                'password' => bcrypt(config('seed.user.admin.password')),
+            ]);
+            $admin->assignRole($adminRole);
+        }
 
-        $teacher = User::create([
-            'name' => config('seed.user.teacher.name'),
-            'email' => config('seed.user.teacher.email'),
-            'password' => bcrypt(config('seed.user.teacher.password')),
-        ]);
-        $teacher->assignRole($teacherRole);
+        if (config('seed.user.teacher.email') !== null) {
+            $teacher = User::create([
+                'name' => config('seed.user.teacher.name'),
+                'email' => config('seed.user.teacher.email'),
+                'password' => bcrypt(config('seed.user.teacher.password')),
+            ]);
+            $teacher->assignRole($teacherRole);
+        }
 
-        $student = User::create([
-            'name' => config('seed.user.student.name'),
-            'username' => config('seed.user.student.username'),
-            'password' => bcrypt(config('seed.user.student.password')),
-        ]);
-        $student->assignRole($studentRole);
+        if (config('seed.user.student.username') !== null) {
+            $student = User::create([
+                'name' => config('seed.user.student.name'),
+                'username' => config('seed.user.student.username'),
+                'password' => bcrypt(config('seed.user.student.password')),
+            ]);
+            $student->assignRole($studentRole);
+        }
     }
 }

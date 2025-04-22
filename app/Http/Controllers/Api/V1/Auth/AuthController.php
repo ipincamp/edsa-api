@@ -1,12 +1,13 @@
 <?php
 
-namespace App\Http\Controllers\V1\Auth;
+namespace App\Http\Controllers\Api\V1\Auth;
 
 use App\Http\Controllers\Controller;
-use App\Http\Requests\Auth\ChangePasswordRequest;
 use App\Http\Requests\Auth\LoginRequest;
+use App\Http\Requests\Auth\UpdatePasswordRequest;
 use App\Http\Requests\Auth\UpdateProfileRequest;
 use Dedoc\Scramble\Attributes\Group;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
@@ -25,28 +26,29 @@ class AuthController extends Controller
      *
      * @return \Illuminate\Http\JsonResponse
      */
-    public function login(LoginRequest $request)
+    public function login(LoginRequest $request): JsonResponse
     {
         try {
-            $i = $request->safe()->only(['username', 'password']);
-            $iEmail = ['email' => $i['username'], 'password' => $i['password']];
-            $iUsername = ['username' => $i['username'], 'password' => $i['password']];
-
-            if (! Auth::attempt($iEmail) && ! Auth::attempt($iUsername)) {
+            if (! Auth::attempt($request->validated())) {
                 /**
                  * Invalid credentials
                  *
                  * @status 401
                  * @body {"status": false, "message": "The provided credentials do not match our records.", "data": null}
                  */
-                return response()->json([
-                    'status' => false,
-                    'message' => 'The provided credentials do not match our records.',
-                    'data' => null,
-                ], 401);
+                return $this->json(
+                    message: 'The provided credentials do not match our records.',
+                    code: 401,
+                );
             }
 
-            $token = $request->user()->createToken('auth_in', ['*'], now()->addDay())->plainTextToken;
+            $token = $request->user()->createToken(
+                'auth_in',
+                ['*'],
+                now()->addDay()
+            )->plainTextToken;
+            $user = $request->user()->load(['groups', 'roles']);
+
             activity('auth api')
                 ->performedOn($request->user())
                 ->event('login')
@@ -58,58 +60,86 @@ class AuthController extends Controller
                         'device' => $request->header('User-Agent'),
                     ],
                 ])
-                ->log('User logged in');
+                ->log('Login');
 
-            /** Expired token issued for 1 day since creation */
-            return response()->json([
-                'status' => true,
-                'message' => 'Login successful',
-                'data' => [
-                    'user' => $request->user()->load(['groups', 'roles']),
+            /* Successfully */
+            return $this->json(
+                message: 'Login successfully',
+                data: [
                     'token' => $token,
+                    'user' => $user,
                 ],
-            ], 200);
+            );
         } catch (\Exception $e) {
             throw $e;
         }
     }
 
     /**
-     * Change Password
+     * Profile
      *
-     * Change the password of the authenticated user.
+     * Get the authenticated user profile.
      *
-     * @operationId changePassword
+     * @operationId getProfile
      * @authenticated
-     * @param ChangePasswordRequest $request
+     * @param Request $request
      *
      * @return \Illuminate\Http\JsonResponse
      */
-    public function changePassword(ChangePasswordRequest $request)
+    public function profile(Request $request): JsonResponse
     {
         try {
-            $user = $request->user();
-            $password = $request->safe()->only(['current_password']);
-            $newPassword = $request->safe()->only(['new_password']);
+            $user = $request->user()->load(['groups', 'roles']);
 
-            if (! Hash::check($password['current_password'], $user->password)) {
+            /* Successfully */
+            return $this->json(
+                message: 'User profile',
+                data: [
+                    'user' => $user,
+                ],
+            );
+        } catch (\Exception $e) {
+            throw $e;
+        }
+    }
+
+    /**
+     * Update Password
+     *
+     * Update the authenticated user's password.
+     *
+     * @operationId updatePassword
+     * @authenticated
+     * @param Request $request
+     *
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function updatePassword(UpdatePasswordRequest $request): JsonResponse
+    {
+        try {
+            $inputs = $request->validated();
+            $user = $request()->user();
+            // dd($inputs);
+
+            if (! Hash::check($inputs['old_password'], $user->password)) {
                 /**
                  * Invalid current password
                  *
                  * @status 401
-                 * @body {"status": false, "message": "The provided current password is incorrect.", "data": null}
+                 * @body {"status": false, "message": "Your old password is incorrect.", "data": null}
                  */
-                return response()->json([
-                    'status' => false,
-                    'message' => 'The provided current password is incorrect.',
-                    'data' => null,
-                ], 401);
+                return $this->json(
+                    message: 'The provided current password is incorrect.',
+                    code: 401,
+                );
             }
 
             $user->update([
-                'password' => Hash::make($newPassword['new_password']),
+                'password' => bcrypt($inputs['new_password']),
+                'updated_at' => now(),
             ]);
             $user->save();
+
             activity('auth api')
                 ->performedOn($request->user())
                 ->event('change password')
@@ -121,19 +151,12 @@ class AuthController extends Controller
                         'device' => $request->header('User-Agent'),
                     ],
                 ])
-                ->log('User changed password');
+                ->log('Change password');
 
-            /**
-             * Password changed successfully
-             *
-             * @status 200
-             * @body {"status": true, "message": "Password changed successfully", "data": null}
-             */
-            return response()->json([
-                'status' => true,
-                'message' => 'Password changed successfully',
-                'data' => null,
-            ], 200);
+            /* Successfully */
+            return $this->json(
+                message: 'Password changed successfully',
+            );
         } catch (\Exception $e) {
             throw $e;
         }
@@ -150,13 +173,17 @@ class AuthController extends Controller
      *
      * @return \Illuminate\Http\JsonResponse
      */
-    public function updateProfile(UpdateProfileRequest $request)
+    public function updateProfile(UpdateProfileRequest $request): JsonResponse
     {
         try {
+            $inputs = $request->validated();
             $user = $request->user();
-            $data = $request->safe()->only(['name', 'username']);
 
-            $user->update($data);
+            $user->update(array_filter([
+                'name' => $inputs['name'] ?? null,
+                'username' => $inputs['username'] ?? null,
+                'updated_at' => now(),
+            ]));
             $user->save();
 
             activity('auth api')
@@ -166,25 +193,24 @@ class AuthController extends Controller
                     'attributes' => [
                         'name' => $request->user()->name,
                         'username' => $request->user()->username,
-                        'email' => $request->user()->email,
                         'ip' => $request->ip(),
                         'user_agent' => $request->userAgent(),
                         'device' => $request->header('User-Agent'),
                     ],
                     'old' => [
-                        'name' => $user->getOriginal('name'),
-                        'username' => $user->getOriginal('username'),
-                        'email' => $user->getOriginal('email'),
+                        'name' => $request->user()->getOriginal('name'),
+                        'username' => $request->user()->getOriginal('username'),
                     ],
                 ])
-                ->log('User updated profile');
+                ->log('Update profile');
 
             /* Successfully */
-            return response()->json([
-                'status' => true,
-                'message' => 'Profile updated successfully',
-                'data' => null,
-            ], 200);
+            return $this->json(
+                message: 'Profile updated successfully',
+                data: [
+                    'user' => $user,
+                ],
+            );
         } catch (\Exception $e) {
             throw $e;
         }
@@ -201,7 +227,7 @@ class AuthController extends Controller
      *
      * @return \Illuminate\Http\JsonResponse
      */
-    public function logout(Request $request)
+    public function logout(Request $request): JsonResponse
     {
         try {
             $request->user()->currentAccessToken()->delete();
@@ -217,14 +243,12 @@ class AuthController extends Controller
                         'device' => $request->header('User-Agent'),
                     ],
                 ])
-                ->log('User logged out');
+                ->log('Logout');
 
             /* Successfully */
-            return response()->json([
-                'status' => true,
-                'message' => 'Logout successful',
-                'data' => null,
-            ], 200);
+            return $this->json(
+                message: 'Logout successfully',
+            );
         } catch (\Exception $e) {
             throw $e;
         }

@@ -7,7 +7,7 @@ use App\Filament\Resources\StudentResource\Pages;
 use App\Filament\Resources\StudentResource\RelationManagers;
 use App\Models\Group;
 use App\Models\Student;
-use App\Traits\AuthorizeTrait;
+use App\Traits\Api\AuthorizeTrait;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;

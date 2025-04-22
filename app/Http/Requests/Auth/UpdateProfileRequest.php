@@ -3,7 +3,7 @@
 namespace App\Http\Requests\Auth;
 
 use App\Enums\PermissionEnum as PE;
-use App\Traits\AuthorizeTrait;
+use App\Traits\Api\AuthorizeTrait;
 use Illuminate\Foundation\Http\FormRequest;
 
 /**
@@ -11,7 +11,7 @@ use Illuminate\Foundation\Http\FormRequest;
  *
  * - Use this request to validate the update profile form.
  * - The regex pattern allowed for `username`:
- * > letters (a-z A-Z) , numbers (0-9) , dots (.) , at (@)
+ * > letters (a-z A-Z) , numbers (0-9) , dots (.)
  */
 class UpdateProfileRequest extends FormRequest
 {
@@ -37,8 +37,18 @@ class UpdateProfileRequest extends FormRequest
         $id = optional($this->user())->id;
 
         return [
-            'name' => ['required', 'string', 'max:50'],
-            'username' => ['required', 'string', 'min:3', 'max:20', 'regex:/^[a-zA-Z0-9.@]+$/', 'unique:users,username,' . ($id ?? 'null')],
+            'name' => [
+                'string',
+                'min:3',
+                'max:50',
+            ],
+            'username' => [
+                'string',
+                'min:3',
+                'max:20',
+                'regex:/^[a-zA-Z0-9.]+$/',
+                'unique:users,username,' . ($id ?? 'null')
+            ],
         ];
     }
 }
