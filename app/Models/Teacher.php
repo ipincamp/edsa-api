@@ -12,17 +12,6 @@ class Teacher extends User
 
     protected $table = 'users';
 
-    /*
-     * The attributes that are mass assignable.
-     *
-     * @var array
-     */
-    protected $fillable = [
-        'name',
-        'email',
-        'password',
-    ];
-
     protected static function boot()
     {
         parent::boot();

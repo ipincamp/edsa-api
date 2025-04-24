@@ -96,6 +96,7 @@ class StudentResource extends Resource
                     ->searchable(),
                 Tables\Columns\TextColumn::make('username')
                     ->searchable()
+                    ->limit(5)
                     ->copyable()
                     ->copyMessage('Copied to clipboard'),
                 Tables\Columns\TextColumn::make('groups')

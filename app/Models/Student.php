@@ -14,15 +14,14 @@ class Student extends User
 
     protected $table = 'users';
 
-    /*
-     * The attributes that are mass assignable.
+    /**
+     * The attributes that aren't mass assignable.
      *
-     * @var array
+     * @var list<string>
      */
-    protected $fillable = [
-        'name',
-        'username',
-        'password',
+    protected $guarded = [
+        'email',
+        'avatar',
     ];
 
     protected static function boot()

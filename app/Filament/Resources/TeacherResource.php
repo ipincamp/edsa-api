@@ -30,6 +30,12 @@ class TeacherResource extends Resource
 
     public static function form(Form $form): Form
     {
+        $columns = [
+            'default' => 1,
+            'sm' => 2,
+            'md' => 3,
+        ];
+
         return $form
             ->schema([
                 Forms\Components\Wizard::make()
@@ -37,17 +43,22 @@ class TeacherResource extends Resource
                         Forms\Components\Wizard\Step::make('Identity')
                             ->schema([
                                 Forms\Components\TextInput::make('name')
-                                    ->columnSpanFull()
+                                    ->columns($columns)
                                     ->required()
                                     ->maxLength(255),
                                 Forms\Components\TextInput::make('email')
-                                    ->columnSpanFull()
+                                    ->columns($columns)
                                     ->required()
                                     ->unique(ignoreRecord: true)
                                     ->maxLength(255)
                                     ->email(),
+                                Forms\Components\TextInput::make('username')
+                                    ->columns($columns)
+                                    ->required()
+                                    ->unique(ignoreRecord: true)
+                                    ->maxLength(255),
                                 Forms\Components\TextInput::make('password')
-                                    ->columnSpanFull()
+                                    ->columns($columns)
                                     ->password()
                                     ->required()
                                     ->maxLength(255)
@@ -92,10 +103,16 @@ class TeacherResource extends Resource
         return $table
             ->columns([
                 Tables\Columns\TextColumn::make('name')
-                    ->searchable(),
+                    ->searchable()
+                    ->copyable(),
                 Tables\Columns\TextColumn::make('email')
                     ->searchable()
+                    ->limit(5)
                     ->copyable()
+                    ->copyMessage('Copied to clipboard'),
+                Tables\Columns\TextColumn::make('username')
+                    ->searchable()
+                    ->limit(5)
                     ->copyMessage('Copied to clipboard'),
                 Tables\Columns\TextColumn::make('groups')
                     ->label('Groups')
