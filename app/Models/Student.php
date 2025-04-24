@@ -31,11 +31,8 @@ class Student extends User
 
         static::created(fn($student) => $student->roles()->attach(
             Role::findByName(RoleEnum::STUDENT->value)->id,
+            ['model_type' => 'App\Models\Student', 'model_id' => $student->id],
         ));
-
-        static::addGlobalScope('student', fn(Builder $builder) => $builder
-            ->whereNull('email')
-            ->whereNotNull('username'));
     }
 
     public function getActivitylogOptions(): LogOptions

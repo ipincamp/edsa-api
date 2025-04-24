@@ -144,6 +144,9 @@ class StudentResource extends Resource
         return parent::getEloquentQuery()
             ->withoutGlobalScopes([
                 SoftDeletingScope::class,
-            ]);
+            ])
+            ->whereHas('roles', function ($query) {
+                $query->where('name', \App\Enums\RoleEnum::STUDENT->value);
+            });
     }
 }

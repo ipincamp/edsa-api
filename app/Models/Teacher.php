@@ -3,7 +3,6 @@
 namespace App\Models;
 
 use App\Enums\RoleEnum;
-use Illuminate\Database\Eloquent\Builder;
 use Spatie\Activitylog\LogOptions;
 use Spatie\Activitylog\Traits\LogsActivity;
 
@@ -30,11 +29,8 @@ class Teacher extends User
 
         static::created(fn($student) => $student->roles()->attach(
             Role::findByName(RoleEnum::TEACHER->value)->id,
+            ['model_type' => 'App\Models\Teacher', 'model_id' => $student->id],
         ));
-
-        static::addGlobalScope('teacher', fn(Builder $builder) => $builder
-            ->whereNull('username')
-            ->whereNull('email_verified_at'));
     }
 
     public function getActivitylogOptions(): LogOptions
