@@ -65,7 +65,7 @@ class ChangePasswordTeacher extends Page
         ];
     }
 
-    protected function getFormAction(): array
+    protected function getFormActions(): array
     {
         return [
             // save
