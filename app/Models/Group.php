@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Spatie\Activitylog\LogOptions;
@@ -20,16 +21,13 @@ class Group extends Model
     protected $fillable = [
         'name',
         'description',
-    ];
-
-    protected $casts = [
-        'deleted_at' => 'datetime',
+        'course_id',
     ];
 
     public function getActivitylogOptions(): LogOptions
     {
         return LogOptions::defaults()
-            ->logOnly(['name', 'description'])
+            ->logOnly(['name', 'description', 'course_id'])
             ->dontSubmitEmptyLogs()
             ->useLogName('group')
             ->setDescriptionForEvent(fn(string $eventName) => "Group has been {$eventName}")
@@ -37,32 +35,27 @@ class Group extends Model
     }
 
     /**
-     * The students that belong to the Group
+     * Get the course that owns the Group
      *
-     * @return \Illuminate\Database\Eloquent\Relations\BelongsToMany
+     * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
      */
-    public function students(): BelongsToMany
+    public function course(): BelongsTo
     {
-        return $this->belongsToMany(
-            Student::class,
-            'group_participants',
-            'group_id',
-            'user_id',
-        )->withTimestamps();
+        return $this->belongsTo(Course::class);
     }
 
     /**
-     * The teachers that belong to the Group
+     * The participants that belong to the Group
      *
      * @return \Illuminate\Database\Eloquent\Relations\BelongsToMany
      */
-    public function teachers(): BelongsToMany
+    public function participants(): BelongsToMany
     {
         return $this->belongsToMany(
-            Teacher::class,
+            User::class,
             'group_participants',
             'group_id',
-            'user_id',
+            'user_id'
         )->withTimestamps();
     }
 }

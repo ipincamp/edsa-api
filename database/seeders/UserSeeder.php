@@ -3,6 +3,7 @@
 namespace Database\Seeders;
 
 use App\Enums\RoleEnum;
+use App\Models\Course;
 use App\Models\Group;
 use App\Models\User;
 use Illuminate\Database\Seeder;
@@ -29,10 +30,17 @@ class UserSeeder extends Seeder
             'guard_name' => 'web',
         ]);
 
+        // courses
+        $course = Course::create([
+            'name' => 'English',
+            'description' => 'English Course',
+        ]);
+
         // groups
         $group = Group::create([
             'name' => 'A',
             'description' => 'Class A',
+            'course_id' => $course->id,
         ]);
 
         // users
@@ -44,10 +52,7 @@ class UserSeeder extends Seeder
                 'username' => config('seed.user.admin.username'),
                 'password' => bcrypt(config('seed.user.admin.password')),
             ]);
-            // $admin->assignRole($adminRole);
-            $admin->roles()->attach(
-                Role::findByName(RoleEnum::ADMIN->value)->id,
-            );
+            $admin->roles()->attach($adminRole->id);
         }
 
         if (config('seed.user.teacher.email') !== null) {
@@ -57,12 +62,8 @@ class UserSeeder extends Seeder
                 'username' => config('seed.user.teacher.username'),
                 'password' => bcrypt(config('seed.user.teacher.password')),
             ]);
-            // $teacher->assignRole($teacherRole);
-            $teacher->roles()->attach(
-                Role::findByName(RoleEnum::TEACHER->value)->id,
-                ['model_type' => 'App\Models\Teacher', 'model_id' => $teacher->id],
-            );
-            $teacher->groups()->attach($group->id);
+            $teacher->roles()->attach($teacherRole->id);
+            $group->participants()->attach($teacher->id);
         }
 
         if (config('seed.user.student.username') !== null) {
@@ -71,12 +72,8 @@ class UserSeeder extends Seeder
                 'username' => config('seed.user.student.username'),
                 'password' => bcrypt(config('seed.user.student.password')),
             ]);
-            // $student->assignRole($studentRole);
-            $student->roles()->attach(
-                Role::findByName(RoleEnum::STUDENT->value)->id,
-                ['model_type' => 'App\Models\Student', 'model_id' => $student->id],
-            );
-            $student->groups()->attach($group->id);
+            $student->roles()->attach($studentRole->id);
+            $group->participants()->attach($student->id);
         }
     }
 }
