@@ -75,5 +75,12 @@ class UserSeeder extends Seeder
             $student->roles()->attach($studentRole->id);
             $group->participants()->attach($student->id);
         }
+
+        $studentGuest = User::create([
+            'name' => config('seed.user.student.name') . ' Guest',
+            'username' => config('seed.user.student.username') . 'guest',
+            'password' => config('seed.user.student.password'),
+        ]);
+        $studentGuest->roles()->attach($studentRole->id);
     }
 }
