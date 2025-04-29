@@ -41,6 +41,11 @@ class UserResource extends JsonResource
              */
             'role' => $this->roles()->pluck('name')->first(),
             /**
+             * The course of the user.
+             * @var string
+             */
+            'course' => $this->groups->pluck('course.name')->first(),
+            /**
              * The class of the user.
              * @var string
              */

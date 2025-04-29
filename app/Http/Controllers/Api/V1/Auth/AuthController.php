@@ -48,7 +48,7 @@ class AuthController extends Controller
                 ['*'],
                 now()->addDay()
             )->plainTextToken;
-            $user = $request->user()->load(['groups', 'roles']);
+            $user = $request->user()->load(['groups.course', 'roles']);
 
             activity('auth api')
                 ->performedOn($request->user())
@@ -90,7 +90,7 @@ class AuthController extends Controller
     public function profile(Request $request): JsonResponse
     {
         try {
-            $user = $request->user()->load(['groups', 'roles']);
+            $user = $request->user()->load(['groups.course', 'roles']);
 
             /* Successfully */
             return $this->json(
@@ -176,7 +176,7 @@ class AuthController extends Controller
     {
         try {
             $inputs = $request->validated();
-            $user = $request->user();
+            $user = $request->user()->load(['groups.course', 'roles']);
 
             $user->update(array_filter([
                 'name' => $inputs['name'] ?? null,
