@@ -2,11 +2,14 @@
 
 namespace App\Http\Controllers\Api\V1\Auth;
 
+use App\Enums\RoleEnum;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Auth\LoginRequest;
+use App\Http\Requests\Auth\RegisterRequest;
 use App\Http\Requests\Auth\UpdatePasswordRequest;
 use App\Http\Requests\Auth\UpdateProfileRequest;
 use App\Http\Resources\UserResource;
+use App\Models\Role;
 use Dedoc\Scramble\Attributes\Group;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -16,6 +19,63 @@ use Illuminate\Support\Facades\Hash;
 #[Group('Auth')]
 class AuthController extends Controller
 {
+    /**
+     * Register
+     *
+     * Register a new user and return the user data along with an access token.
+     *
+     * @operationId signUp
+     * @unauthenticated
+     * @param RegisterRequest $request
+     *
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function register(RegisterRequest $request): JsonResponse
+    {
+        try {
+            $inputs = $request->validated();
+            $user = \App\Models\User::create([
+                'name' => $inputs['name'],
+                'username' => $inputs['username'],
+                'password' => bcrypt($inputs['password']),
+            ]);
+
+            $user->roles()->attach(
+                Role::firstWhere('name', RoleEnum::STUDENT->value)->id
+            );
+
+            $token = $user->createToken(
+                'auth_up',
+                ['*'],
+                now()->addDay()
+            )->plainTextToken;
+
+            activity('auth api')
+                ->performedOn($user)
+                ->event('register')
+                ->withProperties([
+                    'attributes' => [
+                        'name' => $user->name,
+                        'ip' => $request->ip(),
+                        'user_agent' => $request->userAgent(),
+                        'device' => $request->header('User-Agent'),
+                    ],
+                ])
+                ->log('Register');
+
+            /* Successfully */
+            return $this->json(
+                message: 'Register successfully',
+                data: [
+                    'token' => $token,
+                    'user' => new UserResource($user),
+                ],
+            );
+        } catch (\Exception $e) {
+            throw $e;
+        }
+    }
+
     /**
      * Login
      *
