@@ -5,6 +5,7 @@ use Illuminate\Support\Facades\Route;
 
 Route::prefix('v1/auth')->controller(AuthController::class)->group(function () {
     Route::post('login', 'login')->name('auth.signIn');
+    Route::post('register', 'register')->name('auth.signUp');
     Route::middleware('auth:sanctum')->group(function () {
         Route::get('profile', 'profile')->name('auth.profile');
         Route::post('update-password', 'updatePassword')->name('auth.updatePassword');
