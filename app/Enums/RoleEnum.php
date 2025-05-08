@@ -21,4 +21,18 @@ enum RoleEnum: string
             self::STUDENT => 'Student',
         };
     }
+
+    /**
+     * Get the value of the enum case.
+     *
+     * @return string
+     */
+    public static function getAllRoles(): array
+    {
+        return [
+            self::ADMIN->value,
+            self::TEACHER->value,
+            self::STUDENT->value,
+        ];
+    }
 }

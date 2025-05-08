@@ -5,31 +5,17 @@ namespace Database\Seeders;
 use App\Enums\RoleEnum;
 use App\Models\Course;
 use App\Models\Group;
+use App\Models\Role;
 use App\Models\User;
 use Illuminate\Database\Seeder;
-use Spatie\Permission\Models\Role;
 
-class UserSeeder extends Seeder
+class DevelopmentSeeder extends Seeder
 {
     /**
      * Run the database seeds.
      */
     public function run(): void
     {
-        // roles
-        $adminRole = Role::create([
-            'name' => RoleEnum::ADMIN->value,
-            'guard_name' => 'web',
-        ]);
-        $teacherRole = Role::create([
-            'name' => RoleEnum::TEACHER->value,
-            'guard_name' => 'web',
-        ]);
-        $studentRole = Role::create([
-            'name' => RoleEnum::STUDENT->value,
-            'guard_name' => 'web',
-        ]);
-
         // courses
         $course = Course::create([
             'name' => 'English',
@@ -52,7 +38,9 @@ class UserSeeder extends Seeder
                 'username' => config('seed.user.admin.username'),
                 'password' => bcrypt(config('seed.user.admin.password')),
             ]);
-            $admin->roles()->attach($adminRole->id);
+            $admin->roles()->attach(
+                Role::firstWhere('name', RoleEnum::ADMIN->value)->id,
+            );
         }
 
         if (config('seed.user.teacher.email') !== null) {
@@ -62,7 +50,9 @@ class UserSeeder extends Seeder
                 'username' => config('seed.user.teacher.username'),
                 'password' => bcrypt(config('seed.user.teacher.password')),
             ]);
-            $teacher->roles()->attach($teacherRole->id);
+            $teacher->roles()->attach(
+                Role::firstWhere('name', RoleEnum::TEACHER->value)->id,
+            );
             $group->participants()->attach($teacher->id);
         }
 
@@ -72,7 +62,9 @@ class UserSeeder extends Seeder
                 'username' => config('seed.user.student.username'),
                 'password' => bcrypt(config('seed.user.student.password')),
             ]);
-            $student->roles()->attach($studentRole->id);
+            $student->roles()->attach(
+                Role::firstWhere('name', RoleEnum::STUDENT->value)->id,
+            );
             $group->participants()->attach($student->id);
         }
 
@@ -81,6 +73,8 @@ class UserSeeder extends Seeder
             'username' => config('seed.user.student.username') . 'guest',
             'password' => config('seed.user.student.password'),
         ]);
-        $studentGuest->roles()->attach($studentRole->id);
+        $studentGuest->roles()->attach(
+            Role::firstWhere('name', RoleEnum::STUDENT->value)->id,
+        );
     }
 }

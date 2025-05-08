@@ -62,14 +62,17 @@
             "composer install",
             "npm install",
             "@php artisan key:generate --ansi",
-            "@php artisan migrate:fresh --seed",
+            "@php artisan migrate:fresh",
+            "@php artisan db:seed --class=DatabaseSeeder",
+            "@php artisan db:seed --class=DevelopmentSeeder",
             "@php artisan permission:sync -P"
         ],
         "pro-setup": [
             "composer install --prefer-dist --no-dev -o",
             "npm install --omit=dev",
             "@php artisan key:generate --ansi",
-            "@php artisan migrate --seed",
+            "@php artisan migrate",
+            "@php artisan db:seed --class=DatabaseSeeder",
             "@php artisan permission:sync -P"
         ]
     },
