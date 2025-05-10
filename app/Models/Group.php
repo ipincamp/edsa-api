@@ -41,11 +41,15 @@ class Group extends Model
      */
     public function course(): BelongsTo
     {
-        return $this->belongsTo(Course::class);
+        return $this->belongsTo(
+            Course::class,
+            'course_id',
+            'id'
+        );
     }
 
     /**
-     * The participants that belong to the Group
+     * The users that belong to the Group
      *
      * @return \Illuminate\Database\Eloquent\Relations\BelongsToMany
      */

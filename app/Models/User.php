@@ -60,7 +60,7 @@ class User extends Authenticatable
     }
 
     /**
-     * The groups that belong to the Student
+     * The groups that belong to the User
      *
      * @return \Illuminate\Database\Eloquent\Relations\BelongsToMany
      */
@@ -70,7 +70,7 @@ class User extends Authenticatable
             Group::class,
             'group_participants',
             'user_id',
-            'group_id',
+            'group_id'
         )->withTimestamps();
     }
 }

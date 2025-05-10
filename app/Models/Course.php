@@ -3,7 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Spatie\Activitylog\LogOptions;
 use Spatie\Activitylog\Traits\LogsActivity;
@@ -22,16 +22,6 @@ class Course extends Model
         'description',
     ];
 
-    /**
-     * Get all of the groups for the Course
-     *
-     * @return \Illuminate\Database\Eloquent\Relations\BelongsToMany
-     */
-    public function groups(): BelongsToMany
-    {
-        return $this->belongsToMany(Group::class, 'group_participants');
-    }
-
     public function getActivitylogOptions(): LogOptions
     {
         return LogOptions::defaults()
@@ -40,5 +30,19 @@ class Course extends Model
             ->useLogName('course')
             ->setDescriptionForEvent(fn(string $eventName) => "Course {$this->name} has been {$eventName}")
             ->logOnlyDirty();
+    }
+
+    /**
+     * Get all of the groups for the Course
+     *
+     * @return \Illuminate\Database\Eloquent\Relations\HasMany
+     */
+    public function groups(): HasMany
+    {
+        return $this->hasMany(
+            Group::class,
+            'course_id',
+            'id'
+        );
     }
 }
