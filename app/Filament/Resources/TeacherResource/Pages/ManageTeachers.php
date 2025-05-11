@@ -2,7 +2,9 @@
 
 namespace App\Filament\Resources\TeacherResource\Pages;
 
+use App\Enums\RoleEnum;
 use App\Filament\Resources\TeacherResource;
+use App\Models\Role;
 use Filament\Actions;
 use Filament\Resources\Pages\ManageRecords;
 
@@ -13,7 +15,12 @@ class ManageTeachers extends ManageRecords
     protected function getHeaderActions(): array
     {
         return [
-            Actions\CreateAction::make(),
+            Actions\CreateAction::make()
+                ->after(function ($record) {
+                    $record->roles()->attach(
+                        Role::firstWhere('name', RoleEnum::TEACHER->value)->id,
+                    );
+                }),
         ];
     }
 }

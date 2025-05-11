@@ -2,12 +2,11 @@
 
 namespace App\Filament\Resources;
 
-use App\Enums\PermissionEnum as PE;
+use App\Enums\RoleEnum;
 use App\Filament\Resources\TeacherResource\Pages;
 use App\Filament\Resources\TeacherResource\RelationManagers;
 use App\Models\Group;
-use App\Models\Teacher;
-use App\Traits\Api\AuthorizeTrait;
+use App\Models\User;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
@@ -18,9 +17,7 @@ use Illuminate\Database\Eloquent\SoftDeletingScope;
 
 class TeacherResource extends Resource
 {
-    use AuthorizeTrait;
-
-    protected static ?string $model = Teacher::class;
+    protected static ?string $model = User::class;
 
     protected static ?string $navigationGroup = 'Users';
     protected static ?string $navigationLabel = 'Teachers';
@@ -30,70 +27,52 @@ class TeacherResource extends Resource
 
     public static function form(Form $form): Form
     {
-        $columns = [
-            'default' => 1,
-            'sm' => 2,
-            'md' => 3,
-        ];
-
         return $form
             ->schema([
-                Forms\Components\Wizard::make()
-                    ->steps([
-                        Forms\Components\Wizard\Step::make('Identity')
-                            ->schema([
-                                Forms\Components\TextInput::make('name')
-                                    ->columns($columns)
-                                    ->required()
-                                    ->maxLength(255),
-                                Forms\Components\TextInput::make('email')
-                                    ->columns($columns)
-                                    ->required()
-                                    ->unique(ignoreRecord: true)
-                                    ->maxLength(255)
-                                    ->email(),
-                                Forms\Components\TextInput::make('username')
-                                    ->columns($columns)
-                                    ->required()
-                                    ->unique(ignoreRecord: true)
-                                    ->maxLength(255),
-                                Forms\Components\TextInput::make('password')
-                                    ->columns($columns)
-                                    ->password()
-                                    ->required()
-                                    ->maxLength(255)
-                                    ->revealable()
-                                    ->visibleOn('create'),
-                            ]),
-                        Forms\Components\Wizard\Step::make('Groups')
-                            ->schema([
-                                Forms\Components\CheckboxList::make('groups')
-                                    ->columnSpanFull()
-                                    ->relationship('groups', 'name')
-                                    ->required()
-                                    ->label('Groups')
-                                    ->afterStateUpdated(function (callable $set, $state, $record) {
-                                        $set('groups', $state);
-
-                                        if ($record) {
-                                            activity('teacher')
-                                                ->performedOn($record)
-                                                ->event('updated')
-                                                ->withProperties([
-                                                    'attributes' => [
-                                                        'name' => $record->name,
-                                                        'groups' => Group::whereIn('id', $state)->pluck('name')->toArray(),
-                                                    ],
-                                                    'old' => [
-                                                        'name' => $record->name,
-                                                        'groups' => $record->groups->pluck('name')->toArray(),
-                                                    ],
-                                                ])
-                                                ->log('Updated groups');
-                                        }
-                                    }),
-                            ]),
-                    ])
+                // name
+                Forms\Components\TextInput::make('name')
+                    ->label('Name')
+                    ->required()
+                    ->maxLength(50),
+                // username
+                Forms\Components\TextInput::make('username')
+                    ->label('Username')
+                    ->required()
+                    ->maxLength(50)
+                    ->unique(ignoreRecord: true),
+                // email
+                Forms\Components\TextInput::make('email')
+                    ->label('Email')
+                    ->required()
+                    ->email()
+                    ->maxLength(255)
+                    ->unique(ignoreRecord: true),
+                // password
+                Forms\Components\TextInput::make('password')
+                    ->label('Password')
+                    ->required()
+                    ->password()
+                    ->maxLength(32)
+                    ->revealable()
+                    ->columnSpanFull()
+                    ->hiddenOn(['edit', 'view']),
+                // group in course
+                Forms\Components\Select::make('groups')
+                    ->label('Groups')
+                    ->relationship('groups', 'name')
+                    ->options(
+                        Group::with('course')
+                            ->get()
+                            ->groupBy('course.name')
+                            ->mapWithKeys(function ($groups, $courseName) {
+                                return [
+                                    $courseName => $groups->pluck('name', 'id')->map(function ($name) use ($courseName) {
+                                        return $name . ' (' . $courseName . ')';
+                                    })->toArray(),
+                                ];
+                            })
+                            ->toArray()
+                    )
                     ->columnSpanFull(),
             ]);
     }
@@ -102,41 +81,69 @@ class TeacherResource extends Resource
     {
         return $table
             ->columns([
+                // name
                 Tables\Columns\TextColumn::make('name')
+                    ->label('Name')
                     ->searchable()
-                    ->copyable(),
-                Tables\Columns\TextColumn::make('email')
-                    ->searchable()
-                    ->limit(5)
-                    ->copyable()
-                    ->copyMessage('Copied to clipboard'),
+                    ->limit(50),
+                // username
                 Tables\Columns\TextColumn::make('username')
+                    ->label('Username')
                     ->searchable()
-                    ->limit(5)
-                    ->copyMessage('Copied to clipboard'),
+                    ->limit(50),
+                // email
+                Tables\Columns\TextColumn::make('email')
+                    ->label('Email')
+                    ->searchable()
+                    ->limit(50)
+                    ->formatStateUsing(fn($state) => substr($state, 0, 2) . '***@' . substr($state, strpos($state, '@') + 1)),
+                // group
                 Tables\Columns\TextColumn::make('groups')
                     ->label('Groups')
-                    ->limit(30)
-                    ->getStateUsing(fn(Teacher $record): string => $record->groups ? $record->groups->pluck('name')->implode(', ') : ''),
+                    ->formatStateUsing(function ($record) {
+                        return $record->groups->map(function ($group) {
+                            return $group->name . ' (' . $group->course->name . ')';
+                        })->join(', ');
+                    })
+                    ->searchable(false)
+                    ->limit(50),
             ])
             ->filters([
                 Tables\Filters\TrashedFilter::make(),
             ])
             ->actions([
                 Tables\Actions\ActionGroup::make([
+                    Tables\Actions\ViewAction::make()
+                        ->color('success')
+                        ->label('View')
+                        ->icon('heroicon-o-eye'),
                     Tables\Actions\EditAction::make()
                         ->color('warning')
+                        ->label('Details')
                         ->icon('heroicon-o-pencil')
-                        ->label('Details'),
-                    Tables\Actions\Action::make('Password')
-                        ->color('success')
+                        ->closeModalByClickingAway(false),
+                    Tables\Actions\Action::make('password')
+                        ->color('warning')
+                        ->label('Password')
                         ->icon('heroicon-o-key')
-                        ->authorize(fn() => static::grant(PE::CHANGE_PASSWORD_TEACHER->value))
-                        ->url(fn(Teacher $record): string =>  self::getUrl('password', ['record' => $record->id])),
+                        ->form([
+                            Forms\Components\TextInput::make('password')
+                                ->label('New Password')
+                                ->required()
+                                ->password()
+                                ->maxLength(32)
+                                ->revealable(),
+                        ])
+                        ->action(function (User $record, array $data) {
+                            $record->password = bcrypt($data['password']);
+                            $record->save();
+                        })
+                        // TODO: Authorize this action
+                        ->closeModalByClickingAway(false),
                     Tables\Actions\DeleteAction::make(),
                     Tables\Actions\ForceDeleteAction::make(),
                     Tables\Actions\RestoreAction::make(),
-                ]),
+                ])
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
@@ -151,18 +158,18 @@ class TeacherResource extends Resource
     {
         return [
             'index' => Pages\ManageTeachers::route('/'),
-            'password' => Pages\ChangePasswordTeacher::route('/{record}/password'),
         ];
     }
 
     public static function getEloquentQuery(): Builder
     {
         return parent::getEloquentQuery()
+            ->with(['groups', 'roles'])
+            ->whereHas('roles', function (Builder $query) {
+                $query->where('name', RoleEnum::TEACHER->value);
+            })
             ->withoutGlobalScopes([
                 SoftDeletingScope::class,
-            ])
-            ->whereHas('roles', function ($query) {
-                $query->where('name', \App\Enums\RoleEnum::TEACHER->value);
-            });
+            ]);
     }
 }
