@@ -2,12 +2,11 @@
 
 namespace App\Filament\Resources;
 
-use App\Enums\PermissionEnum as PE;
+use App\Enums\RoleEnum;
 use App\Filament\Resources\StudentResource\Pages;
 use App\Filament\Resources\StudentResource\RelationManagers;
 use App\Models\Group;
-use App\Models\Student;
-use App\Traits\Api\AuthorizeTrait;
+use App\Models\User;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
@@ -15,13 +14,10 @@ use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
-use Rmsramos\Activitylog\RelationManagers\ActivitylogRelationManager;
 
 class StudentResource extends Resource
 {
-    use AuthorizeTrait;
-
-    protected static ?string $model = Student::class;
+    protected static ?string $model = User::class;
 
     protected static ?string $navigationGroup = 'Users';
     protected static ?string $navigationLabel = 'Students';
@@ -33,57 +29,43 @@ class StudentResource extends Resource
     {
         return $form
             ->schema([
-                Forms\Components\Wizard::make()
-                    ->steps([
-                        Forms\Components\Wizard\Step::make('Identity')
-                            ->schema([
-                                Forms\Components\TextInput::make('name')
-                                    ->columnSpanFull()
-                                    ->required()
-                                    ->maxLength(255),
-                                Forms\Components\TextInput::make('username')
-                                    ->columnSpanFull()
-                                    ->required()
-                                    ->unique(ignoreRecord: true)
-                                    ->maxLength(255),
-                                Forms\Components\TextInput::make('password')
-                                    ->columnSpanFull()
-                                    ->password()
-                                    ->required()
-                                    ->maxLength(255)
-                                    ->revealable()
-                                    ->visibleOn('create'),
-                            ]),
-                        Forms\Components\Wizard\Step::make('Groups')
-                            ->schema([
-                                Forms\Components\Select::make('groups')
-                                    ->columnSpanFull()
-                                    ->relationship('groups', 'name')
-                                    ->required()
-                                    ->multiple(false)
-                                    ->label('Groups')
-                                    ->afterStateUpdated(function (callable $set, $state, $record) {
-                                        $set('groups', $state);
-
-                                        if ($record) {
-                                            activity('student')
-                                                ->performedOn($record)
-                                                ->event('updated')
-                                                ->withProperties([
-                                                    'attributes' => [
-                                                        'name' => $record->name,
-                                                        'groups' => is_array($state) ? Group::whereIn('id', $state)->pluck('name')->toArray() : [],
-                                                    ],
-                                                    'old' => [
-                                                        'name' => $record->name,
-                                                        'groups' => $record->groups->pluck('name')->toArray(),
-                                                    ],
-                                                ])
-                                                ->log('Updated groups');
-                                        }
-                                    }),
-                            ]),
-                    ])
+                // name
+                Forms\Components\TextInput::make('name')
+                    ->label('Name')
+                    ->required()
+                    ->maxLength(50),
+                // username
+                Forms\Components\TextInput::make('username')
+                    ->label('Username')
+                    ->required()
+                    ->maxLength(50)
+                    ->unique(ignoreRecord: true),
+                // password
+                Forms\Components\TextInput::make('password')
+                    ->label('Password')
+                    ->required()
+                    ->password()
+                    ->maxLength(32)
+                    ->revealable()
+                    ->columnSpanFull()
+                    ->hiddenOn(['edit', 'view']),
+                // group in course
+                Forms\Components\Select::make('groups')
+                    ->label('Groups')
+                    ->relationship('groups', 'name')
+                    ->options(
+                        Group::with('course')
+                            ->get()
+                            ->groupBy('course.name')
+                            ->mapWithKeys(function ($groups, $courseName) {
+                                return [
+                                    $courseName => $groups->pluck('name', 'id')->map(function ($name) use ($courseName) {
+                                        return $name . ' (' . $courseName . ')';
+                                    })->toArray(),
+                                ];
+                            })
+                            ->toArray()
+                    )
                     ->columnSpanFull(),
             ]);
     }
@@ -92,36 +74,63 @@ class StudentResource extends Resource
     {
         return $table
             ->columns([
+                // name
                 Tables\Columns\TextColumn::make('name')
-                    ->searchable(),
-                Tables\Columns\TextColumn::make('username')
+                    ->label('Name')
                     ->searchable()
-                    ->limit(5)
-                    ->copyable()
-                    ->copyMessage('Copied to clipboard'),
+                    ->limit(50),
+                // username
+                Tables\Columns\TextColumn::make('username')
+                    ->label('Username')
+                    ->searchable()
+                    ->limit(50),
+                // group
                 Tables\Columns\TextColumn::make('groups')
                     ->label('Groups')
-                    ->limit(30)
-                    ->getStateUsing(fn(Student $record): string => $record->groups ? $record->groups->pluck('name')->implode(', ') : ''),
+                    ->formatStateUsing(function ($record) {
+                        return $record->groups->map(function ($group) {
+                            return $group->name . ' (' . $group->course->name . ')';
+                        })->join(', ');
+                    })
+                    ->searchable(false)
+                    ->limit(50),
             ])
             ->filters([
                 Tables\Filters\TrashedFilter::make(),
             ])
             ->actions([
                 Tables\Actions\ActionGroup::make([
+                    Tables\Actions\ViewAction::make()
+                        ->color('success')
+                        ->label('View')
+                        ->icon('heroicon-o-eye'),
                     Tables\Actions\EditAction::make()
                         ->color('warning')
+                        ->label('Details')
                         ->icon('heroicon-o-pencil')
-                        ->label('Details'),
-                    Tables\Actions\Action::make('Password')
-                        ->color('success')
+                        ->closeModalByClickingAway(false),
+                    Tables\Actions\Action::make('password')
+                        ->color('warning')
+                        ->label('Password')
                         ->icon('heroicon-o-key')
-                        ->authorize(fn() => static::grant(PE::CHANGE_PASSWORD_STUDENT->value))
-                        ->url(fn(Student $record): string =>  self::getUrl('password', ['record' => $record->id])),
+                        ->form([
+                            Forms\Components\TextInput::make('password')
+                                ->label('New Password')
+                                ->required()
+                                ->password()
+                                ->maxLength(32)
+                                ->revealable(),
+                        ])
+                        ->action(function (User $record, array $data) {
+                            $record->password = bcrypt($data['password']);
+                            $record->save();
+                        })
+                        // TODO: Authorize this action
+                        ->closeModalByClickingAway(false),
                     Tables\Actions\DeleteAction::make(),
                     Tables\Actions\ForceDeleteAction::make(),
                     Tables\Actions\RestoreAction::make(),
-                ]),
+                ])
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
@@ -136,18 +145,19 @@ class StudentResource extends Resource
     {
         return [
             'index' => Pages\ManageStudents::route('/'),
-            'password' => Pages\ChangePasswordStudent::route('/{record}/password'),
         ];
     }
 
     public static function getEloquentQuery(): Builder
     {
         return parent::getEloquentQuery()
+            ->with(['groups', 'roles'])
+            ->whereHas('roles', function (Builder $query) {
+                $query->where('name', RoleEnum::STUDENT->value);
+            })
+            ->whereHas('groups')
             ->withoutGlobalScopes([
                 SoftDeletingScope::class,
-            ])
-            ->whereHas('roles', function ($query) {
-                $query->where('name', \App\Enums\RoleEnum::STUDENT->value);
-            });
+            ]);
     }
 }
