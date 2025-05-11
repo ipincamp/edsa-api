@@ -159,7 +159,6 @@ class CourseResource extends Resource
                         ->label('Details')
                         ->icon('heroicon-o-pencil')
                         ->closeModalByClickingAway(false),
-                    // add group
                     Tables\Actions\Action::make('new_group')
                         ->color('success')
                         ->label('New Group')
