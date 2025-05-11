@@ -80,6 +80,7 @@ class GroupResource extends Resource
                                     ->whereHas('roles', function ($query) {
                                         $query->whereIn('name', ['student']);
                                     })
+                                    ->whereDoesntHave('groups')
                                     ->pluck('name', 'id')
                             )
                             ->columns(2)
