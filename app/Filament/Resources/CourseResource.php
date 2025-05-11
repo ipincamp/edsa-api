@@ -159,6 +159,25 @@ class CourseResource extends Resource
                         ->label('Details')
                         ->icon('heroicon-o-pencil')
                         ->closeModalByClickingAway(false),
+                    // add group
+                    Tables\Actions\Action::make('new_group')
+                        ->color('success')
+                        ->label('New Group')
+                        ->icon('heroicon-o-plus')
+                        ->modalHeading(fn($record) => 'New Group for ' . $record->name . ' Course')
+                        ->form([
+                            Forms\Components\TextInput::make('name')
+                                ->label('Group Name')
+                                ->required()
+                                ->maxLength(50),
+                            Forms\Components\Textarea::make('description')
+                                ->label('Group Description')
+                                ->rows(2)
+                                ->maxLength(255),
+                        ])
+                        ->action(function (array $data, Course $record) {
+                            $record->groups()->create($data);
+                        }),
                     Tables\Actions\DeleteAction::make(),
                     Tables\Actions\ForceDeleteAction::make(),
                     Tables\Actions\RestoreAction::make(),
