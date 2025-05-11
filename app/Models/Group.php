@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\RoleEnum;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
@@ -61,5 +62,19 @@ class Group extends Model
             'group_id',
             'user_id'
         )->withTimestamps();
+    }
+
+    public function teachers()
+    {
+        return $this->participants()->whereHas('roles', function ($query) {
+            $query->where('name', RoleEnum::TEACHER->value);
+        });
+    }
+
+    public function students()
+    {
+        return $this->participants()->whereHas('roles', function ($query) {
+            $query->where('name', RoleEnum::STUDENT->value);
+        });
     }
 }
