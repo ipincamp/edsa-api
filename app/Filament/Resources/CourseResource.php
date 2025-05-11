@@ -71,89 +71,98 @@ class CourseResource extends Resource
                 Tables\Filters\TrashedFilter::make(),
             ])
             ->actions([
-                Tables\Actions\ViewAction::make()
-                    ->mutateRecordDataUsing(function (array $data): array {
-                        if (!isset($data['record']) || !$data['record']) {
+                Tables\Actions\ActionGroup::make([
+                    Tables\Actions\ViewAction::make()
+                        ->color('success')
+                        ->label('View')
+                        ->icon('heroicon-o-eye')
+                        ->mutateRecordDataUsing(function (array $data): array {
+                            if (!isset($data['record']) || !$data['record']) {
+                                return $data;
+                            }
+
+                            // Get the course with the groups and participants
+                            $course = Course::with(['groups', 'groups.participants'])->find($data['record']->id);
+                            if (!$course) {
+                                return $data;
+                            }
+
+                            // Get the groups and participants
+                            $data['groups'] = $course->groups->map(function ($group) {
+                                return [
+                                    'name' => $group->name,
+                                    'participants' => $group->participants->map(function ($participant) {
+                                        return [
+                                            'name' => $participant->name,
+                                            'role' => $participant->roles->pluck('name')->first(),
+                                        ];
+                                    }),
+                                ];
+                            });
+
+                            // Get the participants
+                            $data['participants'] = $course->groups->flatMap(function ($group) {
+                                return $group->participants;
+                            });
+
+                            // Get the total groups
+                            $data['total_groups'] = $course->groups->count();
+
                             return $data;
-                        }
+                        })
+                        ->form([
+                            // course
+                            Forms\Components\Fieldset::make()
+                                ->label('Course Details')
+                                ->columnSpanFull()
+                                ->schema([
+                                    // name
+                                    Forms\Components\TextInput::make('name')
+                                        ->label('Name')
+                                        ->columnSpanFull()
+                                        ->maxLength(255)
+                                        ->disabled(),
 
-                        // Get the course with the groups and participants
-                        $course = Course::with(['groups', 'groups.participants'])->find($data['record']->id);
-                        if (!$course) {
-                            return $data;
-                        }
-
-                        // Get the groups and participants
-                        $data['groups'] = $course->groups->map(function ($group) {
-                            return [
-                                'name' => $group->name,
-                                'participants' => $group->participants->map(function ($participant) {
-                                    return [
-                                        'name' => $participant->name,
-                                        'role' => $participant->roles->pluck('name')->first(),
-                                    ];
-                                }),
-                            ];
-                        });
-
-                        // Get the participants
-                        $data['participants'] = $course->groups->flatMap(function ($group) {
-                            return $group->participants;
-                        });
-
-                        // Get the total groups
-                        $data['total_groups'] = $course->groups->count();
-
-                        return $data;
-                    })
-                    ->form([
-                        // course
-                        Forms\Components\Fieldset::make()
-                            ->label('Course Details')
-                            ->columnSpanFull()
-                            ->schema([
-                                // name
-                                Forms\Components\TextInput::make('name')
-                                    ->label('Name')
-                                    ->columnSpanFull()
-                                    ->maxLength(255)
-                                    ->disabled(),
-
-                                // description
-                                Forms\Components\Textarea::make('description')
-                                    ->label('Description')
-                                    ->columnSpanFull()
-                                    ->rows(3)
-                                    ->maxLength(65535)
-                            ]),
-                        // groups
-                        Forms\Components\Fieldset::make()
-                            ->label('Groups')
-                            ->schema([
-                                Forms\Components\Repeater::make('groups')
-                                    ->label(false)
-                                    ->relationship('groups')
-                                    ->columnSpanFull()
-                                    ->schema([
-                                        Forms\Components\Section::make(fn($record) => $record->name)
-                                            ->description(fn($record) => $record->description . '. Total ' . count($record->participants) . ' participants.')
-                                            ->schema([
-                                                Forms\Components\CheckboxList::make('participants')
-                                                    ->label(false)
-                                                    ->columns(2)
-                                                    ->options(fn($record) => $record->participants->mapWithKeys(function ($participant) {
-                                                        return [$participant->id => $participant->name . ' - ' . $participant->roles->pluck('name')->first()];
-                                                    }))
-                                                    ->disabled(),
-                                            ])
-                                            ->collapsed(),
-                                    ]),
-                            ]),
-                    ]),
-                Tables\Actions\EditAction::make(),
-                Tables\Actions\DeleteAction::make(),
-                Tables\Actions\ForceDeleteAction::make(),
-                Tables\Actions\RestoreAction::make(),
+                                    // description
+                                    Forms\Components\Textarea::make('description')
+                                        ->label('Description')
+                                        ->columnSpanFull()
+                                        ->rows(3)
+                                        ->maxLength(65535)
+                                ]),
+                            // groups
+                            Forms\Components\Fieldset::make()
+                                ->label('Groups')
+                                ->schema([
+                                    Forms\Components\Repeater::make('groups')
+                                        ->label(false)
+                                        ->relationship('groups')
+                                        ->columnSpanFull()
+                                        ->schema([
+                                            Forms\Components\Section::make(fn($record) => $record->name)
+                                                ->description(fn($record) => $record->description . '. Total ' . count($record->participants) . ' participants.')
+                                                ->schema([
+                                                    Forms\Components\CheckboxList::make('participants')
+                                                        ->label(false)
+                                                        ->columns(2)
+                                                        ->options(fn($record) => $record->participants->mapWithKeys(function ($participant) {
+                                                            return [$participant->id => $participant->name . ' - ' . $participant->roles->pluck('name')->first()];
+                                                        }))
+                                                        ->disabled(),
+                                                ])
+                                                ->collapsed(),
+                                        ]),
+                                ]),
+                        ]),
+                    Tables\Actions\EditAction::make()
+                        ->color('warning')
+                        ->label('Details')
+                        ->icon('heroicon-o-pencil')
+                        ->closeModalByClickingAway(false),
+                    Tables\Actions\DeleteAction::make(),
+                    Tables\Actions\ForceDeleteAction::make(),
+                    Tables\Actions\RestoreAction::make(),
+                ])
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([

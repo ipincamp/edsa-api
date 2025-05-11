@@ -13,7 +13,14 @@ class ManageCourses extends ManageRecords
     protected function getHeaderActions(): array
     {
         return [
-            Actions\CreateAction::make(),
+            Actions\CreateAction::make()
+                ->after(function ($record) {
+                    $record->groups()->create([
+                        'name' => 'Default',
+                        'description' => 'Default group for ' . $record->name,
+                        'course_id' => $record->id,
+                    ]);
+                }),
         ];
     }
 }
