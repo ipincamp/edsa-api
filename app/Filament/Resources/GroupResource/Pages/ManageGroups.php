@@ -13,7 +13,13 @@ class ManageGroups extends ManageRecords
     protected function getHeaderActions(): array
     {
         return [
-            Actions\CreateAction::make(),
+            Actions\CreateAction::make()
+                ->after(function ($record) {
+                    activity('group')
+                        ->performedOn($record)
+                        ->event('created')
+                        ->log('Created group');
+                }),
         ];
     }
 }

@@ -2,11 +2,13 @@
 
 namespace App\Filament\Resources;
 
+use App\Enums\PermissionEnum;
 use App\Enums\RoleEnum;
 use App\Filament\Resources\StudentResource\Pages;
 use App\Filament\Resources\StudentResource\RelationManagers;
 use App\Models\Group;
 use App\Models\User;
+use App\Traits\Api\AuthorizeTrait;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
@@ -17,6 +19,8 @@ use Illuminate\Database\Eloquent\SoftDeletingScope;
 
 class StudentResource extends Resource
 {
+    use AuthorizeTrait;
+
     protected static ?string $model = User::class;
 
     protected static ?string $navigationGroup = 'Users';
@@ -125,7 +129,7 @@ class StudentResource extends Resource
                             $record->password = bcrypt($data['password']);
                             $record->save();
                         })
-                        // TODO: Authorize this action
+                        ->authorize(fn() => static::grant(PermissionEnum::CHANGE_PASSWORD_STUDENT->value))
                         ->closeModalByClickingAway(false),
                     Tables\Actions\DeleteAction::make(),
                     Tables\Actions\ForceDeleteAction::make(),

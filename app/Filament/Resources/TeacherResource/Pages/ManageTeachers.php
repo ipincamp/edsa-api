@@ -20,6 +20,11 @@ class ManageTeachers extends ManageRecords
                     $record->roles()->attach(
                         Role::firstWhere('name', RoleEnum::TEACHER->value)->id,
                     );
+
+                    activity('teacher')
+                        ->performedOn($record)
+                        ->event('created')
+                        ->log('Created teacher');
                 }),
         ];
     }

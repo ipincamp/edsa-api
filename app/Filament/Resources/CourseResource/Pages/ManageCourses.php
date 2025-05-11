@@ -20,6 +20,11 @@ class ManageCourses extends ManageRecords
                         'description' => 'Default group for ' . $record->name,
                         'course_id' => $record->id,
                     ]);
+
+                    activity('course')
+                        ->performedOn($record)
+                        ->event('created')
+                        ->log('Course created');
                 }),
         ];
     }
