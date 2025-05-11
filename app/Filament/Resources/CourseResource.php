@@ -40,8 +40,6 @@ class CourseResource extends Resource
                     ->label('Description')
                     ->rows(3)
                     ->maxLength(65535),
-
-                // groups
             ]);
     }
 

@@ -194,7 +194,67 @@ class GroupResource extends Resource
                         ->color('warning')
                         ->label('Details')
                         ->icon('heroicon-o-pencil')
-                        ->closeModalByClickingAway(false),
+                        ->closeModalByClickingAway(false)
+                        ->form([
+                            // fieldset
+                            Forms\Components\Fieldset::make()
+                                ->label('Group Information')
+                                ->schema([
+                                    // name
+                                    Forms\Components\TextInput::make('name')
+                                        ->label('Name')
+                                        ->columns(3)
+                                        ->maxLength(50)
+                                        ->required(),
+                                    // course name
+                                    Forms\Components\Radio::make('course.name')
+                                        ->label('Course')
+                                        ->columns(1)
+                                        ->options(function ($record) {
+                                            return \App\Models\Course::query()
+                                                ->where('id', $record->course_id ?? null)
+                                                ->pluck('name', 'id');
+                                        })
+                                        ->disabled(),
+                                    // description
+                                    Forms\Components\Textarea::make('description')
+                                        ->label('Description')
+                                        ->columnSpanFull()
+                                        ->rows(2)
+                                        ->maxLength(255),
+                                ]),
+                            // participants
+                            Forms\Components\Fieldset::make()
+                                ->label('Participants')
+                                ->schema([
+                                    // teachers
+                                    Forms\Components\CheckboxList::make('teachers')
+                                        ->label('Teachers')
+                                        ->relationship('teachers', 'name')
+                                        ->options(
+                                            \App\Models\User::query()
+                                                ->whereHas('roles', function ($query) {
+                                                    $query->whereIn('name', ['teacher']);
+                                                })
+                                                ->pluck('name', 'id')
+                                        )
+                                        ->columns(2),
+
+                                    // students
+                                    Forms\Components\CheckboxList::make('students')
+                                        ->label('Students')
+                                        ->relationship('students', 'name')
+                                        ->options(
+                                            \App\Models\User::query()
+                                                ->whereHas('roles', function ($query) {
+                                                    $query->whereIn('name', ['student']);
+                                                })
+                                                ->whereDoesntHave('groups')
+                                                ->pluck('name', 'id')
+                                        )
+                                        ->columns(2),
+                                ]),
+                        ]),
                     Tables\Actions\DeleteAction::make(),
                     Tables\Actions\ForceDeleteAction::make(),
                     Tables\Actions\RestoreAction::make(),
