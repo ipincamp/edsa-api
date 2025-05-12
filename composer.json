@@ -69,11 +69,11 @@
         ],
         "pro-setup": [
             "composer install --prefer-dist --no-dev -o",
-            "npm install --omit=dev",
-            "@php artisan key:generate --ansi",
-            "@php artisan migrate",
-            "@php artisan db:seed --class=DatabaseSeeder",
-            "@php artisan permission:sync -P"
+            "npm install",
+            "npm run build",
+            "@php artisan permission:sync -P",
+            "@php artisan optimize",
+            "@php artisan filament:optimize"
         ]
     },
     "extra": {
