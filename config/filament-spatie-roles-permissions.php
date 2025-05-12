@@ -203,23 +203,17 @@ return [
          * Define excluded_models
          */
         'excluded_models' => [
-            \App\Models\User::class,
-            \App\Models\Role::class,
+            //
         ],
 
         'excluded_policy_models' => [
-            \App\Models\User::class,
+            //
         ],
 
         /*
          * Define any other permission that should be synced with the DB
          */
-        'custom_permissions' => [
-            PE::CHANGE_PASSWORD_SELF->value,
-            PE::UPDATE_PROFILE_SELF->value,
-            PE::CHANGE_PASSWORD_STUDENT->value,
-            PE::CHANGE_PASSWORD_TEACHER->value,
-        ],
+        'custom_permissions' => PE::getAllPermissions(),
 
         'user_model' => \App\Models\User::class,
 

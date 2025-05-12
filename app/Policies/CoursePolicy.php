@@ -3,25 +3,25 @@
 namespace App\Policies;
 
 use Illuminate\Auth\Access\Response;
-use App\Models\Teacher;
+use App\Models\Course;
 use App\Models\User;
 
-class TeacherPolicy
+class CoursePolicy
 {
     /**
      * Determine whether the user can view any models.
      */
     public function viewAny(User $user): bool
     {
-        return $user->checkPermissionTo('View any Teacher');
+        return $user->checkPermissionTo('View any Course');
     }
 
     /**
      * Determine whether the user can view the model.
      */
-    public function view(User $user, Teacher $teacher): bool
+    public function view(User $user, Course $course): bool
     {
-        return $user->checkPermissionTo('View Teacher');
+        return $user->checkPermissionTo('View Course');
     }
 
     /**
@@ -29,23 +29,23 @@ class TeacherPolicy
      */
     public function create(User $user): bool
     {
-        return $user->checkPermissionTo('Create Teacher');
+        return $user->checkPermissionTo('Create Course');
     }
 
     /**
      * Determine whether the user can update the model.
      */
-    public function update(User $user, Teacher $teacher): bool
+    public function update(User $user, Course $course): bool
     {
-        return $user->checkPermissionTo('Update Teacher');
+        return $user->checkPermissionTo('Update Course');
     }
 
     /**
      * Determine whether the user can delete the model.
      */
-    public function delete(User $user, Teacher $teacher): bool
+    public function delete(User $user, Course $course): bool
     {
-        return $user->checkPermissionTo('Delete Teacher');
+        return $user->checkPermissionTo('Delete Course');
     }
 
     /**
@@ -53,15 +53,15 @@ class TeacherPolicy
      */
     public function deleteAny(User $user): bool
     {
-        return $user->checkPermissionTo('Delete any Teacher');
+        return $user->checkPermissionTo('Delete any Course');
     }
 
     /**
      * Determine whether the user can restore the model.
      */
-    public function restore(User $user, Teacher $teacher): bool
+    public function restore(User $user, Course $course): bool
     {
-        return $user->checkPermissionTo('Restore Teacher');
+        return $user->checkPermissionTo('Restore Course');
     }
 
     /**
@@ -69,15 +69,15 @@ class TeacherPolicy
      */
     public function restoreAny(User $user): bool
     {
-        return $user->checkPermissionTo('Restore any Teacher');
+        return $user->checkPermissionTo('Restore any Course');
     }
 
     /**
      * Determine whether the user can replicate the model.
      */
-    public function replicate(User $user, Teacher $teacher): bool
+    public function replicate(User $user, Course $course): bool
     {
-        return $user->checkPermissionTo('Replicate Teacher');
+        return $user->checkPermissionTo('Replicate Course');
     }
 
     /**
@@ -85,15 +85,15 @@ class TeacherPolicy
      */
     public function reorder(User $user): bool
     {
-        return $user->checkPermissionTo('Reorder Teacher');
+        return $user->checkPermissionTo('Reorder Course');
     }
 
     /**
      * Determine whether the user can permanently delete the model.
      */
-    public function forceDelete(User $user, Teacher $teacher): bool
+    public function forceDelete(User $user, Course $course): bool
     {
-        return $user->checkPermissionTo('Permanently delete Teacher');
+        return $user->checkPermissionTo('Permanently delete Course');
     }
 
     /**
@@ -101,6 +101,6 @@ class TeacherPolicy
      */
     public function forceDeleteAny(User $user): bool
     {
-        return $user->checkPermissionTo('Permanently delete any Teacher');
+        return $user->checkPermissionTo('Permanently delete any Course');
     }
 }
