@@ -23,16 +23,12 @@ enum RoleEnum: string
     }
 
     /**
-     * Get the value of the enum case.
+     * Get all roles for the enum.
      *
      * @return string
      */
     public static function getAllRoles(): array
     {
-        return [
-            self::ADMIN->value,
-            self::TEACHER->value,
-            self::STUDENT->value,
-        ];
+        return array_map(fn($enum) => $enum->value, self::cases());
     }
 }

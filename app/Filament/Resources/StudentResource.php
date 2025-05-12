@@ -15,6 +15,7 @@ use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
 
 class StudentResource extends Resource
@@ -163,5 +164,86 @@ class StudentResource extends Resource
             ->withoutGlobalScopes([
                 SoftDeletingScope::class,
             ]);
+    }
+
+    // Custom Permissions
+    public static function canViewAny(): bool
+    {
+        return static::can('viewAnyStudent');
+    }
+
+    public static function canCreate(): bool
+    {
+        return static::can('createStudent');
+    }
+
+    public static function canEdit(Model $record): bool
+    {
+        return static::can('updateStudent', $record);
+    }
+
+    public static function canDelete(Model $record): bool
+    {
+        return static::can('deleteStudent', $record);
+    }
+
+    public static function canDeleteAny(): bool
+    {
+        return static::can('deleteAnyStudent');
+    }
+
+    public static function canForceDelete(Model $record): bool
+    {
+        return static::can('forceDeleteStudent', $record);
+    }
+
+    public static function canForceDeleteAny(): bool
+    {
+        return static::can('forceDeleteAnyStudent');
+    }
+
+    public static function canReorder(): bool
+    {
+        return static::can('reorderStudent');
+    }
+
+    public static function canReplicate(Model $record): bool
+    {
+        return static::can('replicateStudent', $record);
+    }
+
+    public static function canRestore(Model $record): bool
+    {
+        return static::can('restoreStudent', $record);
+    }
+
+    public static function canRestoreAny(): bool
+    {
+        return static::can('restoreAnyStudent');
+    }
+
+    public static function canView(Model $record): bool
+    {
+        return static::can('viewStudent', $record);
+    }
+
+    public static function authorizeViewAny(): void
+    {
+        static::authorize('viewAnyStudent');
+    }
+
+    public static function authorizeCreate(): void
+    {
+        static::authorize('createStudent');
+    }
+
+    public static function authorizeEdit(Model $record): void
+    {
+        static::authorize('updateStudent', $record);
+    }
+
+    public static function authorizeView(Model $record): void
+    {
+        static::authorize('viewStudent', $record);
     }
 }

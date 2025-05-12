@@ -15,6 +15,7 @@ use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
 
 class TeacherResource extends Resource
@@ -175,5 +176,86 @@ class TeacherResource extends Resource
             ->withoutGlobalScopes([
                 SoftDeletingScope::class,
             ]);
+    }
+
+    // Custom Permissions
+    public static function canViewAny(): bool
+    {
+        return static::can('viewAnyTeacher');
+    }
+
+    public static function canCreate(): bool
+    {
+        return static::can('createTeacher');
+    }
+
+    public static function canEdit(Model $record): bool
+    {
+        return static::can('updateTeacher', $record);
+    }
+
+    public static function canDelete(Model $record): bool
+    {
+        return static::can('deleteTeacher', $record);
+    }
+
+    public static function canDeleteAny(): bool
+    {
+        return static::can('deleteAnyTeacher');
+    }
+
+    public static function canForceDelete(Model $record): bool
+    {
+        return static::can('forceDeleteTeacher', $record);
+    }
+
+    public static function canForceDeleteAny(): bool
+    {
+        return static::can('forceDeleteAnyTeacher');
+    }
+
+    public static function canReorder(): bool
+    {
+        return static::can('reorderTeacher');
+    }
+
+    public static function canReplicate(Model $record): bool
+    {
+        return static::can('replicateTeacher', $record);
+    }
+
+    public static function canRestore(Model $record): bool
+    {
+        return static::can('restoreTeacher', $record);
+    }
+
+    public static function canRestoreAny(): bool
+    {
+        return static::can('restoreAnyTeacher');
+    }
+
+    public static function canView(Model $record): bool
+    {
+        return static::can('viewTeacher', $record);
+    }
+
+    public static function authorizeViewAny(): void
+    {
+        static::authorize('viewAnyTeacher');
+    }
+
+    public static function authorizeCreate(): void
+    {
+        static::authorize('createTeacher');
+    }
+
+    public static function authorizeEdit(Model $record): void
+    {
+        static::authorize('updateTeacher', $record);
+    }
+
+    public static function authorizeView(Model $record): void
+    {
+        static::authorize('viewTeacher', $record);
     }
 }
