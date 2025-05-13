@@ -34,44 +34,52 @@ class StudentResource extends Resource
     {
         return $form
             ->schema([
-                // name
-                Forms\Components\TextInput::make('name')
-                    ->label('Name')
-                    ->required()
-                    ->maxLength(50),
-                // username
-                Forms\Components\TextInput::make('username')
-                    ->label('Username')
-                    ->required()
-                    ->maxLength(50)
-                    ->unique(ignoreRecord: true),
-                // password
-                Forms\Components\TextInput::make('password')
-                    ->label('Password')
-                    ->required()
-                    ->password()
-                    ->maxLength(32)
-                    ->revealable()
-                    ->columnSpanFull()
-                    ->hiddenOn(['edit', 'view']),
-                // group in course
-                Forms\Components\Select::make('groups')
-                    ->label('Groups')
-                    ->relationship('groups', 'name')
-                    ->options(
-                        Group::with('course')
-                            ->get()
-                            ->groupBy('course.name')
-                            ->mapWithKeys(function ($groups, $courseName) {
-                                return [
-                                    $courseName => $groups->pluck('name', 'id')->map(function ($name) use ($courseName) {
-                                        return $name . ' (' . $courseName . ')';
-                                    })->toArray(),
-                                ];
-                            })
-                            ->toArray()
-                    )
-                    ->columnSpanFull(),
+                Forms\Components\Fieldset::make()
+                    ->label('Details')
+                    ->schema([
+                        // name
+                        Forms\Components\TextInput::make('name')
+                            ->label('Name')
+                            ->required()
+                            ->maxLength(50),
+                        // username
+                        Forms\Components\TextInput::make('username')
+                            ->label('Username')
+                            ->required()
+                            ->maxLength(50)
+                            ->unique(ignoreRecord: true),
+                        // password
+                        Forms\Components\TextInput::make('password')
+                            ->label('Password')
+                            ->required()
+                            ->password()
+                            ->maxLength(32)
+                            ->revealable()
+                            ->columnSpanFull()
+                            ->hiddenOn(['edit', 'view']),
+                    ]),
+                Forms\Components\Fieldset::make()
+                    ->label('Group (Course)')
+                    ->schema([
+                        // group in course
+                        Forms\Components\Select::make('groups')
+                            ->label(false)
+                            ->relationship('groups', 'name')
+                            ->options(
+                                Group::with('course')
+                                    ->get()
+                                    ->groupBy('course.name')
+                                    ->mapWithKeys(function ($groups, $courseName) {
+                                        return [
+                                            $courseName => $groups->pluck('name', 'id')->map(function ($name) use ($courseName) {
+                                                return $name . ' (' . $courseName . ')';
+                                            })->toArray(),
+                                        ];
+                                    })
+                                    ->toArray()
+                            )
+                            ->columnSpanFull(),
+                    ]),
             ]);
     }
 
@@ -127,12 +135,12 @@ class StudentResource extends Resource
                                                 ->columnSpan(1)
                                                 ->maxLength(50),
                                             Forms\Components\CheckboxList::make('groups')
-                                                ->label('Group')
+                                                ->label('Group (Course)')
                                                 ->columnSpan(1)
                                                 ->options(
                                                     fn($record) => $record->groups->mapWithKeys(function ($group) {
                                                         return [
-                                                            $group->id => "{$group->name}. Course {$group->course->name}",
+                                                            $group->id => "{$group->name} ( {$group->course->name} )",
                                                         ];
                                                     })->toArray()
                                                 ),

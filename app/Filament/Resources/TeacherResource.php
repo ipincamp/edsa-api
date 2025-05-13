@@ -34,51 +34,62 @@ class TeacherResource extends Resource
     {
         return $form
             ->schema([
-                // name
-                Forms\Components\TextInput::make('name')
-                    ->label('Name')
-                    ->required()
-                    ->maxLength(50),
-                // username
-                Forms\Components\TextInput::make('username')
-                    ->label('Username')
-                    ->required()
-                    ->maxLength(50)
-                    ->unique(ignoreRecord: true),
-                // email
-                Forms\Components\TextInput::make('email')
-                    ->label('Email')
-                    ->required()
-                    ->email()
-                    ->maxLength(255)
-                    ->unique(ignoreRecord: true),
-                // password
-                Forms\Components\TextInput::make('password')
-                    ->label('Password')
-                    ->required()
-                    ->password()
-                    ->maxLength(32)
-                    ->revealable()
-                    ->columnSpanFull()
-                    ->hiddenOn(['edit', 'view']),
+                Forms\Components\Fieldset::make()
+                    ->label('Details')
+                    ->schema([
+                        // name
+                        Forms\Components\TextInput::make('name')
+                            ->label('Name')
+                            ->required()
+                            ->columnSpanFull()
+                            ->maxLength(50),
+                        // username
+                        Forms\Components\TextInput::make('username')
+                            ->label('Username')
+                            ->required()
+                            ->maxLength(50)
+                            ->columnSpanFull()
+                            ->unique(ignoreRecord: true),
+                        // email
+                        Forms\Components\TextInput::make('email')
+                            ->label('Email')
+                            ->email()
+                            ->maxLength(255)
+                            ->columnSpanFull()
+                            ->unique(ignoreRecord: true),
+                        // password
+                        Forms\Components\TextInput::make('password')
+                            ->label('Password')
+                            ->required()
+                            ->password()
+                            ->maxLength(32)
+                            ->revealable()
+                            ->columnSpanFull()
+                            ->hiddenOn(['edit', 'view']),
+                    ]),
                 // group in course
-                Forms\Components\Select::make('groups')
-                    ->label('Groups')
-                    ->relationship('groups', 'name')
-                    ->options(
-                        Group::with('course')
-                            ->get()
-                            ->groupBy('course.name')
-                            ->mapWithKeys(function ($groups, $courseName) {
-                                return [
-                                    $courseName => $groups->pluck('name', 'id')->map(function ($name) use ($courseName) {
-                                        return $name . ' (' . $courseName . ')';
-                                    })->toArray(),
-                                ];
-                            })
-                            ->toArray()
-                    )
-                    ->columnSpanFull(),
+                Forms\Components\Fieldset::make()
+                    ->label('Groups (Course)')
+                    ->schema([
+                        Forms\Components\Select::make('groups')
+                            ->label(false)
+                            ->relationship('groups', 'name')
+                            ->options(
+                                Group::with('course')
+                                    ->get()
+                                    ->groupBy('course.name')
+                                    ->mapWithKeys(function ($groups, $courseName) {
+                                        return [
+                                            $courseName => $groups->pluck('name', 'id')->map(function ($name) use ($courseName) {
+                                                return $name . ' (' . $courseName . ')';
+                                            })->toArray(),
+                                        ];
+                                    })
+                                    ->toArray()
+                            )
+                            ->multiple()
+                            ->columnSpanFull(),
+                    ]),
             ]);
     }
 
@@ -121,7 +132,41 @@ class TeacherResource extends Resource
                     Tables\Actions\ViewAction::make()
                         ->color('success')
                         ->label('View')
-                        ->icon('heroicon-o-eye'),
+                        ->icon('heroicon-o-eye')
+                        ->form([
+                            Forms\Components\Fieldset::make()
+                                ->label('Details')
+                                ->schema([
+                                    Forms\Components\Grid::make(2)
+                                        ->schema([
+                                            Forms\Components\TextInput::make('id')
+                                                ->label('UUID')
+                                                ->columnSpan(1),
+                                            Forms\Components\TextInput::make('name')
+                                                ->label('Name')
+                                                ->columnSpan(1)
+                                                ->maxLength(50),
+                                            Forms\Components\TextInput::make('username')
+                                                ->label('Username')
+                                                ->columnSpan(1)
+                                                ->maxLength(50),
+                                            Forms\Components\TextInput::make('email')
+                                                ->label('Email')
+                                                ->columnSpan(1)
+                                                ->maxLength(50),
+                                            Forms\Components\CheckboxList::make('groups')
+                                                ->label('Groups (Course)')
+                                                ->columnSpan(1)
+                                                ->options(
+                                                    fn($record) => $record->groups->mapWithKeys(function ($group) {
+                                                        return [
+                                                            $group->id => "{$group->name} ( {$group->course->name} )",
+                                                        ];
+                                                    })->toArray()
+                                                ),
+                                        ]),
+                                ]),
+                        ]),
                     Tables\Actions\EditAction::make()
                         ->color('warning')
                         ->label('Details')
