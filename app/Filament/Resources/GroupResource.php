@@ -189,26 +189,27 @@ class GroupResource extends Resource
                         ->icon('heroicon-o-pencil')
                         ->closeModalByClickingAway(false)
                         ->form([
-                            // fieldset
                             Forms\Components\Fieldset::make()
                                 ->label('Group Information')
                                 ->schema([
-                                    // name
-                                    Forms\Components\TextInput::make('name')
-                                        ->label('Name')
-                                        ->columns(3)
-                                        ->maxLength(50)
-                                        ->required(),
-                                    // course name
-                                    Forms\Components\Radio::make('course.name')
-                                        ->label('Course')
-                                        ->columns(1)
-                                        ->options(function ($record) {
-                                            return \App\Models\Course::query()
-                                                ->where('id', $record->course_id ?? null)
-                                                ->pluck('name', 'id');
-                                        })
-                                        ->disabled(),
+                                    // name and course
+                                    Forms\Components\Grid::make(3)
+                                        ->schema([
+                                            Forms\Components\TextInput::make('name')
+                                                ->label('Name')
+                                                ->maxLength(50)
+                                                ->columnSpan(2)
+                                                ->required(),
+                                            Forms\Components\Radio::make('course.name')
+                                                ->label('Course')
+                                                ->options(function ($record) {
+                                                    return \App\Models\Course::query()
+                                                        ->where('id', $record->course_id ?? null)
+                                                        ->pluck('name', 'id');
+                                                })
+                                                ->columnSpan(1)
+                                                ->disabled(),
+                                        ]),
                                     // description
                                     Forms\Components\Textarea::make('description')
                                         ->label('Description')
