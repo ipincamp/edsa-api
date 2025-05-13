@@ -171,7 +171,41 @@ class TeacherResource extends Resource
                         ->color('warning')
                         ->label('Details')
                         ->icon('heroicon-o-pencil')
-                        ->closeModalByClickingAway(false),
+                        ->closeModalByClickingAway(false)
+                        ->form([
+                            Forms\Components\TextInput::make('name')
+                                ->label('Name')
+                                ->maxLength(50),
+                            Forms\Components\TextInput::make('username')
+                                ->label('Username')
+                                ->maxLength(50)
+                                ->unique(ignoreRecord: true),
+                            Forms\Components\TextInput::make('email')
+                                ->label('Email')
+                                ->email()
+                                ->maxLength(255)
+                                ->unique(ignoreRecord: true),
+                            Forms\Components\Select::make('groups')
+                                ->label('Groups (Course)')
+                                ->relationship('groups', 'name')
+                                ->options(
+                                    Group::with('course')
+                                        ->get()
+                                        ->groupBy('course.name')
+                                        ->mapWithKeys(function ($groups, $courseName) {
+                                            return [
+                                                $courseName => $groups->pluck('name', 'id')->map(function ($name) use ($courseName) {
+                                                    return $name . ' (' . $courseName . ')';
+                                                })->toArray(),
+                                            ];
+                                        })
+                                        ->toArray()
+                                )
+                                ->multiple()
+                                ->columnSpanFull(),
+                        ])->action(function (User $record, array $data) {
+                            $record->update($data);
+                        }),
                     Tables\Actions\Action::make('password')
                         ->color('warning')
                         ->label('Password')
