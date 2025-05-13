@@ -108,7 +108,37 @@ class StudentResource extends Resource
                     Tables\Actions\ViewAction::make()
                         ->color('success')
                         ->label('View')
-                        ->icon('heroicon-o-eye'),
+                        ->icon('heroicon-o-eye')
+                        ->form([
+                            Forms\Components\Fieldset::make()
+                                ->label('Details')
+                                ->schema([
+                                    Forms\Components\Grid::make(2)
+                                        ->schema([
+                                            Forms\Components\TextInput::make('id')
+                                                ->label('UUID')
+                                                ->columnSpan(1),
+                                            Forms\Components\TextInput::make('name')
+                                                ->label('Name')
+                                                ->columnSpan(1)
+                                                ->maxLength(50),
+                                            Forms\Components\TextInput::make('username')
+                                                ->label('Username')
+                                                ->columnSpan(1)
+                                                ->maxLength(50),
+                                            Forms\Components\CheckboxList::make('groups')
+                                                ->label('Group')
+                                                ->columnSpan(1)
+                                                ->options(
+                                                    fn($record) => $record->groups->mapWithKeys(function ($group) {
+                                                        return [
+                                                            $group->id => "{$group->name}. Course {$group->course->name}",
+                                                        ];
+                                                    })->toArray()
+                                                ),
+                                        ]),
+                                ]),
+                        ]),
                     Tables\Actions\EditAction::make()
                         ->color('warning')
                         ->label('Details')
@@ -160,7 +190,6 @@ class StudentResource extends Resource
             ->whereHas('roles', function (Builder $query) {
                 $query->where('name', RoleEnum::STUDENT->value);
             })
-            ->whereHas('groups')
             ->withoutGlobalScopes([
                 SoftDeletingScope::class,
             ]);
