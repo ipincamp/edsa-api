@@ -163,31 +163,24 @@ class GroupResource extends Resource
                                 ->label('Participants')
                                 ->schema([
                                     // teachers
-                                    Forms\Components\CheckboxList::make('teachers')
+                                    Forms\Components\Repeater::make('data.teachers')
                                         ->label('Teachers')
-                                        ->relationship('teachers', 'name')
-                                        ->options(
-                                            \App\Models\User::query()
-                                                ->whereHas('roles', function ($query) {
-                                                    $query->whereIn('name', ['teacher']);
-                                                })
-                                                ->pluck('name', 'id')
-                                        )
-                                        ->columns(2),
+                                        ->relationship('teachers')
+                                        ->schema([
+                                            Forms\Components\TextInput::make('name')
+                                                ->label(false)
+                                                ->disabled(),
+                                        ]),
 
                                     // students
-                                    Forms\Components\CheckboxList::make('students')
+                                    Forms\Components\Repeater::make('data.students')
                                         ->label('Students')
-                                        ->relationship('students', 'name')
-                                        ->options(
-                                            \App\Models\User::query()
-                                                ->whereHas('roles', function ($query) {
-                                                    $query->whereIn('name', ['student']);
-                                                })
-                                                ->whereDoesntHave('groups')
-                                                ->pluck('name', 'id')
-                                        )
-                                        ->columns(2),
+                                        ->relationship('students')
+                                        ->schema([
+                                            Forms\Components\TextInput::make('name')
+                                                ->label(false)
+                                                ->disabled(),
+                                        ]),
                                 ]),
                         ]),
                     Tables\Actions\EditAction::make()
