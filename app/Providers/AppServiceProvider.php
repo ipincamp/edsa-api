@@ -53,12 +53,12 @@ class AppServiceProvider extends ServiceProvider
                     ->icon('heroicon-s-users')
                     ->collapsed(),
                 NavigationGroup::make()
-                    ->label('Settings')
-                    ->icon('heroicon-s-cog')
-                    ->collapsed(),
-                NavigationGroup::make()
                     ->label('Managements')
                     ->icon('heroicon-s-academic-cap')
+                    ->collapsed(),
+                NavigationGroup::make()
+                    ->label('Settings')
+                    ->icon('heroicon-s-cog')
                     ->collapsed(),
             ]);
         });
