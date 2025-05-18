@@ -73,7 +73,8 @@
             "npm run build",
             "@php artisan permission:sync -P",
             "@php artisan optimize",
-            "@php artisan filament:optimize"
+            "@php artisan filament:optimize",
+            "@php artisan livewire:publish --assets"
         ]
     },
     "extra": {
