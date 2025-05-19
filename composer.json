@@ -65,6 +65,7 @@
             "@php artisan migrate:fresh",
             "@php artisan db:seed --class=DatabaseSeeder",
             "@php artisan db:seed --class=DevelopmentSeeder",
+            "@php artisan db:seed --class=BookSeeder",
             "@php artisan permission:sync -P"
         ],
         "pro-setup": [
