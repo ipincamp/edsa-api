@@ -19,7 +19,7 @@ class BookSeeder extends Seeder
             'year' => 2025,
             'genre' => 'Fiction',
             'focus' => 'Alphabet',
-            'image' => '/img/books/book1/cover.png',
+            'image' => '/book_cover_1.png',
         ]);
 
         // book 2
@@ -29,7 +29,7 @@ class BookSeeder extends Seeder
             'year' => 2025,
             'genre' => 'Fiction',
             'focus' => 'Number',
-            'image' => '/img/books/book2/cover.png',
+            'image' => '/book_cover_2.png',
         ]);
 
         // book 3
@@ -39,7 +39,7 @@ class BookSeeder extends Seeder
             'year' => 1949,
             'genre' => 'Dystopian',
             'focus' => 'Alphabet',
-            'image' => '/img/books/book3/cover.png',
+            'image' => '/book_cover_3.png',
         ]);
 
         // book 4
@@ -50,7 +50,7 @@ class BookSeeder extends Seeder
             'genre' => 'Romance',
             'focus' => 'Alphabet',
             'status' => false,
-            'image' => 'https://picsum.photos/seed/picsum/200/300',
+            'image' => '/default.jpg',
         ]);
 
         // book 5
@@ -61,7 +61,7 @@ class BookSeeder extends Seeder
             'genre' => 'Adventure',
             'focus' => 'Alphabet',
             'status' => false,
-            'image' => 'https://picsum.photos/seed/picsum/200/300',
+            'image' => '/default.jpg',
         ]);
 
         // book 6
@@ -72,7 +72,7 @@ class BookSeeder extends Seeder
             'genre' => 'Historical',
             'focus' => 'Alphabet',
             'status' => false,
-            'image' => 'https://picsum.photos/seed/picsum/200/300',
+            'image' => '/default.jpg',
         ]);
 
         // book 7
@@ -83,7 +83,7 @@ class BookSeeder extends Seeder
             'genre' => 'Comedy',
             'focus' => 'Number',
             'status' => false,
-            'image' => 'https://picsum.photos/seed/picsum/200/300',
+            'image' => '/default.jpg',
         ]);
 
         // book 8
@@ -94,7 +94,7 @@ class BookSeeder extends Seeder
             'genre' => 'Tragedy',
             'focus' => 'Alphabet',
             'status' => false,
-            'image' => 'https://picsum.photos/seed/picsum/200/300',
+            'image' => '/default.jpg',
         ]);
     }
 }
