@@ -35,6 +35,12 @@ class BookResource extends Resource
     {
         return $table
             ->columns([
+                // cover image
+                Tables\Columns\ImageColumn::make('image')
+                    ->label('Cover')
+                    ->circular()
+                    ->size(64)
+                    ->default(config('app.url') . '/assets/default.jpg'),
                 // title
                 Tables\Columns\TextColumn::make('title')
                     ->searchable()
