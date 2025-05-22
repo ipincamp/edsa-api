@@ -39,7 +39,7 @@ class BookSeeder extends Seeder
             'year' => 1949,
             'genre' => 'Dystopian',
             'focus' => 'Alphabet',
-            'image' => '/book_cover_3.png',
+            'image' => '/default.jpg',
         ]);
 
         // book 4
