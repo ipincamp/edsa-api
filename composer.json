@@ -66,12 +66,14 @@
             "@php artisan db:seed --class=DatabaseSeeder",
             "@php artisan db:seed --class=DevelopmentSeeder",
             "@php artisan db:seed --class=BookSeeder",
-            "@php artisan permission:sync -P"
+            "@php artisan permission:sync -P",
+            "@php artisan storage:link"
         ],
         "pro-setup": [
             "composer install --prefer-dist --no-dev -o",
             "npm install",
             "npm run build",
+            "rm -rf node_modules",
             "@php artisan permission:sync -P",
             "@php artisan optimize",
             "@php artisan filament:optimize",
