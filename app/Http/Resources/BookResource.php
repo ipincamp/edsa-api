@@ -60,7 +60,7 @@ class BookResource extends JsonResource
              * The image URL of the book cover.
              * @var string
              */
-            'image' => $this->image,
+            'image' => config('app.url') . '/assets' . $this->image,
             /**
              * The date when the book was created.
              * @var string

@@ -1,7 +1,7 @@
 <?php
 
 use App\Http\Controllers\Api\V1\Auth\AuthController;
-use App\Http\Controllers\Api\V1\Book\AllBookController;
+use App\Http\Controllers\Api\V1\Book\BookController;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('v1')->group(function () {
@@ -17,7 +17,7 @@ Route::prefix('v1')->group(function () {
         });
     });
 
-    Route::middleware('auth:sanctum')->group(function () {
-        Route::get('books', AllBookController::class)->name('books.all');
+    Route::middleware('auth:sanctum')->controller(BookController::class)->group(function () {
+        Route::get('books', 'index')->name('books.all');
     });
 });
