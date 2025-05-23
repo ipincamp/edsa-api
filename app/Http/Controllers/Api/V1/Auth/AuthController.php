@@ -287,7 +287,7 @@ class AuthController extends Controller
     public function logout(Request $request): JsonResponse
     {
         try {
-            $request->user()->currentAccessToken()->delete();
+            auth()->guard('web')->logout();
 
             activity('auth api')
                 ->performedOn($request->user())
