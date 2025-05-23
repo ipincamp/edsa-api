@@ -34,29 +34,36 @@ class SaveProgressRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'book_id' => [
-                'required',
-                'integer',
-                'exists:books,id',
-            ],
-            'group_id' => [
-                'nullable',
-                'exists:groups,id',
-            ],
+            /**
+             * Score correct.
+             * @example 10
+             */
             'correct' => [
                 'required',
                 'integer',
                 'min:0',
             ],
+            /**
+             * Score incorrect.
+             * @example 2
+             */
             'incorrect' => [
                 'required',
                 'integer',
                 'min:0',
             ],
+            /**
+             * The start and finish date of the book progress.
+             * @example 2025-10-20 12:00:00
+             */
             'start_at' => [
                 'required',
                 'date_format:Y-m-d H:i:s',
             ],
+            /**
+             * The start and finish date of the book progress.
+             * @example 2025-10-20 12:30:00
+             */
             'finish_at' => [
                 'required',
                 'date_format:Y-m-d H:i:s',
