@@ -19,7 +19,8 @@ class StudentProgress extends Model
         'score_correct',
         'score_incorrect',
         'time_start',
-        'time_end',
+        'time_finish',
+        'taken',
     ];
 
     /**

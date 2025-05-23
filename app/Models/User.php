@@ -88,7 +88,6 @@ class User extends Authenticatable
         )->withTimestamps();
     }
 
-    // progress
     /**
      * Get all of the progress for the User
      *
@@ -96,10 +95,6 @@ class User extends Authenticatable
      */
     public function progress(): HasMany
     {
-        return $this->hasMany(
-            StudentProgress::class,
-            'student_id',
-            'id'
-        );
+        return $this->hasMany(StudentProgress::class, 'student_id', 'id');
     }
 }

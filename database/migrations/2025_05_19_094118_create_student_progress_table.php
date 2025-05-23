@@ -19,7 +19,8 @@ return new class extends Migration
             $table->integer('score_correct')->default(0);
             $table->integer('score_incorrect')->default(0);
             $table->timestamp('time_start')->nullable();
-            $table->timestamp('time_end')->nullable();
+            $table->timestamp('time_finish')->nullable();
+            $table->integer('taken')->default(0);
             $table->timestamps();
         });
     }
