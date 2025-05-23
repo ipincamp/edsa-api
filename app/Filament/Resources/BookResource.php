@@ -73,24 +73,75 @@ class BookResource extends Resource
                     Tables\Actions\ViewAction::make()
                         ->color('success')
                         ->label('View')
-                        ->icon('heroicon-o-eye'),
+                        ->icon('heroicon-o-eye')
+                        ->mutateRecordDataUsing(function (array $data): array {
+                            $data['status'] = $data['status'] ? 'Open' : 'Locked';
+
+                            return $data;
+                        })
+                        ->form([
+                            Forms\Components\Fieldset::make()
+                                ->label(false)
+                                ->schema([
+                                    Forms\Components\Grid::make(4)
+                                        ->schema([
+                                            Forms\Components\Fieldset::make()
+                                                ->label('Book Cover')
+                                                ->schema([
+                                                    Forms\Components\FileUpload::make('image')
+                                                        ->label(false)
+                                                        ->image()
+                                                        ->columnSpanFull(),
+                                                ])
+                                                ->columnSpan(2),
+                                            Forms\Components\Fieldset::make()
+                                                ->label(fn($state) => 'The book is ' . $state['status'])
+                                                ->schema([
+                                                    Forms\Components\TextInput::make('title')
+                                                        ->label('Title')
+                                                        ->maxLength(100)
+                                                        ->columnSpanFull(),
+                                                    Forms\Components\TextInput::make('author')
+                                                        ->label('Author')
+                                                        ->maxLength(20)
+                                                        ->columnSpan(1),
+                                                    Forms\Components\TextInput::make('year')
+                                                        ->label('Year')
+                                                        ->maxLength(4)
+                                                        ->columnSpan(1),
+                                                    Forms\Components\TextInput::make('genre')
+                                                        ->label('Genre')
+                                                        ->maxLength(20)
+                                                        ->columnSpan(1),
+                                                    Forms\Components\TextInput::make('focus')
+                                                        ->label('Focus')
+                                                        ->maxLength(20)
+                                                        ->columnSpan(1),
+                                                ])
+                                                ->columnSpan(2),
+                                        ]),
+
+
+
+                                ]),
+                        ]),
                     /*
                     Tables\Actions\EditAction::make()
                         ->color('warning')
                         ->label('Details')
                         ->icon('heroicon-o-pencil'),
-                    */
                     Tables\Actions\DeleteAction::make(),
                     Tables\Actions\ForceDeleteAction::make(),
                     Tables\Actions\RestoreAction::make(),
+                    */
                 ]),
             ])
             ->bulkActions([
-                Tables\Actions\BulkActionGroup::make([
-                    Tables\Actions\DeleteBulkAction::make(),
-                    Tables\Actions\ForceDeleteBulkAction::make(),
-                    Tables\Actions\RestoreBulkAction::make(),
-                ]),
+                // Tables\Actions\BulkActionGroup::make([
+                //     Tables\Actions\DeleteBulkAction::make(),
+                //     Tables\Actions\ForceDeleteBulkAction::make(),
+                //     Tables\Actions\RestoreBulkAction::make(),
+                // ]),
             ]);
     }
 
