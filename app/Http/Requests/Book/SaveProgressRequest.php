@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\Book;
 
+use App\Enums\RoleEnum;
 use Illuminate\Foundation\Http\FormRequest;
 
 /**
@@ -15,6 +16,16 @@ use Illuminate\Foundation\Http\FormRequest;
  */
 class SaveProgressRequest extends FormRequest
 {
+    /**
+     * Determine if the user is authorized to make this request.
+     *
+     * @return bool
+     */
+    public function authorize(): bool
+    {
+        return $this->user()->hasRole(RoleEnum::STUDENT->value);
+    }
+
     /**
      * Get the validation rules that apply to the request.
      *
