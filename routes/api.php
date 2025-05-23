@@ -17,7 +17,10 @@ Route::prefix('v1')->group(function () {
         });
     });
 
-    Route::middleware('auth:sanctum')->controller(BookController::class)->group(function () {
-        Route::get('books', 'index')->name('books.all');
+    Route::prefix('books')->controller(BookController::class)->group(function () {
+        Route::middleware('auth:sanctum')->group(function () {
+            Route::get('/', 'index')->name('books.all');
+            Route::post('/{book}/progress', 'store')->name('books.saveProgress');
+        });
     });
 });

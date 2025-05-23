@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\V1\Book;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Book\SaveProgressRequest;
 use App\Http\Resources\BookResource;
 use App\Models\Book;
 use Dedoc\Scramble\Attributes\Group;
@@ -35,11 +36,47 @@ class BookController extends Controller
     }
 
     /**
-     * Store a newly created resource in storage.
+     * Save progress
+     *
+     * Store the progress of a book.
+     *
+     * @operationId saveBookProgress
+     * @authenticated
+     * @param SaveProgressRequest $request
+     * @param Book $book
+     *
+     * @return \Illuminate\Http\JsonResponse
      */
-    public function store(Request $request)
+    public function store(SaveProgressRequest $request, Book $book): JsonResponse
     {
-        //
+        try {
+            $user = auth()->user();
+            $group = $user->groups->first();
+            $input = $request->validated();
+
+            // See how many takes the user has
+            $taken = $user
+                ->progress()
+                ->where('book_id', $book->id)
+                ->count();
+
+            $user->progress()->updateOrCreate(
+                ['book_id' => $book->id, 'taken' => $taken + 1], // Ensure unique for each entry
+                [
+                    'group_id' => $group->id ?? null,
+                    'score_correct' => $input['correct'],
+                    'score_incorrect' => $input['incorrect'],
+                    'time_start' => $input['start_at'],
+                    'time_finish' => $input['finish_at'],
+                ]
+            );
+
+            return $this->json(
+                message: 'Book progress updated successfully',
+            );
+        } catch (\Exception $e) {
+            throw $e;
+        }
     }
 
     /**
