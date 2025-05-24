@@ -119,12 +119,61 @@ class BookResource extends Resource
                                                         ->columnSpan(1),
                                                 ])
                                                 ->columnSpan(2),
+                                            Forms\Components\Fieldset::make()
+                                                ->label('Settings')
+                                                ->schema([
+                                                    Forms\Components\Repeater::make('settings')
+                                                        ->label(false)
+                                                        ->relationship('settings')
+                                                        ->schema([
+                                                            Forms\Components\TextInput::make('key')
+                                                                ->label('Key')
+                                                                ->maxLength(50),
+                                                            Forms\Components\Textarea::make('value')
+                                                                ->label('Value')
+                                                                ->rows(3),
+                                                        ])
+                                                        ->columnSpanFull(),
+                                                ]),
                                         ]),
-
-
-
                                 ]),
                         ]),
+                    Tables\Actions\Action::make('settings')
+                        ->color('primary')
+                        ->label('Settings')
+                        ->icon('heroicon-o-cog')
+                        ->form([
+                            Forms\Components\Fieldset::make()
+                                ->label(false)
+                                ->schema([
+                                    Forms\Components\Select::make('key')
+                                        ->label(false)
+                                        ->options([
+                                            'ramdom-word' => 'Random Word',
+                                        ])
+                                        ->required()
+                                        ->placeholder('Select a key to set')
+                                        ->columnSpanFull(),
+                                    Forms\Components\Textarea::make('value')
+                                        ->label('Value')
+                                        ->required()
+                                        ->rows(3)
+                                        ->placeholder('Separated by commas')
+                                        ->columnSpanFull(),
+                                ]),
+                        ])
+                        ->action(function (array $data, Book $record) {
+                            $record->settings()->updateOrCreate(
+                                ['key' => $data['key']],
+                                ['value' => $data['value']]
+                            );
+
+                            \Filament\Notifications\Notification::make()
+                                ->title('Settings Updated')
+                                ->body('The settings for ' . $record->title . ' have been updated.')
+                                ->success()
+                                ->send();
+                        }),
                     /*
                     Tables\Actions\EditAction::make()
                         ->color('warning')
@@ -155,6 +204,7 @@ class BookResource extends Resource
     public static function getEloquentQuery(): Builder
     {
         return parent::getEloquentQuery()
+            ->with('settings')
             ->withoutGlobalScopes([
                 SoftDeletingScope::class,
             ]);
