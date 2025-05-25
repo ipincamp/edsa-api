@@ -16,6 +16,7 @@ class BookSetting extends Model
         'book_id',
         'key',
         'value',
+        'note',
     ];
 
     /**

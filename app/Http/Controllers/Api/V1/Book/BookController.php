@@ -14,6 +14,39 @@ use Illuminate\Http\Request;
 class BookController extends Controller
 {
     /**
+     * Random Word
+     *
+     * Retrieve a random word from the book's settings.
+     *
+     * @param Book $book
+     * @param string $key
+     * @return array
+     */
+    private function randomWord(Book $book, string $key = 'random-word-focus'): array
+    {
+        $words = $book->settings()
+            ->where('key', $key)
+            ->pluck('value')
+            ->toArray();
+
+        if (empty($words)) {
+            return [];
+        }
+
+        $words = array_map('trim', explode(',', $words[0]));
+        $original = $words[array_rand($words)];
+        $random = str_split($original);
+        shuffle($random);
+        $random = implode('', $random);
+        $random = str_split($random);
+
+        return [
+            'original' => $original,
+            'shuffle' => $random,
+        ];
+    }
+
+    /**
      * All books
      *
      * Retrieve all books stored.
@@ -38,7 +71,7 @@ class BookController extends Controller
     /**
      * Save progress
      *
-     * Store the progress of a book.
+     * Store the progress of a book. Then retrieve a random word from the book's settings.
      *
      * @operationId saveBookProgress
      * @authenticated
@@ -71,8 +104,13 @@ class BookController extends Controller
                 ]
             );
 
+            $word = $this->randomWord(book: $book);
+
             return $this->json(
                 message: 'Book progress updated successfully',
+                data: [
+                    'word' => $word,
+                ]
             );
         } catch (\Exception $e) {
             throw $e;
@@ -80,11 +118,28 @@ class BookController extends Controller
     }
 
     /**
-     * Display the specified resource.
+     * Random word other
+     *
+     * Retrieve a random word from the book's settings, specifically for other words.
+     *
+     * @operationId getRandomWordOther
+     * @param Book $book
+     * @return \Illuminate\Http\JsonResponse
      */
-    public function show(Book $book)
+    public function show(Book $book): JsonResponse
     {
-        //
+        try {
+            $word = $this->randomWord(book: $book, key: 'random-word-other');
+
+            return $this->json(
+                message: 'Random word retrieved successfully',
+                data: [
+                    'word' => $word,
+                ]
+            );
+        } catch (\Exception $e) {
+            throw $e;
+        }
     }
 
     /**

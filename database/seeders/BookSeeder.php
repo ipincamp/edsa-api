@@ -13,7 +13,7 @@ class BookSeeder extends Seeder
     public function run(): void
     {
         // book 1
-        \App\Models\Book::create([
+        $book1 = \App\Models\Book::create([
             'title' => 'The Alphabet in the Land of Dewi Sri',
             'author' => 'Miss Ani',
             'year' => 2025,
@@ -21,6 +21,20 @@ class BookSeeder extends Seeder
             'focus' => 'Alphabet',
             'image' => '/book_cover_1.png',
         ]);
+        $book1->settings()->updateOrCreate(
+            ['key' => 'random-word-focus'],
+            [
+                'value' => 'apple,banana,cat,dog,elephant,fish,grape,house,igloo,jar',
+                'note' => 'Words for the focus of the book, used in random word generation.'
+            ],
+        );
+        $book1->settings()->updateOrCreate(
+            ['key' => 'random-word-other'],
+            [
+                'value' => 'ant,ball,car,doll,egg,fan,guitar,hut,ice,jump',
+                'note' => 'Other words for random word generation, not related to the book focus.'
+            ],
+        );
 
         // book 2
         \App\Models\Book::create([

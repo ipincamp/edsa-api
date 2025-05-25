@@ -23,6 +23,15 @@ return new class extends Migration
             $table->timestamps();
             $table->softDeletes();
         });
+
+        Schema::create('book_settings', function (Blueprint $table) {
+            $table->id();
+            $table->foreignId('book_id')->references('id')->on('books')->onDelete('cascade');
+            $table->string('key')->unique();
+            $table->longText('value')->nullable();
+            $table->string('note')->nullable();
+            $table->timestamps();
+        });
     }
 
     /**

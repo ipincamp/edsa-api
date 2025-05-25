@@ -2,7 +2,6 @@
 
 use App\Http\Controllers\Api\V1\Auth\AuthController;
 use App\Http\Controllers\Api\V1\Book\BookController;
-use App\Http\Controllers\Api\V1\Book\RandomWordController;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('v1')->group(function () {
@@ -18,9 +17,6 @@ Route::prefix('v1')->group(function () {
     Route::prefix('books')->controller(BookController::class)->middleware('auth:sanctum')->group(function () {
         Route::get('/', 'index')->name('books.all');
         Route::post('/{book}/progress', 'store')->name('books.saveProgress');
+        Route::get('/{book}/random-word', 'show')->name('books.randomWordOther');
     });
-
-    Route::get('/books/{book}/random-word', RandomWordController::class)
-        ->middleware('auth:sanctum')
-        ->name('books.randomWord');
 });
