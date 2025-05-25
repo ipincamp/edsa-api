@@ -96,7 +96,7 @@ class UserResource extends JsonResource
             'description' => $group->course->description,
         ]);
 
-        return $this->getRole() === RoleEnum::STUDENT->value ? $courses->first() : $courses;
+        return $this->getRole() === RoleEnum::STUDENT->value ? ($courses->first() ?? []) : $courses->toArray();
     }
 
     /**
@@ -112,7 +112,7 @@ class UserResource extends JsonResource
             'description' => $group->description,
         ]);
 
-        return $this->getRole() === RoleEnum::STUDENT->value ? $classes->first() : $classes;
+        return $this->getRole() === RoleEnum::STUDENT->value ? ($classes->first() ?? []) : $classes;
     }
 
     /**
