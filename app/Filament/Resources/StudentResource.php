@@ -216,6 +216,7 @@ class StudentResource extends Resource
     {
         return [
             'index' => Pages\ManageStudents::route('/'),
+            'progress' => Pages\StudentProgress::route('/progress'),
         ];
     }
 

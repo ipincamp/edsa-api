@@ -15,6 +15,9 @@ class ManageStudents extends ManageRecords
     protected function getHeaderActions(): array
     {
         return [
+            Actions\Action::make('book_progress')
+                ->label('Progress')
+                ->url(fn() => StudentResource::getUrl('progress')),
             Actions\CreateAction::make()
                 ->after(function ($record) {
                     $record->roles()->attach(
