@@ -24,11 +24,11 @@ return new class extends Migration
             $table->softDeletes();
         });
 
-        Schema::create('book_settings', function (Blueprint $table) {
+        Schema::create('book_images', function (Blueprint $table) {
             $table->id();
             $table->foreignId('book_id')->references('id')->on('books')->onDelete('cascade');
-            $table->string('key')->unique();
-            $table->longText('value')->nullable();
+            $table->string('path');
+            $table->string('name')->unique();
             $table->string('note')->nullable();
             $table->timestamps();
         });
@@ -40,5 +40,6 @@ return new class extends Migration
     public function down(): void
     {
         Schema::dropIfExists('books');
+        Schema::dropIfExists('book_images');
     }
 };

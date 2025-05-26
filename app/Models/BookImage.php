@@ -5,7 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
-class BookSetting extends Model
+class BookImage extends Model
 {
     /**
      * The attributes that are mass assignable.
@@ -14,8 +14,8 @@ class BookSetting extends Model
      */
     protected $fillable = [
         'book_id',
-        'key',
-        'value',
+        'path',
+        'name',
         'note',
     ];
 

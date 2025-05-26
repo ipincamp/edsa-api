@@ -26,14 +26,14 @@ class Book extends Model
     ];
 
     /**
-     * Get all of the settings for the Book
+     * Get all of the images for the Book
      *
      * @return \Illuminate\Database\Eloquent\Relations\HasMany
      */
-    public function settings(): HasMany
+    public function images(): HasMany
     {
         return $this->hasMany(
-            BookSetting::class,
+            BookImage::class,
             'book_id',
             'id',
         );
