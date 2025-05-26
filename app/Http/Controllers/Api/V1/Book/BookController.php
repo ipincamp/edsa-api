@@ -19,31 +19,39 @@ class BookController extends Controller
      * Retrieve a random word from the book's settings.
      *
      * @param Book $book
-     * @param string $key
      * @return array
      */
-    private function randomWord(Book $book, string $key = 'random-word-focus'): array
+    private function randomWord(Book $book): array
     {
-        $words = $book->settings()
-            ->where('key', $key)
-            ->pluck('value')
-            ->toArray();
+        $words = $book->images()->pluck('name')->toArray();
 
-        if (empty($words)) {
+        if (count($words) < 4) {
             return [];
         }
 
-        $words = array_map('trim', explode(',', $words[0]));
-        $original = $words[array_rand($words)];
-        $random = str_split($original);
-        shuffle($random);
-        $random = implode('', $random);
-        $random = str_split($random);
+        $selectedWords = [];
+        $usedIndexes = [];
 
-        return [
-            'original' => $original,
-            'shuffle' => $random,
-        ];
+        while (count($selectedWords) < 4) {
+            $index = array_rand($words);
+
+            if (!in_array($index, $usedIndexes)) {
+                $original = $words[$index];
+                $random = str_split($original);
+                shuffle($random);
+                $random = implode('', $random);
+                $random = str_split($random);
+
+                $selectedWords[] = [
+                    'original' => $original,
+                    'shuffle' => $random,
+                ];
+
+                $usedIndexes[] = $index;
+            }
+        }
+
+        return $selectedWords;
     }
 
     /**
@@ -108,9 +116,7 @@ class BookController extends Controller
 
             return $this->json(
                 message: 'Book progress updated successfully',
-                data: [
-                    'word' => $word,
-                ]
+                data: $word,
             );
         } catch (\Exception $e) {
             throw $e;
@@ -129,13 +135,11 @@ class BookController extends Controller
     public function show(Book $book): JsonResponse
     {
         try {
-            $word = $this->randomWord(book: $book, key: 'random-word-other');
+            $word = $this->randomWord(book: $book);
 
             return $this->json(
                 message: 'Random word retrieved successfully',
-                data: [
-                    'word' => $word,
-                ]
+                data: $word,
             );
         } catch (\Exception $e) {
             throw $e;
