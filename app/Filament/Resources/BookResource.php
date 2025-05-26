@@ -119,66 +119,63 @@ class BookResource extends Resource
                                                         ->columnSpan(1),
                                                 ])
                                                 ->columnSpan(2),
-                                            Forms\Components\Fieldset::make()
-                                                ->label('Settings')
+                                            Forms\Components\Repeater::make('images')
+                                                ->label('Random Words')
+                                                ->relationship('images')
                                                 ->schema([
-                                                    Forms\Components\Repeater::make('settings')
-                                                        ->label(false)
-                                                        ->relationship('settings')
+                                                    Forms\Components\Section::make(fn($record) => $record->name)
                                                         ->schema([
-                                                            Forms\Components\TextInput::make('key')
-                                                                ->label('Key')
-                                                                ->maxLength(50),
-                                                            Forms\Components\Textarea::make('value')
-                                                                ->label('Value')
-                                                                ->rows(3),
-                                                        ])
-                                                        ->columnSpanFull(),
-                                                ]),
+                                                            Forms\Components\FileUpload::make('path')
+                                                                ->label(false)
+                                                                ->avatar()
+                                                                ->alignment('center'),
+                                                        ]),
+                                                ])
+                                                ->grid(4)
+                                                ->columnSpanFull(),
                                         ]),
                                 ]),
                         ]),
-                    Tables\Actions\Action::make('settings')
-                        ->color('primary')
-                        ->label('Settings')
-                        ->icon('heroicon-o-cog')
+                    Tables\Actions\EditAction::make('editRandomWord')
+                        ->color('warning')
+                        ->label('Random Words')
+                        ->icon('heroicon-o-pencil')
                         ->form([
                             Forms\Components\Fieldset::make()
                                 ->label(false)
                                 ->schema([
-                                    Forms\Components\Select::make('key')
-                                        ->label(false)
-                                        ->options([
-                                            'ramdom-word' => 'Random Word',
-                                        ])
-                                        ->required()
-                                        ->placeholder('Select a key to set')
-                                        ->columnSpanFull(),
-                                    Forms\Components\Textarea::make('value')
-                                        ->label('Value')
-                                        ->required()
-                                        ->rows(3)
-                                        ->placeholder('Separated by commas')
-                                        ->columnSpanFull(),
+                                    Forms\Components\Grid::make(4)
+                                        ->schema([
+                                            Forms\Components\Repeater::make('images')
+                                                ->label('Random Words')
+                                                ->relationship('images')
+                                                ->schema([
+                                                    Forms\Components\FileUpload::make('path')
+                                                        ->required()
+                                                        ->label('Image')
+                                                        ->image()
+                                                        ->visibility('public')
+                                                        ->placeholder('Upload an image for the word'),
+                                                    Forms\Components\TextInput::make('name')
+                                                        ->required()
+                                                        ->label('Word')
+                                                        ->maxLength(15)
+                                                        ->placeholder('Enter the word'),
+                                                ])
+                                                ->grid(4)
+                                                ->columnSpanFull()
+                                                ->addActionLabel('Add More Words'),
+                                        ]),
                                 ]),
                         ])
                         ->action(function (array $data, Book $record) {
-                            $record->settings()->updateOrCreate(
-                                ['key' => $data['key']],
-                                ['value' => $data['value']]
-                            );
-
                             \Filament\Notifications\Notification::make()
-                                ->title('Settings Updated')
-                                ->body('The settings for ' . $record->title . ' have been updated.')
+                                ->title('Random Word Updated')
+                                ->body('Random words for ' . $record->title . ' have been updated.')
                                 ->success()
                                 ->send();
                         }),
                     /*
-                    Tables\Actions\EditAction::make()
-                        ->color('warning')
-                        ->label('Details')
-                        ->icon('heroicon-o-pencil'),
                     Tables\Actions\DeleteAction::make(),
                     Tables\Actions\ForceDeleteAction::make(),
                     Tables\Actions\RestoreAction::make(),
@@ -204,7 +201,7 @@ class BookResource extends Resource
     public static function getEloquentQuery(): Builder
     {
         return parent::getEloquentQuery()
-            ->with('settings')
+            ->with('images')
             ->withoutGlobalScopes([
                 SoftDeletingScope::class,
             ]);
