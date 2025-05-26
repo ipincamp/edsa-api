@@ -203,11 +203,13 @@ return [
          * Define excluded_models
          */
         'excluded_models' => [
-            //
+            \App\Models\BookImage::class,
+            \App\Models\StudentProgress::class,
         ],
 
         'excluded_policy_models' => [
-            //
+            \App\Models\BookImage::class,
+            \App\Models\StudentProgress::class,
         ],
 
         /*
