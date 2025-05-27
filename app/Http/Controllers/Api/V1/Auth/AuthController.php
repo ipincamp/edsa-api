@@ -288,6 +288,7 @@ class AuthController extends Controller
     {
         try {
             auth()->guard('web')->logout();
+            $request->user()->currentAccessToken()->delete();
 
             activity('auth api')
                 ->performedOn($request->user())
