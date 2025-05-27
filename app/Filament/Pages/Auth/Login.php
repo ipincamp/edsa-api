@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Filament\Auth;
+namespace App\Filament\Pages\Auth;
 
 use Filament\Forms\Form;
 use Filament\Forms\Components\TextInput;
