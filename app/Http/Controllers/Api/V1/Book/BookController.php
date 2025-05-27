@@ -23,7 +23,7 @@ class BookController extends Controller
      */
     private function randomWord(Book $book): array
     {
-        $words = $book->images()->pluck('name')->toArray();
+        $words = $book->images()->get(['name', 'path'])->toArray();
 
         if (count($words) < 4) {
             return [];
@@ -36,13 +36,15 @@ class BookController extends Controller
             $index = array_rand($words);
 
             if (!in_array($index, $usedIndexes)) {
-                $original = $words[$index];
+                $original = $words[$index]['name'];
+                $path = $words[$index]['path'];
                 $random = str_split($original);
                 shuffle($random);
                 $random = implode('', $random);
                 $random = str_split($random);
 
                 $selectedWords[] = [
+                    'image' => config('app.url') . '/assets' . $path,
                     'original' => $original,
                     'shuffle' => $random,
                 ];
