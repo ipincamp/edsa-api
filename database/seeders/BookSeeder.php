@@ -19,7 +19,7 @@ class BookSeeder extends Seeder
             'year' => 2025,
             'genre' => 'Fiction',
             'focus' => 'Alphabet',
-            'image' => '/book_cover_1.png',
+            'image' => '/cover1.png',
         ]);
 
         // book 2
@@ -29,28 +29,27 @@ class BookSeeder extends Seeder
             'year' => 2025,
             'genre' => 'Fiction',
             'focus' => 'Number',
-            'image' => '/book_cover_2.png',
+            'image' => '/cover2.png',
         ]);
 
         // book 3
         \App\Models\Book::create([
-            'title' => '1984',
-            'author' => 'George Orwell',
-            'year' => 1949,
-            'genre' => 'Dystopian',
-            'focus' => 'Alphabet',
-            'image' => '/default.jpg',
+            'title' => 'Bawang Putih and the Kind Body Parts',
+            'author' => 'Miss Ani',
+            'year' => 2025,
+            'genre' => 'Fiction',
+            'focus' => 'Body Parts',
+            'image' => '/cover3.png',
         ]);
 
         // book 4
         \App\Models\Book::create([
-            'title' => 'Pride and Prejudice',
-            'author' => 'Jane Austen',
-            'year' => 1813,
-            'genre' => 'Romance',
-            'focus' => 'Alphabet',
-            'status' => false,
-            'image' => '/default.jpg',
+            'title' => 'The Big Mango Tree and the Family of Five',
+            'author' => 'Miss Ani',
+            'year' => 2025,
+            'genre' => 'Fiction',
+            'focus' => 'Family',
+            'image' => '/cover4.png',
         ]);
 
         // book 5
