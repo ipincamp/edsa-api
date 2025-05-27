@@ -154,6 +154,7 @@ class BookResource extends Resource
                                                         ->required()
                                                         ->label('Image')
                                                         ->image()
+                                                        ->directory('image/book/word')
                                                         ->visibility('public')
                                                         ->placeholder('Upload an image for the word'),
                                                     Forms\Components\TextInput::make('name')

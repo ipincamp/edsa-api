@@ -19,7 +19,31 @@ class BookSeeder extends Seeder
             'year' => 2025,
             'genre' => 'Fiction',
             'focus' => 'Alphabet',
-            'image' => '/cover1.png',
+            'image' => '/image/book/cover1.png',
+        ]);
+        $book1->images()->create([
+            'path' => '/image/book/word/andong.png',
+            'name' => 'ANDONG',
+        ]);
+        $book1->images()->create([
+            'path' => '/image/book/word/candi.png',
+            'name' => 'CANDI',
+        ]);
+        $book1->images()->create([
+            'path' => '/image/book/word/dewa.png',
+            'name' => 'DEWA',
+        ]);
+        $book1->images()->create([
+            'path' => '/image/book/word/gong.png',
+            'name' => 'GONG',
+        ]);
+        $book1->images()->create([
+            'path' => '/image/book/word/ikan.png',
+            'name' => 'IKAN',
+        ]);
+        $book1->images()->create([
+            'path' => '/image/book/word/mangga.png',
+            'name' => 'MANGGA',
         ]);
 
         // book 2
@@ -29,7 +53,7 @@ class BookSeeder extends Seeder
             'year' => 2025,
             'genre' => 'Fiction',
             'focus' => 'Number',
-            'image' => '/cover2.png',
+            'image' => '/image/book/cover2.png',
         ]);
 
         // book 3
@@ -39,7 +63,7 @@ class BookSeeder extends Seeder
             'year' => 2025,
             'genre' => 'Fiction',
             'focus' => 'Body Parts',
-            'image' => '/cover3.png',
+            'image' => '/image/book/cover3.png',
         ]);
 
         // book 4
@@ -49,7 +73,7 @@ class BookSeeder extends Seeder
             'year' => 2025,
             'genre' => 'Fiction',
             'focus' => 'Family',
-            'image' => '/cover4.png',
+            'image' => '/image/book/cover4.png',
         ]);
 
         // book 5
@@ -60,7 +84,7 @@ class BookSeeder extends Seeder
             'genre' => 'Adventure',
             'focus' => 'Alphabet',
             'status' => false,
-            'image' => '/default.jpg',
+            'image' => '/image/book/default.jpg',
         ]);
 
         // book 6
@@ -71,7 +95,7 @@ class BookSeeder extends Seeder
             'genre' => 'Historical',
             'focus' => 'Alphabet',
             'status' => false,
-            'image' => '/default.jpg',
+            'image' => '/image/book/default.jpg',
         ]);
 
         // book 7
@@ -82,7 +106,7 @@ class BookSeeder extends Seeder
             'genre' => 'Comedy',
             'focus' => 'Number',
             'status' => false,
-            'image' => '/default.jpg',
+            'image' => '/image/book/default.jpg',
         ]);
 
         // book 8
@@ -93,7 +117,7 @@ class BookSeeder extends Seeder
             'genre' => 'Tragedy',
             'focus' => 'Alphabet',
             'status' => false,
-            'image' => '/default.jpg',
+            'image' => '/image/book/default.jpg',
         ]);
     }
 }
