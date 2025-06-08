@@ -25,6 +25,22 @@ The API is built using Laravel 12 and follows RESTful principles. It provides en
 - MySQL
 - Node.js and npm (for frontend assets)
 
+## Running on Docker
+
+- Select stage of `docker-compose.yml` inside *docker/docker-compose*
+```js
+development.yml // for development stage
+
+production.yml // for production stage
+```
+
+- Copy and paste in root project directory, then rename to `docker-compose.yml`
+
+- Build the image:
+```bash
+docker compose up -d --build
+```
+
 ## Installation
 
 > **Note:** This project is a work in progress and may not be fully functional.
@@ -36,13 +52,6 @@ git clone https://github.com/ipincamp/laravel-12-edsa-api.git
 cd laravel-12-edsa-api
 ```
 
-- Install dependencies:
-
-```bash
-composer install
-npm install
-```
-
 - Copy the `.env.example` file to `.env` and update the database configuration:
 
 ```bash
@@ -51,22 +60,14 @@ cp .env.example .env
 
 - Fill in the `.env` file with your database credentials and other environment variables.
 
-- Generate the application key:
-
+- For development stage:
 ```bash
-php artisan key:generate
+composer run dev-setup
 ```
 
-- Run the migrations and seed the database:
-
+- For production stage:
 ```bash
-php artisan migrate --seed
-```
-
-- Start the development server:
-
-```bash
-php artisan serve
+composer run pro-setup
 ```
 
 - Endpoints:
