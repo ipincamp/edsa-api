@@ -1,51 +1,37 @@
 services:
-  edsa_laravel:
+  app:
     build:
       context: .
       dockerfile: Dockerfile
       args:
         - user=${APP_USER}
         - uid=${APP_UID}
-    container_name: edsa_be_app
+    container_name: edsa_laravel
     restart: unless-stopped
     working_dir: /var/www/
     environment:
-      - DB_HOST=edsa_mariadb
+      - DB_HOST=${DB_HOST}
+      - DB_PORT=${DB_PORT}
       - DB_DATABASE=${DB_DATABASE}
       - DB_USERNAME=${DB_USERNAME}
       - DB_PASSWORD=${DB_PASSWORD}
     volumes:
       - ./:/var/www/
     networks:
-      - edsa_network
-  edsa_mariadb:
-    image: mariadb:10.11.13-jammy
-    container_name: edsa_be_db
-    restart: unless-stopped
-    environment:
-      - MYSQL_ROOT_PASSWORD=${DB_PASSWORD}
-      - MYSQL_DATABASE=${DB_DATABASE}
-      - MYSQL_USER=${DB_USERNAME}
-      - MYSQL_PASSWORD=${DB_PASSWORD}
-    volumes:
-      - db_edsa:/var/lib/mysql
-    networks:
-      - edsa_network
-  edsa_nginx:
+      - edsa
+  dash:
     image: nginx:1.28.0-alpine
-    container_name: edsa_be_web
+    container_name: edsa_dashboard
     restart: unless-stopped
     volumes:
       - ./:/var/www/
       - ./docker/nginx:/etc/nginx/conf.d
     networks:
-      - edsa_network
+      - edsa
     ports:
       - "80:80"
     depends_on:
-      - edsa_laravel
+      - app
 networks:
-  edsa_network:
+  edsa:
     driver: bridge
-volumes:
-  db_edsa:
