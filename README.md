@@ -74,6 +74,16 @@ composer run pro-setup
   - API: `http://localhost:8000/api/v1`
   - Web: `http://localhost:8000`
 
+## Additional Setup for Docker
+- If you are running the application in a Docker container, you may need to set the correct permissions for the storage and bootstrap/cache directories:
+
+```bash
+sudo chown -R $USER:$USER api
+cd api
+sudo chown -R www-data:www-data storage bootstrap/cache
+sudo chmod -R 755 storage bootstrap/cache
+```
+
 ## License
 
 This project is closed-sourced software licensed under the [MIT license](LICENSE).

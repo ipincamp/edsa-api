@@ -1,66 +1,47 @@
 services:
   app:
+    image: edsa:1.0.0-api
     build:
       context: .
-      dockerfile: Dockerfile
-      args:
-        - user=${APP_USER}
-        - uid=${APP_UID}
+      dockerfile: docker/php/Dockerfile
     container_name: edsa_laravel
     restart: unless-stopped
-    working_dir: /var/www/
-    environment:
-      - DB_HOST=db
-      - DB_DATABASE=${DB_DATABASE}
-      - DB_USERNAME=${DB_USERNAME}
-      - DB_PASSWORD=${DB_PASSWORD}
     volumes:
-      - ./:/var/www/
+      - ./api:/var/www/html
+    ports:
+      - "8000:80"
+    environment:
+      DB_CONNECTION: ${DB_CONNECTION:-mysql}
+      DB_HOST: ${DB_HOST:-db}
+      DB_PORT: ${DB_PORT:-3306}
+      DB_DATABASE: ${DB_DATABASE:-db_edsa}
+      DB_USERNAME: ${DB_USERNAME:-laravel}
+      DB_PASSWORD: ${DB_PASSWORD:-secret}
+    depends_on:
+      - db
     networks:
       - edsa
   db:
-    image: mariadb:10.11.13-jammy
+    image: mariadb:10.11.13
     container_name: edsa_db
     restart: unless-stopped
     environment:
-      - MYSQL_ROOT_PASSWORD=${DB_PASSWORD}
-      - MYSQL_DATABASE=${DB_DATABASE}
-      - MYSQL_USER=${DB_USERNAME}
-      - MYSQL_PASSWORD=${DB_PASSWORD}
-    volumes:
-      - db_edsa:/var/lib/mysql
-    networks:
-      - edsa
-  pma:
-    image: phpmyadmin:5.2.2-apache
-    container_name: edsa_phpmyadmin
-    restart: unless-stopped
-    environment:
-      - PMA_HOST=db
-      - PMA_PORT=3306
-      - PMA_USER=${DB_USERNAME}
-      - PMA_PASSWORD=${DB_PASSWORD}
-    networks:
-      - edsa
+      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD:-secret}
+      MYSQL_DATABASE: ${DB_DATABASE:-db_edsa}
+      MYSQL_USER: ${DB_USERNAME:-laravel}
+      MYSQL_PASSWORD: ${DB_PASSWORD:-secret}
     ports:
-      - "8080:80"
-    depends_on:
-      - db
-  dash:
-    image: nginx:1.28.0-alpine
-    container_name: edsa_dashboard
-    restart: unless-stopped
+      - ${DB_PORT:-3306}:3306
     volumes:
-      - ./:/var/www/
-      - ./docker/nginx:/etc/nginx/conf.d
+      - ./db_edsa:/var/lib/mysql
     networks:
       - edsa
-    ports:
-      - "8000:80"
-    depends_on:
-      - app
+    healthcheck:
+      test: [ "CMD", "mysqladmin", "ping", "-h", "localhost" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 networks:
   edsa:
-    driver: bridge
 volumes:
   db_edsa:
