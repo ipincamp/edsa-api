@@ -22,6 +22,7 @@ class BookSeeder extends Seeder
         $this->createDewiSriBook();
         $this->createTenHillsBook();
         $this->createBawangPutihBook();
+        $this->createFamilyTreeBook();
     }
 
     /**
@@ -305,6 +306,90 @@ class BookSeeder extends Seeder
                     ['part' => 'eyes', 'verbs' => ['see', 'close', 'open']],
                     ['part' => 'ears', 'verbs' => ['hear', 'listen']],
                     ['part' => 'heart', 'verbs' => ['feel']],
+                ]
+            ],
+        ]);
+    }
+
+    /**
+     * Membuat data untuk buku "The Big Mango Tree and the Family of Five".
+     */
+    private function createFamilyTreeBook(): void
+    {
+        $book4 = Book::create([
+            'title' => 'The Big Mango Tree and the Family of Five',
+            'author' => 'Miss Ani',
+            'year' => '2025',
+            'genre' => 'Fiction',
+            'focus' => 'Family',
+            'status' => 'draft',
+            'cover_image' => 'https://placehold.co/400x600/FFD54F/FFFFFF?text=The+Big+Mango+Tree',
+            'order_sequence' => 4,
+        ]);
+
+        // Halaman 1
+        $page1 = Page::create(['book_id' => $book4->id, 'page_number' => 1, 'content' => 'Once upon a time, in a peaceful village, there stood a big, old mango tree at the centre of a small yard. Under its shade lived a loving family of five: Father, Mother, Brother, Sister, and Baby.']);
+        Interaction::create(['page_id' => $page1->id, 'type' => 'drag_to_silhouette', 'data' => ['instruction' => 'Drag the people to the right place!', 'members' => ['Father', 'Mother', 'Brother', 'Sister', 'Baby']], 'points' => 10]);
+
+        // Halaman 2
+        Page::create(['book_id' => $book4->id, 'page_number' => 2, 'content' => 'One day, the tree spoke to them for the very first time. “Your family is like my five strong branches,” it said. “Each of you has a special role, and together you make your home happy and strong. Let me show you.”']);
+
+        // Halaman 3 (Father)
+        $page3 = Page::create(['book_id' => $book4->id, 'page_number' => 3, 'content' => 'The Father stepped forward, curious. “You are the tallest branch,” the tree said. “You stand strong to protect everyone. Can you tell me how you care for your family?”...']);
+        Interaction::create(['page_id' => $page3->id, 'type' => 'arrange_letters', 'data' => ['instruction' => 'Put these letters to write “father”!', 'word' => 'FATHER'], 'points' => 10]);
+
+        // Halaman 4 (Mother)
+        $page4 = Page::create(['book_id' => $book4->id, 'page_number' => 4, 'content' => 'The Mother placed her hand on the tree. “You are my steady middle branch,” said the tree. “You hold everything together and bring life to the family. What do you do for your family?”...']);
+        Interaction::create(['page_id' => $page4->id, 'type' => 'arrange_letters', 'data' => ['instruction' => 'Put these letters to write “mother”!', 'word' => 'MOTHER'], 'points' => 10]);
+
+        // Halaman 5 (Brother)
+        $page5 = Page::create(['book_id' => $book4->id, 'page_number' => 5, 'content' => 'The Brother came next. “You are a sturdy side branch,” the tree said. “You are growing strong and learning to help. What do you do for your family?”...']);
+        Interaction::create(['page_id' => $page5->id, 'type' => 'arrange_letters', 'data' => ['instruction' => 'Put these letters to write “brother”!', 'word' => 'BROTHER'], 'points' => 10]);
+
+        // Halaman 6 (Sister)
+        $page6 = Page::create(['book_id' => $book4->id, 'page_number' => 6, 'content' => 'The Sister gently touched the tree. “You are my graceful young branch,” the tree said. “You bring beauty and joy to the family. How do you help at home?”...']);
+        Interaction::create(['page_id' => $page6->id, 'type' => 'arrange_letters', 'data' => ['instruction' => 'Put these letters to write “sister”!', 'word' => 'SISTER'], 'points' => 10]);
+
+        // Halaman 7 (Baby)
+        $page7 = Page::create(['book_id' => $book4->id, 'page_number' => 7, 'content' => 'Finally, little Baby toddled up to the tree, giggling. “And you,” said the tree, “are my smallest branch. You are still growing, but you remind everyone of the joy of life. What do you do?”...']);
+        Interaction::create(['page_id' => $page7->id, 'type' => 'arrange_letters', 'data' => ['instruction' => 'Put these letters to write “baby”!', 'word' => 'BABY'], 'points' => 10]);
+
+        // Halaman 8 & 9 (Narasi Akhir)
+        Page::create(['book_id' => $book4->id, 'page_number' => 8, 'content' => 'The tree looked at the family of five and said, “Each of you is like a part of me, and together, you make your family strong and full of love. Always care for one another, and you will grow as tall and strong as I have.”']);
+        Page::create(['book_id' => $book4->id, 'page_number' => 9, 'content' => 'From that day on, the family of five loved and appreciated each other even more. They sat under the mango tree every evening, sharing stories, laughter, and dreams. Knowing that together, they were unstoppable.']);
+
+        // Post-Activity 1 (Slide 10)
+        PostActivity::create([
+            'book_id' => $book4->id,
+            'type' => 'tap_the_member',
+            'order' => 1,
+            'points' => 15,
+            'data' => ['instruction' => 'Tap the family member mentioned!', 'members' => ['father', 'mother', 'brother', 'sister', 'baby']],
+        ]);
+
+        // Post-Activity 2 (Slide 11)
+        PostActivity::create([
+            'book_id' => $book4->id,
+            'type' => 'family_tree_drag',
+            'order' => 2,
+            'points' => 15,
+            'data' => ['instruction' => 'Drag the family member into the right place!', 'members' => ['father', 'mother', 'brother', 'sister', 'baby']],
+        ]);
+
+        // Post-Activity 3 (Slide 12)
+        PostActivity::create([
+            'book_id' => $book4->id,
+            'type' => 'match_member_to_task',
+            'order' => 3,
+            'points' => 20,
+            'data' => [
+                'instruction' => 'Match the pictures with the right family member!',
+                'tasks' => [
+                    ['member' => 'Father', 'task_list' => ['work in the field', 'build a safe home']],
+                    ['member' => 'Mother', 'task_list' => ['cook meals', 'care for everyone', 'keep our home warm']],
+                    ['member' => 'Brother', 'task_list' => ['help Father', 'carry water']],
+                    ['member' => 'Sister', 'task_list' => ['take care of Baby', 'sing songs']],
+                    ['member' => 'Baby', 'task_list' => ['make everyone smile']],
                 ]
             ],
         ]);
