@@ -17,9 +17,19 @@ class PostActivity extends Model
      */
     protected $fillable = [
         'book_id',
-        'image_url',
-        'scrambled_word',
-        'correct_answer',
+        'type',
+        'data',
+        'order',
+        'points',
+    ];
+
+    /**
+     * The attributes that should be cast to native types.
+     *
+     * @var array<string, string>
+     */
+    protected $casts = [
+        'data' => 'array',
     ];
 
     /**

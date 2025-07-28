@@ -34,13 +34,14 @@ class Book extends Model
     }
 
     /**
-     * Get the postActivity associated with the Book
+     * Get all of the postActivities for the Book
      *
-     * @return \Illuminate\Database\Eloquent\Relations\HasOne
+     * @return \Illuminate\Database\Eloquent\Relations\HasMany
      */
-    public function postActivity(): HasOne
+    public function postActivities(): HasMany
     {
-        return $this->hasOne(PostActivity::class);
+        return $this->hasMany(PostActivity::class)
+            ->orderBy('order', 'asc');
     }
 
     /**
