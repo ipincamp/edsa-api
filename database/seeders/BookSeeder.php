@@ -20,6 +20,11 @@ class BookSeeder extends Seeder
         // === BUKU 1: The Alphabet in the Land of Dewi Sri ===
         $book = Book::create([
             'title' => 'The Alphabet in the Land of Dewi Sri',
+            'author' => 'Miss Ani',
+            'year' => '2025',
+            'genre' => 'Fiction',
+            'focus' => 'Alphabet',
+            'status' => 'published',
             'cover_image' => 'https://placehold.co/400x600/81C784/FFFFFF?text=Dewi+Sri',
             'order_sequence' => 1,
         ]);
