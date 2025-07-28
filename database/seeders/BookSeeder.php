@@ -21,6 +21,7 @@ class BookSeeder extends Seeder
         // Panggil method untuk membuat setiap buku
         $this->createDewiSriBook();
         $this->createTenHillsBook();
+        $this->createBawangPutihBook();
     }
 
     /**
@@ -227,6 +228,84 @@ class BookSeeder extends Seeder
                 'instruction' => 'Put the number on the mountains orderly!',
                 'range_start' => 1,
                 'range_end' => 10,
+            ],
+        ]);
+    }
+
+    /**
+     * Membuat data untuk buku "Bawang Putih and the Kind Body Parts".
+     */
+    private function createBawangPutihBook(): void
+    {
+        $book3 = Book::create([
+            'title' => 'Bawang Putih and the Kind Body Parts',
+            'author' => 'Miss Ani',
+            'year' => '2025',
+            'genre' => 'Moral Folklore',
+            'focus' => 'Body Parts',
+            'status' => 'draft',
+            'cover_image' => 'https://placehold.co/400x600/D8BFD8/FFFFFF?text=Bawang+Putih',
+            'order_sequence' => 3,
+        ]);
+
+        // Halaman 1 - 4 (Narasi)
+        Page::create(['book_id' => $book3->id, 'page_number' => 1, 'content' => 'Once upon a time, in a peaceful village, there lived a kind-hearted girl named Bawang Putih. She was hardworking and loved helping others.']);
+        Page::create(['book_id' => $book3->id, 'page_number' => 2, 'content' => 'One day, while washing clothes by the river, her favourite scarf slipped into the water and disappeared. As she tried to reach it, an old woman appeared from the woods.']);
+        Page::create(['book_id' => $book3->id, 'page_number' => 3, 'content' => '“Bawang Putih,” said the old woman with a kind smile, “I will return your scarf, but only if you visit my house and learn the secrets of your body parts.”']);
+        Page::create(['book_id' => $book3->id, 'page_number' => 4, 'content' => 'Curious and respectful, Bawang Putih followed the old woman to her cozy little hut. Inside, the old woman brought out a magical mirror. “Look into this mirror,” she said, “and your body will tell you its secrets.”']);
+
+        // Halaman 5 (Hands)
+        $page5 = Page::create(['book_id' => $book3->id, 'page_number' => 5, 'content' => 'First, Bawang Putih’s Hands spoke. “We are your Hands, Bawang Putih. We help you carry baskets, sew clothes, and plant rice. But we also love to help others! Can you clap your Hands to show us you’re ready to help?”...']);
+        Interaction::create(['page_id' => $page5->id, 'type' => 'tap_body_part', 'data' => ['instruction' => 'Touch my hands!', 'body_part' => 'hands', 'tap_count' => 2, 'sound' => 'hand'], 'points' => 10]);
+
+        // Halaman 6 (Feet)
+        $page6 = Page::create(['book_id' => $book3->id, 'page_number' => 6, 'content' => 'Next, her Feet tapped gently. “We are your Feet! We carry you to the market, the fields, and the river. But remember, we also love to dance when you’re happy! Can you stomp your Feet with joy?”...']);
+        Interaction::create(['page_id' => $page6->id, 'type' => 'tap_body_part', 'data' => ['instruction' => 'Touch my feet!', 'body_part' => 'feet', 'tap_count' => 1, 'sound' => 'feet'], 'points' => 10]);
+
+        // Halaman 7 (Eyes)
+        $page7 = Page::create(['book_id' => $book3->id, 'page_number' => 7, 'content' => 'Her Eyes sparkled in the mirror. “Bawang Putih, we are your Eyes. We help you see the beauty of the sunrise, the flowing river, and the faces of those you love. Close us sometimes to rest so we can stay strong!”...']);
+        Interaction::create(['page_id' => $page7->id, 'type' => 'tap_body_part', 'data' => ['instruction' => 'Touch my eyes!', 'body_part' => 'eyes', 'tap_count' => 2, 'sound' => 'eye'], 'points' => 10]);
+
+        // Halaman 8 (Ears)
+        $page8 = Page::create(['book_id' => $book3->id, 'page_number' => 8, 'content' => 'Her Ears perked up. “We are your Ears! We let you hear the laughter of children, the songs of birds, and the advice of elders. Always listen carefully to the sounds of the world. Can you touch your ears?”...']);
+        Interaction::create(['page_id' => $page8->id, 'type' => 'tap_body_part', 'data' => ['instruction' => 'Touch my ears!', 'body_part' => 'ears', 'tap_count' => 2, 'sound' => 'ear'], 'points' => 10]);
+
+        // Halaman 9 (Heart)
+        $page9 = Page::create(['book_id' => $book3->id, 'page_number' => 9, 'content' => 'The Heart in her chest glowed warmly. “I am your Heart, Bawang Putih. I help you feel kindness and courage. Keep me healthy by sharing love and avoiding anger. Place your hands on your chest to feel your heart inside!”...']);
+        Interaction::create(['page_id' => $page9->id, 'type' => 'tap_body_part', 'data' => ['instruction' => 'Touch my heart!', 'body_part' => 'heart', 'tap_count' => 1, 'sound' => 'heart'], 'points' => 10]);
+
+        // Halaman 10 - 12 (Narasi Akhir)
+        Page::create(['book_id' => $book3->id, 'page_number' => 10, 'content' => 'After learning about her body parts, the old woman returned Bawang Putih’s scarf and handed her a golden box. “Inside this box is a gift for your kindness and for understanding the wonders of your body,” she said.']);
+        Page::create(['book_id' => $book3->id, 'page_number' => 11, 'content' => 'When Bawang Putih opened the box at home, it was filled with fruits and sweets that never ran out, a blessing for her hardworking spirit.']);
+        Page::create(['book_id' => $book3->id, 'page_number' => 12, 'content' => 'From that day on, Bawang Putih used her body parts with gratitude, helping her neighbours, dancing at village festivals, and planting more rice fields. She shared her golden gift with everyone, spreading kindness throughout the village. The End.']);
+
+        // Post-Activity 1 (dari Slide 13)
+        PostActivity::create([
+            'book_id' => $book3->id,
+            'type' => 'label_body_parts',
+            'order' => 1,
+            'points' => 20,
+            'data' => [
+                'instruction' => 'Name the body parts correctly!',
+                'parts' => ['hands', 'feet', 'eyes', 'ears', 'heart']
+            ],
+        ]);
+
+        // Post-Activity 2 (dari Slide 14)
+        PostActivity::create([
+            'book_id' => $book3->id,
+            'type' => 'group_verbs_to_body_part',
+            'order' => 2,
+            'points' => 25,
+            'data' => [
+                'instruction' => 'Group the verbs to the correct body part!',
+                'groups' => [
+                    ['part' => 'hands', 'verbs' => ['carry', 'sew', 'plant', 'clap']],
+                    ['part' => 'feet', 'verbs' => ['walk', 'dance', 'stomp']],
+                    ['part' => 'eyes', 'verbs' => ['see', 'close', 'open']],
+                    ['part' => 'ears', 'verbs' => ['hear', 'listen']],
+                    ['part' => 'heart', 'verbs' => ['feel']],
+                ]
             ],
         ]);
     }
