@@ -21,7 +21,7 @@ class BookController extends Controller
             $query = Book::query()->orderBy('order_sequence', 'asc');
 
             // If the user is not an admin, filter out unpublished books
-            if ($user->role !== RolesEnum::A->value) {
+            if (!$user->hasRole(RolesEnum::A->value)) {
                 $query->where('status', 'published');
             }
 
@@ -61,8 +61,11 @@ class BookController extends Controller
     {
         try {
             // If the book is not 'published', only admins can view it
-            if ($book->status !== 'published' && Auth::user()->role !== RolesEnum::A->value) {
-                return response()->json(['message' => 'Not Found.'], 404);
+            if ($book->status !== 'published' && !Auth::user()->hasRole(RolesEnum::S->value)) {
+                return $this->sendError(
+                    statusCode: Response::HTTP_NOT_FOUND,
+                    message: 'Book not found or not accessible.',
+                );
             }
 
             $book->load(['pages.interaction', 'postActivities']);
