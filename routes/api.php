@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Api\Auth\AuthController;
 use App\Http\Controllers\Api\Book\BookController;
+use App\Http\Controllers\Api\Course\CourseController;
 use Illuminate\Support\Facades\Route;
 
 // Public routes
@@ -28,5 +29,10 @@ Route::middleware('auth:sanctum')->group(function () {
             Route::patch('/{book}', 'update')->name('books.update');
             Route::delete('/{book}', 'destroy')->name('books.destroy');
         });
+    });
+
+    // Course
+    Route::middleware('role:admin')->group(function () {
+        Route::apiResource('courses', CourseController::class);
     });
 });

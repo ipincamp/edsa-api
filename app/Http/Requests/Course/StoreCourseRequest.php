@@ -1,11 +1,11 @@
 <?php
 
-namespace App\Http\Requests\Auth;
+namespace App\Http\Requests\Course;
 
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
-class RegisterRequest extends FormRequest
+class StoreCourseRequest extends FormRequest
 {
     /**
      * Determine if the user is authorized to make this request.
@@ -26,22 +26,12 @@ class RegisterRequest extends FormRequest
             'name' => [
                 'required',
                 'string',
-                'min:3',
                 'max:255',
+                Rule::unique('courses', 'name'),
             ],
-            'email' => [
-                'required',
+            'description' => [
+                'nullable',
                 'string',
-                'email',
-                'max:255',
-                Rule::unique('users', 'email'),
-            ],
-            'password' => [
-                'required',
-                'string',
-                'min:8',
-                'max:255',
-                'confirmed',
             ],
         ];
     }

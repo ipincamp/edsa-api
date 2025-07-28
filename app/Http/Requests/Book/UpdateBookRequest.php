@@ -23,6 +23,7 @@ class UpdateBookRequest extends FormRequest
     public function rules(): array
     {
         $bookId = $this->route('book')->id;
+
         return [
             'title' => [
                 'sometimes',
