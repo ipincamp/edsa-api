@@ -32,7 +32,11 @@ class StoreGroupRequest extends FormRequest
                 'required',
                 Rule::exists('courses', 'id'),
             ],
-            'teacher_id' => [
+            'teacher_ids' => [
+                'required',
+                'array',
+            ],
+            'teacher_ids.*' => [
                 'required',
                 Rule::exists('users', 'id'),
             ],

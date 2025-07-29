@@ -25,7 +25,9 @@ class GroupController extends Controller
         try {
             return $this->sendSuccess(
                 message: 'Groups retrieved successfully.',
-                data: GroupResource::collection($course->groups()->with('teacher')->withCount('students')->get()),
+                data: GroupResource::collection(
+                    $course->groups()->with('teachers')->withCount('students')->get(),
+                ),
             );
         } catch (\Exception $e) {
             return $this->sendError(
@@ -39,12 +41,13 @@ class GroupController extends Controller
     public function store(StoreGroupRequest $request)
     {
         try {
-            $group = Group::create($request->validated());
+            $group = Group::create($request->safe()->only(['name', 'course_id']));
+            $group->teachers()->attach($request->teacher_ids);
 
             return $this->sendSuccess(
                 statusCode: Response::HTTP_CREATED,
                 message: 'Group created successfully.',
-                data: new GroupResource($group->load('teacher')),
+                data: new GroupResource($group->load('teachers')),
             );
         } catch (\Exception $e) {
             return $this->sendError(

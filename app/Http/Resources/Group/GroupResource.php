@@ -20,7 +20,7 @@ class GroupResource extends JsonResource
             'id' => $this->id,
             'name' => $this->name,
             'course' => new CourseResource($this->whenLoaded('course')),
-            'teacher' => new AuthResource($this->whenLoaded('teacher')),
+            'teachers' => AuthResource::collection($this->whenLoaded('teachers')),
             'students' => AuthResource::collection($this->whenLoaded('students')),
             'students_count' => $this->whenCounted('students', $this->students_count),
         ];
