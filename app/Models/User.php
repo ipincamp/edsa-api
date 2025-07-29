@@ -83,4 +83,14 @@ class User extends Authenticatable
     {
         return $this->hasMany(StudentProgress::class, 'student_id');
     }
+
+    /**
+     * Get all of the enrollments for the User
+     *
+     * @return \Illuminate\Database\Eloquent\Relations\HasMany
+     */
+    public function enrollments(): HasMany
+    {
+        return $this->hasMany(Enrollment::class);
+    }
 }

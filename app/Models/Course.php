@@ -17,6 +17,7 @@ class Course extends Model
      */
     protected $fillable = [
         'name',
+        'enrollment_code',
         'description',
     ];
 
@@ -28,5 +29,15 @@ class Course extends Model
     public function groups(): HasMany
     {
         return $this->hasMany(Group::class);
+    }
+
+    /**
+     * Get all of the enrollments for the Course
+     *
+     * @return \Illuminate\Database\Eloquent\Relations\HasMany
+     */
+    public function enrollments(): HasMany
+    {
+        return $this->hasMany(Enrollment::class);
     }
 }
