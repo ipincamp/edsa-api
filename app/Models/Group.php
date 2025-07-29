@@ -33,13 +33,14 @@ class Group extends Model
     }
 
     /**
-     * Get the teacher that owns the Group
+     * The teachers that belong to the Group
      *
-     * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
+     * @return \Illuminate\Database\Eloquent\Relations\BelongsToMany
      */
-    public function teacher(): BelongsTo
+    public function teachers(): BelongsToMany
     {
-        return $this->belongsTo(User::class, 'teacher_id');
+        return $this->belongsToMany(User::class, 'group_teacher')
+            ->withTimestamps();
     }
 
     /**

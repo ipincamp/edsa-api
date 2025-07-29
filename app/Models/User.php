@@ -63,15 +63,13 @@ class User extends Authenticatable
     }
 
     /**
-     * Get all of the taughtGroups for the User
+     * The taughtGroups that belong to the User
      *
-     * Grup di mana user ini adalah seorang guru
-     *
-     * @return \Illuminate\Database\Eloquent\Relations\HasMany
+     * @return \Illuminate\Database\Eloquent\Relations\BelongsToMany
      */
-    public function taughtGroups(): HasMany
+    public function taughtGroups(): BelongsToMany
     {
-        return $this->hasMany(Group::class, 'teacher_id');
+        return $this->belongsToMany(Group::class, 'group_teacher');
     }
 
     /**
