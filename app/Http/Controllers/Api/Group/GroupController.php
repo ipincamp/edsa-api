@@ -26,7 +26,7 @@ class GroupController extends Controller
             return $this->sendSuccess(
                 message: 'Groups retrieved successfully.',
                 data: GroupResource::collection(
-                    $course->groups()->with('teachers')->withCount('students')->get(),
+                    $course->groups()->withCount('teachers')->withCount('students')->get(),
                 ),
             );
         } catch (\Exception $e) {
@@ -62,7 +62,7 @@ class GroupController extends Controller
     {
         try {
             $this->authorize('view', $group);
-            $group->load('course', 'teacher', 'students');
+            $group->load('course', 'teachers', 'students');
 
             return $this->sendSuccess(
                 message: 'Group retrieved successfully.',
@@ -81,11 +81,18 @@ class GroupController extends Controller
     {
         try {
             $this->authorize('update', $group);
-            $group->update($request->validated());
+
+            if ($request->has('name')) {
+                $group->update($request->safe()->only(['name']));
+            }
+
+            if ($request->has('teacher_ids')) {
+                $group->teachers()->sync($request->teacher_ids);
+            }
 
             return $this->sendSuccess(
                 message: 'Group updated successfully.',
-                data: new GroupResource($group->load('teacher'))
+                data: new GroupResource($group->load('teachers')),
             );
         } catch (\Exception $e) {
             return $this->sendError(

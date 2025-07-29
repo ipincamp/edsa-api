@@ -29,8 +29,12 @@ class UpdateGroupRequest extends FormRequest
                 'string',
                 'max:255',
             ],
-            'teacher_id' => [
+            'teacher_ids' => [
                 'sometimes',
+                'required',
+                'array',
+            ],
+            'teacher_ids.*' => [
                 'required',
                 Rule::exists('users', 'id'),
             ],
