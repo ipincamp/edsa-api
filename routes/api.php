@@ -5,6 +5,7 @@ use App\Http\Controllers\Api\Book\BookController;
 use App\Http\Controllers\Api\Course\CourseController;
 use App\Http\Controllers\Api\Course\EnrollmentController;
 use App\Http\Controllers\Api\Group\GroupController;
+use App\Http\Controllers\Api\User\ProgressController;
 use Illuminate\Support\Facades\Route;
 
 // Public routes
@@ -50,4 +51,14 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('groups/{group}/assign-student', [GroupController::class, 'assignStudent'])->name('groups.assign-student');
         Route::post('groups/{group}/remove-student', [GroupController::class, 'removeStudent'])->name('groups.remove-student');
     });
+
+    // User Progress
+    Route::middleware(['role:student'])->prefix('progress')->group(function () {
+        Route::post('/start-book', [ProgressController::class, 'startOrContinueBook']);
+        Route::post('/submit-interaction', [ProgressController::class, 'submitInteraction']);
+        Route::post('/submit-post-activity', [ProgressController::class, 'submitPostActivity']);
+        Route::post('/complete-book', [ProgressController::class, 'completeBook']);
+    });
+    Route::get('/students/{user}/progress', [ProgressController::class, 'viewStudentProgress'])
+        ->middleware(['role:admin|teacher']);
 });
