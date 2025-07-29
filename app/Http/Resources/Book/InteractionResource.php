@@ -19,6 +19,7 @@ class InteractionResource extends JsonResource
             'type' => $this->type,
             'data' => $this->data,
             'points' => $this->points,
+            'passed' => $this->when(isset($this->passed), $this->passed, false),
         ];
     }
 }

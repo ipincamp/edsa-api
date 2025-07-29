@@ -79,15 +79,30 @@ class BookController extends Controller
     public function show(Book $book)
     {
         try {
-            // If the book is not 'published', only admins can view it
-            if ($book->status !== 'published' && !Auth::user()->hasRole(RolesEnum::S->value)) {
-                return $this->sendError(
-                    statusCode: Response::HTTP_NOT_FOUND,
-                    message: 'Book not found or not accessible.',
-                );
+            $user = Auth::user();
+            $completedInteractionIds = collect(); // Default koleksi kosong
+
+            // Jika pengguna adalah siswa, dapatkan progresnya
+            if ($user->hasRole(RolesEnum::S->value)) {
+                $progress = StudentProgress::where('student_id', $user->id)
+                    ->where('book_id', $book->id)
+                    ->first();
+
+                if ($progress) {
+                    // Ambil semua ID interaksi yang sudah diselesaikan untuk buku ini
+                    $completedInteractionIds = $progress->completedInteractions()->pluck('interactions.id');
+                }
             }
 
+            // Muat relasi buku
             $book->load(['pages.interaction', 'postActivities']);
+
+            // Tambahkan properti 'passed' secara manual ke setiap interaksi
+            foreach ($book->pages as $page) {
+                if ($page->interaction) {
+                    $page->interaction->passed = $completedInteractionIds->contains($page->interaction->id);
+                }
+            }
 
             return $this->sendSuccess(
                 message: 'Book retrieved successfully.',

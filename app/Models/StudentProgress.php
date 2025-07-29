@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 class StudentProgress extends Model
 {
@@ -43,5 +44,15 @@ class StudentProgress extends Model
     public function book(): BelongsTo
     {
         return $this->belongsTo(Book::class);
+    }
+
+    /**
+     * The completedInteractions that belong to the StudentProgress
+     *
+     * @return \Illuminate\Database\Eloquent\Relations\BelongsToMany
+     */
+    public function completedInteractions(): BelongsToMany
+    {
+        return $this->belongsToMany(Interaction::class, 'interaction_progress');
     }
 }

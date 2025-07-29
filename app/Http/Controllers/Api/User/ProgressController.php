@@ -65,6 +65,8 @@ class ProgressController extends Controller
                 ->where('book_id', $interaction->page->book->id)
                 ->firstOrFail();
 
+            $progress->completedInteractions()->syncWithoutDetaching($interaction->id);
+
             $progress->increment('total_points', $interaction->points);
             $progress->update(['last_page' => $interaction->page->page_number]);
 

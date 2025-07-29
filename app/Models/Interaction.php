@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 class Interaction extends Model
 {
@@ -39,5 +40,15 @@ class Interaction extends Model
     public function page(): BelongsTo
     {
         return $this->belongsTo(Page::class);
+    }
+
+    /**
+     * The studentProgresses that belong to the Interaction
+     *
+     * @return \Illuminate\Database\Eloquent\Relations\BelongsToMany
+     */
+    public function studentProgresses(): BelongsToMany
+    {
+        return $this->belongsToMany(StudentProgress::class, 'interaction_progress');
     }
 }
