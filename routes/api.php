@@ -3,6 +3,8 @@
 use App\Http\Controllers\Api\Auth\AuthController;
 use App\Http\Controllers\Api\Book\BookController;
 use App\Http\Controllers\Api\Course\CourseController;
+use App\Http\Controllers\Api\Course\EnrollmentController;
+use App\Http\Controllers\Api\Group\GroupController;
 use Illuminate\Support\Facades\Route;
 
 // Public routes
@@ -34,5 +36,18 @@ Route::middleware('auth:sanctum')->group(function () {
     // Course
     Route::middleware('role:admin')->group(function () {
         Route::apiResource('courses', CourseController::class);
+    });
+    Route::middleware('role:student')->group(function () {
+        Route::post('courses/enroll', [EnrollmentController::class, 'enroll'])->name('courses.enroll');
+    });
+
+    // Group
+    Route::middleware('role:admin|teacher')->group(function () {
+        Route::get('courses/{course}/groups', [GroupController::class, 'index'])->name('courses.groups.index');
+
+        Route::apiResource('groups', GroupController::class)->except(['index']);
+
+        Route::post('groups/{group}/assign-student', [GroupController::class, 'assignStudent'])->name('groups.assign-student');
+        Route::post('groups/{group}/remove-student', [GroupController::class, 'removeStudent'])->name('groups.remove-student');
     });
 });
