@@ -8,6 +8,7 @@ use App\Http\Requests\Book\StoreBookRequest;
 use App\Http\Requests\Book\UpdateBookRequest;
 use App\Http\Resources\Book\BookResource;
 use App\Models\Book;
+use App\Models\StudentProgress;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Auth;
 
@@ -18,16 +19,34 @@ class BookController extends Controller
     {
         try {
             $user = Auth::user();
-            $query = Book::query()->orderBy('order_sequence', 'asc');
+            $allBooks = Book::orderBy('order_sequence', 'asc')->get();
 
-            // If the user is not an admin, filter out unpublished books
-            if (!$user->hasRole(RolesEnum::A->value)) {
-                $query->where('status', 'published');
+            if ($user->hasRole(RolesEnum::A->value) || $user->hasRole(RolesEnum::T->value)) {
+                return $this->sendSuccess(
+                    message: 'Books retrieved successfully.',
+                    data: BookResource::collection($allBooks),
+                );
             }
+
+            $studentProgress = StudentProgress::where('student_id', $user->id)
+                ->where('status', 'completed')
+                ->pluck('book_id');
+
+            $lastCompletedBookOrder = Book::whereIn('id', $studentProgress)
+                ->max('order_sequence') ?? 0;
+
+            $unlockedBooks = $allBooks->filter(function ($book) use ($lastCompletedBookOrder) {
+                return $book->order_sequence <= $lastCompletedBookOrder + 1;
+            });
+
+            $booksWithLockStatus = $allBooks->map(function ($book) use ($unlockedBooks) {
+                $book->is_locked = !$unlockedBooks->contains('id', $book->id);
+                return $book;
+            });
 
             return $this->sendSuccess(
                 message: 'Books retrieved successfully.',
-                data: BookResource::collection($query->paginate(10)),
+                data: BookResource::collection($booksWithLockStatus),
             );
         } catch (\Exception $e) {
             return $this->sendError(

@@ -24,6 +24,7 @@ class BookResource extends JsonResource
             'status' => $this->status,
             'cover_image' => $this->cover_image,
             'order_sequence' => $this->order_sequence,
+            'is_locked' => $this->when(isset($this->is_locked), $this->is_locked),
             'pages' => PageResource::collection($this->whenLoaded('pages')),
             'post_activities' => PostActivityResource::collection($this->whenLoaded('postActivities')),
         ];

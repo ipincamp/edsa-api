@@ -55,11 +55,6 @@ class UpdateBookRequest extends FormRequest
                 'string',
                 'max:255'
             ],
-            'status' => [
-                'sometimes',
-                'required',
-                Rule::in(['published', 'draft', 'locked'])
-            ],
             'cover_image' => [
                 'nullable',
                 'url'

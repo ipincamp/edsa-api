@@ -26,7 +26,7 @@ class BookSeeder extends Seeder
     }
 
     /**
-     * Membuat data untuk buku "The Alphabet in the Land of Dewi Sri".
+     * Buku 1: "The Alphabet in the Land of Dewi Sri"
      */
     private function createDewiSriBook(): void
     {
@@ -36,10 +36,17 @@ class BookSeeder extends Seeder
             'year' => '2025',
             'genre' => 'Fiction',
             'focus' => 'Alphabet',
-            'status' => 'published',
             'cover_image' => 'https://placehold.co/400x600/81C784/FFFFFF?text=Dewi+Sri',
             'order_sequence' => 1,
         ]);
+
+        // Hitung jumlah interaksi yang menghasilkan poin
+        // Ada 12 interaksi (slide 1,2,4,5,6,7,8,9,10,11,12) + 2 post-activity = 14
+        // Total poin yang diinginkan: 100
+        // Maka tiap interaksi dapat: floor(100/14) = 7, sisanya 2 (boleh tambahkan ke post-activity terakhir)
+
+        $basePoint = 7;
+        $extraPoints = 2; // untuk post-activity terakhir
 
         // Halaman 1
         $page1 = Page::create(['book_id' => $book->id, 'page_number' => 1, 'content' => 'Once upon a time, in a beautiful rice-growing village in Indonesia, there was a kind and gentle goddess named Dewi Sri. She was loved by everyone because she taught people how to plant rice and take care of the land.']);
@@ -50,7 +57,7 @@ class BookSeeder extends Seeder
                 'instruction' => 'Drag the words into the right picture!',
                 'words' => ['Dewi Sri', 'mountain', 'rice plant', 'farmer', 'hut', 'buffalo']
             ],
-            'points' => 10,
+            'points' => $basePoint,
         ]);
 
         // Halaman 2
@@ -62,49 +69,50 @@ class BookSeeder extends Seeder
                 'instruction' => 'How many children are there around the rice field?',
                 'correct_count' => 5 // Asumsi ada 5 gambar anak
             ],
-            'points' => 5,
+            'points' => $basePoint,
         ]);
 
         // Halaman 3
-        Page::create(['book_id' => $book->id, 'page_number' => 3, 'content' => 'She smiled and said, “Let me teach you the magic of the alphabet, so you can write about our rice fields and tell stories of our village.” Dewi Sri waved her hand, and sparkling letters appeared in the sky. The children were amazed as each letter told its own little story about life in the village.']);
+        Page::create(['book_id' => $book->id, 'page_number' => 3, 'content' => 'She smiled and said, “Let me teach you the magic of the alphabet, so you can write about our rice fields and tell stories of our village.” Dewi Sri waved her hand, and sparkling letters appeared in the sky. The children were amazed as each letter told its own little story about life in the village.”']);
 
         // Halaman 4
         $page4 = Page::create(['book_id' => $book->id, 'page_number' => 4, 'content' => 'A was for Andong, the cart pulled by buffalo. “Andong helps carry the rice to the market!” Dewi Sri explained.']);
-        Interaction::create(['page_id' => $page4->id, 'type' => 'tap_the_letter', 'data' => ['letter' => 'A', 'instruction' => 'Tap the letter that you see, hurry up!'], 'points' => 5]);
+        Interaction::create(['page_id' => $page4->id, 'type' => 'tap_the_letter', 'data' => ['letter' => 'A', 'instruction' => 'Tap the letter that you see, hurry up!'], 'points' => $basePoint]);
 
         // Halaman 5
         $page5 = Page::create(['book_id' => $book->id, 'page_number' => 5, 'content' => 'B was for Beras, the rice that everyone ate. “Beras gives us strength and happiness,” she said.']);
-        Interaction::create(['page_id' => $page5->id, 'type' => 'tap_the_letter', 'data' => ['letter' => 'B', 'instruction' => 'Tap the letter that you see, hurry up!'], 'points' => 5]);
+        Interaction::create(['page_id' => $page5->id, 'type' => 'tap_the_letter', 'data' => ['letter' => 'B', 'instruction' => 'Tap the letter that you see, hurry up!'], 'points' => $basePoint]);
 
         // Halaman 6
         $page6 = Page::create(['book_id' => $book->id, 'page_number' => 6, 'content' => 'C was for Candi, the temple where people gave thanks. “It reminds us to be grateful for the blessings we have.” The children repeated after her, “A is for Andong, B is for Beras, C is for Candi!”']);
-        Interaction::create(['page_id' => $page6->id, 'type' => 'tap_the_letter', 'data' => ['letter' => 'C', 'instruction' => 'Tap the letter that you see, hurry up!'], 'points' => 5]);
+        Interaction::create(['page_id' => $page6->id, 'type' => 'tap_the_letter', 'data' => ['letter' => 'C', 'instruction' => 'Tap the letter that you see, hurry up!'], 'points' => $basePoint]);
 
         // Halaman 7
         $page7 = Page::create(['book_id' => $book->id, 'page_number' => 7, 'content' => 'As they walked, Dewi Sri showed them more letters: D was for Dewa, the gods who protected the fields. E was for Emas, the golden rice that shone in the sunlight. F was for Fauna, the animals in the fields, like ducks and water buffalo.']);
-        Interaction::create(['page_id' => $page7->id, 'type' => 'tap_the_letter', 'data' => ['letters' => ['D', 'E', 'F'], 'instruction' => 'Tap the letter that you see, hurry up!'], 'points' => 10]);
+        Interaction::create(['page_id' => $page7->id, 'type' => 'tap_the_letter', 'data' => ['letters' => ['D', 'E', 'F'], 'instruction' => 'Tap the letter that you see, hurry up!'], 'points' => $basePoint]);
 
         // Halaman 8
         $page8 = Page::create(['book_id' => $book->id, 'page_number' => 8, 'content' => 'The children laughed when they saw G, which stood for Gong, the big musical instrument that echoed through the village. “We play the gong during festivals!” Dewi Sri said, clapping her hands.']);
-        Interaction::create(['page_id' => $page8->id, 'type' => 'tap_the_letter', 'data' => ['letter' => 'G', 'instruction' => 'Tap the letter that you see, hurry up!'], 'points' => 5]);
+        Interaction::create(['page_id' => $page8->id, 'type' => 'tap_the_letter', 'data' => ['letter' => 'G', 'instruction' => 'Tap the letter that you see, hurry up!'], 'points' => $basePoint]);
 
         // Halaman 9
         $page9 = Page::create(['book_id' => $book->id, 'page_number' => 9, 'content' => 'Soon, the children began spotting letters everywhere: H was for Hujan, the rain that helped the rice grow. I was for Ikan, the fish swimming in the ponds near the fields. J was for Jagung, the corn that grew alongside the rice.']);
-        Interaction::create(['page_id' => $page9->id, 'type' => 'tap_the_letter', 'data' => ['letters' => ['H', 'I', 'J'], 'instruction' => 'Tap the letter that you see, hurry up!'], 'points' => 10]);
+        Interaction::create(['page_id' => $page9->id, 'type' => 'tap_the_letter', 'data' => ['letters' => ['H', 'I', 'J'], 'instruction' => 'Tap the letter that you see, hurry up!'], 'points' => $basePoint]);
 
         // Halaman 10
-        Page::create(['book_id' => $book->id, 'page_number' => 10, 'content' => 'Dewi Sri encouraged the children to use their voices. “Can you say, ‘ H is for Hujan, I is for Ikan, J is for Jagung’?” They shouted happily, “ H is for Hujan, I is for Ikan, J is for Jagung!”']);
+        $page10 = Page::create(['book_id' => $book->id, 'page_number' => 10, 'content' => 'Dewi Sri encouraged the children to use their voices. “Can you say, ‘ H is for Hujan, I is for Ikan, J is for Jagung’?” They shouted happily, “ H is for Hujan, I is for Ikan, J is for Jagung!”']);
+        Interaction::create(['page_id' => $page10->id, 'type' => 'tap_the_letter', 'data' => ['letters' => ['H', 'I', 'J'], 'instruction' => 'Tap the letter that you see, hurry up!'], 'points' => $basePoint]);
 
         // Halaman 11
         $page11 = Page::create(['book_id' => $book->id, 'page_number' => 11, 'content' => 'As the sun set, Dewi Sri introduced the last letters: K for Keris, the traditional dagger. L for Lumbung, the rice barn where the harvest was stored. M for Mangga, the juicy mangoes they loved to eat. Repeat please, “K for Keris, L for Lumbung, M for Mangga!”']);
-        Interaction::create(['page_id' => $page11->id, 'type' => 'tap_the_letter', 'data' => ['letters' => ['K', 'L', 'M'], 'instruction' => 'Tap the letter that you see, hurry up!'], 'points' => 10]);
+        Interaction::create(['page_id' => $page11->id, 'type' => 'tap_the_letter', 'data' => ['letters' => ['K', 'L', 'M'], 'instruction' => 'Tap the letter that you see, hurry up!'], 'points' => $basePoint]);
 
         // Halaman 12
-        Page::create(['book_id' => $book->id, 'page_number' => 12, 'content' => 'The children clapped their hands and sang about the letters. “We’ve learned the alphabet with Dewi Sri, and now we can tell stories about our home!” Let’s sing this song together!']);
+        $page12 = Page::create(['book_id' => $book->id, 'page_number' => 12, 'content' => 'The children clapped their hands and sang about the letters. “We’ve learned the alphabet with Dewi Sri, and now we can tell stories about our home!” Let’s sing this song together!']);
+        Interaction::create(['page_id' => $page12->id, 'type' => 'tap_the_sound', 'data' => ['instruction' => 'Listen carefully and tap the correct letter as you hear it!'], 'points' => $basePoint]);
 
         // Halaman 13
-        $page13 = Page::create(['book_id' => $book->id, 'page_number' => 13, 'content' => 'Dewi Sri smiled warmly and gave them a gift—a magical book where they could write their stories and draw pictures of their favourite letters. “Remember,” she said, “the alphabet is like planting rice. Each letter is a seed that grows into beautiful words and stories.”']);
-        Interaction::create(['page_id' => $page13->id, 'type' => 'tap_the_sound', 'data' => ['instruction' => 'Listen carefully and tap the correct letter as you hear it!'], 'points' => 15]);
+        Page::create(['book_id' => $book->id, 'page_number' => 13, 'content' => 'Dewi Sri smiled warmly and gave them a gift—a magical book where they could write their stories and draw pictures of their favourite letters. “Remember,” she said, “the alphabet is like planting rice. Each letter is a seed that grows into beautiful words and stories.”']);
 
         // Halaman 14
         Page::create(['book_id' => $book->id, 'page_number' => 14, 'content' => 'From that day on, the children in the village of Dewi Sri became the best storytellers. They wrote about their fields, their animals, and their festivals, sharing their culture with the world. The End.']);
@@ -115,14 +123,22 @@ class BookSeeder extends Seeder
             'book_id' => $book->id,
             'type' => 'match_the_picture',
             'order' => 1,
-            'points' => 20,
+            'points' => $basePoint,
             'data' => [
                 'instruction' => 'Match the alphabet to the right picture!',
                 'pairs' => [
                     ['letter' => 'A', 'image' => 'url/to/andong.png', 'name' => 'Andong'],
                     ['letter' => 'B', 'image' => 'url/to/beras.png', 'name' => 'Beras'],
                     ['letter' => 'C', 'image' => 'url/to/candi.png', 'name' => 'Candi'],
-                    // ... tambahkan pasangan lainnya hingga J
+                    ['letter' => 'D', 'image' => 'url/to/dewa.png', 'name' => 'Dewa'],
+                    ['letter' => 'E', 'image' => 'url/to/emas.png', 'name' => 'Emas'],
+                    ['letter' => 'F', 'image' => 'url/to/fauna.png', 'name' => 'Fauna'],
+                    ['letter' => 'G', 'image' => 'url/to/gong.png', 'name' => 'Gong'],
+                    ['letter' => 'H', 'image' => 'url/to/hujan.png', 'name' => 'Hujan'],
+                    ['letter' => 'I', 'image' => 'url/to/ikan.png', 'name' => 'Ikan'],
+                    ['letter' => 'J', 'image' => 'url/to/jagung.png', 'name' => 'Jagung'],
+                    ['letter' => 'K', 'image' => 'url/to/keris.png', 'name' => 'Keris'],
+                    ['letter' => 'L', 'image' => 'url/to/lumbung.png', 'name' => 'Lumbung'],
                 ]
             ],
         ]);
@@ -132,17 +148,24 @@ class BookSeeder extends Seeder
             'book_id' => $book->id,
             'type' => 'trace_the_word',
             'order' => 2,
-            'points' => 15,
+            'points' => $basePoint + $extraPoints, // 7+2=9
             'data' => [
                 'instruction' => 'Drag and drop the letter into the right place to write the name of the picture!',
-                'image' => 'https://placehold.co/300x200/FFCDB2/4F4F4F?text=Image+of+Andong',
-                'word' => 'ANDONG'
+                'images' => [
+                    ['url' => 'https://placehold.co/300x200/FFCDB2/4F4F4F?text=Image+of+Andong', 'word' => 'ANDONG'],
+                    ['url' => 'https://placehold.co/300x200/FFCDB2/4F4F4F?text=Image+of+Beras', 'word' => 'BERAS'],
+                    ['url' => 'https://placehold.co/300x200/FFCDB2/4F4F4F?text=Image+of+Candi', 'word' => 'CANDI'],
+                    ['url' => 'https://placehold.co/300x200/FFCDB2/4F4F4F?text=Image+of+Dewa', 'word' => 'DEWA'],
+                    ['url' => 'https://placehold.co/300x200/FFCDB2/4F4F4F?text=Image+of+Emas', 'word' => 'EMAS'],
+                ]
             ],
         ]);
     }
 
     /**
-     * Membuat data untuk buku "The Numbers in the Village of Ten Hills".
+     * Buku 2: "The Numbers in the Village of Ten Hills"
+     *
+     * Not Yet
      */
     private function createTenHillsBook(): void
     {
@@ -152,7 +175,6 @@ class BookSeeder extends Seeder
             'year' => '2025',
             'genre' => 'Fiction',
             'focus' => 'Numbers',
-            'status' => 'draft',
             'cover_image' => 'https://placehold.co/400x600/89CFF0/FFFFFF?text=Ten+Hills',
             'order_sequence' => 2,
         ]);
@@ -234,7 +256,9 @@ class BookSeeder extends Seeder
     }
 
     /**
-     * Membuat data untuk buku "Bawang Putih and the Kind Body Parts".
+     * Buku 3: "Bawang Putih and the Kind Body Parts"
+     *
+     * Not Yet
      */
     private function createBawangPutihBook(): void
     {
@@ -244,7 +268,6 @@ class BookSeeder extends Seeder
             'year' => '2025',
             'genre' => 'Moral Folklore',
             'focus' => 'Body Parts',
-            'status' => 'draft',
             'cover_image' => 'https://placehold.co/400x600/D8BFD8/FFFFFF?text=Bawang+Putih',
             'order_sequence' => 3,
         ]);
@@ -312,7 +335,7 @@ class BookSeeder extends Seeder
     }
 
     /**
-     * Membuat data untuk buku "The Big Mango Tree and the Family of Five".
+     * Buku 4: "The Big Mango Tree and the Family of Five"
      */
     private function createFamilyTreeBook(): void
     {
@@ -322,37 +345,46 @@ class BookSeeder extends Seeder
             'year' => '2025',
             'genre' => 'Fiction',
             'focus' => 'Family',
-            'status' => 'draft',
             'cover_image' => 'https://placehold.co/400x600/FFD54F/FFFFFF?text=The+Big+Mango+Tree',
             'order_sequence' => 4,
         ]);
 
+        // Hitung jumlah interaksi dan post-activity
+        // Interaksi: 1 (drag_to_silhouette) + 5 (arrange_letters) = 6
+        // Post-activity: 3
+        // Total: 9
+        // Target total poin: 100
+        // Poin per interaksi/post-activity: floor(100/9) = 11, sisa 1 (tambahkan ke post-activity terakhir)
+
+        $basePoint = 11;
+        $extraPoint = 1; // untuk post-activity terakhir
+
         // Halaman 1
         $page1 = Page::create(['book_id' => $book4->id, 'page_number' => 1, 'content' => 'Once upon a time, in a peaceful village, there stood a big, old mango tree at the centre of a small yard. Under its shade lived a loving family of five: Father, Mother, Brother, Sister, and Baby.']);
-        Interaction::create(['page_id' => $page1->id, 'type' => 'drag_to_silhouette', 'data' => ['instruction' => 'Drag the people to the right place!', 'members' => ['Father', 'Mother', 'Brother', 'Sister', 'Baby']], 'points' => 10]);
+        Interaction::create(['page_id' => $page1->id, 'type' => 'drag_to_silhouette', 'data' => ['instruction' => 'Drag the people to the right place!', 'members' => ['Father', 'Mother', 'Brother', 'Sister', 'Baby']], 'points' => $basePoint]);
 
         // Halaman 2
         Page::create(['book_id' => $book4->id, 'page_number' => 2, 'content' => 'One day, the tree spoke to them for the very first time. “Your family is like my five strong branches,” it said. “Each of you has a special role, and together you make your home happy and strong. Let me show you.”']);
 
         // Halaman 3 (Father)
         $page3 = Page::create(['book_id' => $book4->id, 'page_number' => 3, 'content' => 'The Father stepped forward, curious. “You are the tallest branch,” the tree said. “You stand strong to protect everyone. Can you tell me how you care for your family?”...']);
-        Interaction::create(['page_id' => $page3->id, 'type' => 'arrange_letters', 'data' => ['instruction' => 'Put these letters to write “father”!', 'word' => 'FATHER'], 'points' => 10]);
+        Interaction::create(['page_id' => $page3->id, 'type' => 'arrange_letters', 'data' => ['instruction' => 'Put these letters to write “father”!', 'word' => 'FATHER'], 'points' => $basePoint]);
 
         // Halaman 4 (Mother)
         $page4 = Page::create(['book_id' => $book4->id, 'page_number' => 4, 'content' => 'The Mother placed her hand on the tree. “You are my steady middle branch,” said the tree. “You hold everything together and bring life to the family. What do you do for your family?”...']);
-        Interaction::create(['page_id' => $page4->id, 'type' => 'arrange_letters', 'data' => ['instruction' => 'Put these letters to write “mother”!', 'word' => 'MOTHER'], 'points' => 10]);
+        Interaction::create(['page_id' => $page4->id, 'type' => 'arrange_letters', 'data' => ['instruction' => 'Put these letters to write “mother”!', 'word' => 'MOTHER'], 'points' => $basePoint]);
 
         // Halaman 5 (Brother)
         $page5 = Page::create(['book_id' => $book4->id, 'page_number' => 5, 'content' => 'The Brother came next. “You are a sturdy side branch,” the tree said. “You are growing strong and learning to help. What do you do for your family?”...']);
-        Interaction::create(['page_id' => $page5->id, 'type' => 'arrange_letters', 'data' => ['instruction' => 'Put these letters to write “brother”!', 'word' => 'BROTHER'], 'points' => 10]);
+        Interaction::create(['page_id' => $page5->id, 'type' => 'arrange_letters', 'data' => ['instruction' => 'Put these letters to write “brother”!', 'word' => 'BROTHER'], 'points' => $basePoint]);
 
         // Halaman 6 (Sister)
         $page6 = Page::create(['book_id' => $book4->id, 'page_number' => 6, 'content' => 'The Sister gently touched the tree. “You are my graceful young branch,” the tree said. “You bring beauty and joy to the family. How do you help at home?”...']);
-        Interaction::create(['page_id' => $page6->id, 'type' => 'arrange_letters', 'data' => ['instruction' => 'Put these letters to write “sister”!', 'word' => 'SISTER'], 'points' => 10]);
+        Interaction::create(['page_id' => $page6->id, 'type' => 'arrange_letters', 'data' => ['instruction' => 'Put these letters to write “sister”!', 'word' => 'SISTER'], 'points' => $basePoint]);
 
         // Halaman 7 (Baby)
         $page7 = Page::create(['book_id' => $book4->id, 'page_number' => 7, 'content' => 'Finally, little Baby toddled up to the tree, giggling. “And you,” said the tree, “are my smallest branch. You are still growing, but you remind everyone of the joy of life. What do you do?”...']);
-        Interaction::create(['page_id' => $page7->id, 'type' => 'arrange_letters', 'data' => ['instruction' => 'Put these letters to write “baby”!', 'word' => 'BABY'], 'points' => 10]);
+        Interaction::create(['page_id' => $page7->id, 'type' => 'arrange_letters', 'data' => ['instruction' => 'Put these letters to write “baby”!', 'word' => 'BABY'], 'points' => $basePoint]);
 
         // Halaman 8 & 9 (Narasi Akhir)
         Page::create(['book_id' => $book4->id, 'page_number' => 8, 'content' => 'The tree looked at the family of five and said, “Each of you is like a part of me, and together, you make your family strong and full of love. Always care for one another, and you will grow as tall and strong as I have.”']);
@@ -363,7 +395,7 @@ class BookSeeder extends Seeder
             'book_id' => $book4->id,
             'type' => 'tap_the_member',
             'order' => 1,
-            'points' => 15,
+            'points' => $basePoint,
             'data' => ['instruction' => 'Tap the family member mentioned!', 'members' => ['father', 'mother', 'brother', 'sister', 'baby']],
         ]);
 
@@ -372,7 +404,7 @@ class BookSeeder extends Seeder
             'book_id' => $book4->id,
             'type' => 'family_tree_drag',
             'order' => 2,
-            'points' => 15,
+            'points' => $basePoint,
             'data' => ['instruction' => 'Drag the family member into the right place!', 'members' => ['father', 'mother', 'brother', 'sister', 'baby']],
         ]);
 
@@ -381,7 +413,7 @@ class BookSeeder extends Seeder
             'book_id' => $book4->id,
             'type' => 'match_member_to_task',
             'order' => 3,
-            'points' => 20,
+            'points' => $basePoint + $extraPoint, // 11+1=12
             'data' => [
                 'instruction' => 'Match the pictures with the right family member!',
                 'tasks' => [

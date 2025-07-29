@@ -49,10 +49,6 @@ class StoreBookRequest extends FormRequest
                 'string',
                 'max:255',
             ],
-            'status' => [
-                'required',
-                Rule::in(['published', 'draft', 'locked']),
-            ],
             'cover_image' => [
                 'nullable',
                 'url',
