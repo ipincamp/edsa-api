@@ -1,11 +1,11 @@
 <?php
 
-namespace App\Http\Requests\Course;
+namespace App\Http\Requests\Group;
 
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
-class StoreCourseRequest extends FormRequest
+class StoreGroupRequest extends FormRequest
 {
     /**
      * Determine if the user is authorized to make this request.
@@ -27,17 +27,14 @@ class StoreCourseRequest extends FormRequest
                 'required',
                 'string',
                 'max:255',
-                Rule::unique('courses', 'name'),
             ],
-            'enrollment_code' => [
+            'course_id' => [
                 'required',
-                'string',
-                'max:255',
-                Rule::unique('courses', 'enrollment_code'),
+                Rule::exists('courses', 'id'),
             ],
-            'description' => [
-                'nullable',
-                'string',
+            'teacher_id' => [
+                'required',
+                Rule::exists('users', 'id'),
             ],
         ];
     }
