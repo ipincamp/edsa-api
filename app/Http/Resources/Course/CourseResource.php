@@ -17,11 +17,10 @@ class CourseResource extends JsonResource
         return [
             'id' => $this->id,
             'name' => $this->name,
+            'enrollment_code' => $this->enrollment_code,
             'description' => $this->description,
             'created_at' => $this->created_at->toDateTimeString(),
-            // Memuat relasi group jika diminta melalui parameter ?include=groups
-            // 'groups' => GroupResource::collection($this->whenLoaded('groups')),
-            // 'groups_count' => $this->whenCounted('groups'),
+            'groups_count' => $this->whenCounted('groups'),
         ];
     }
 }
