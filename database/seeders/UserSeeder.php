@@ -23,15 +23,6 @@ class UserSeeder extends Seeder
         );
         $admin->assignRole(RolesEnum::A);
 
-        $teacher = User::updateOrCreate(
-            ['email' => config('seed.users.teacher')],
-            [
-                'name' => 'Teacher EDSA',
-                'password' => bcrypt(config('seed.users.password')),
-            ]
-        );
-        $teacher->assignRole(RolesEnum::T);
-
         $student = User::updateOrCreate(
             ['email' => config('seed.users.student')],
             [
