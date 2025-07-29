@@ -53,6 +53,18 @@ class StudentProgress extends Model
      */
     public function completedInteractions(): BelongsToMany
     {
-        return $this->belongsToMany(Interaction::class, 'interaction_progress');
+        return $this->belongsToMany(Interaction::class, 'interaction_progress')
+            ->withTimestamps();
+    }
+
+    /**
+     * The completedPostActivities that belong to the StudentProgress
+     *
+     * @return \Illuminate\Database\Eloquent\Relations\BelongsToMany
+     */
+    public function completedPostActivities(): BelongsToMany
+    {
+        return $this->belongsToMany(PostActivity::class, 'post_activity_progress')
+            ->withTimestamps();
     }
 }

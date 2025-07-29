@@ -51,13 +51,6 @@ class ProgressController extends Controller
     public function submitInteraction(SubmitInteractionRequest $request)
     {
         try {
-            if (!$request->is_correct) {
-                return $this->sendError(
-                    message: 'Answer is incorrect, no points awarded.',
-                    statusCode: 400,
-                );
-            }
-
             $student = Auth::user();
             $interaction = Interaction::with('page.book')->findOrFail($request->interaction_id);
 
@@ -65,7 +58,22 @@ class ProgressController extends Controller
                 ->where('book_id', $interaction->page->book->id)
                 ->firstOrFail();
 
-            $progress->completedInteractions()->syncWithoutDetaching($interaction->id);
+            if ($progress->completedInteractions->contains($interaction->id)) {
+                return $this->sendError(
+                    message: 'This interaction has already been completed.',
+                    statusCode: 409, // Conflict
+                );
+            }
+
+            if (!$request->is_correct) {
+                return $this->sendError(
+                    message: 'Answer is incorrect, no points awarded.',
+                    statusCode: 400,
+                );
+            }
+
+            // Catat bahwa interaksi ini telah diselesaikan.
+            $progress->completedInteractions()->attach($interaction->id);
 
             $progress->increment('total_points', $interaction->points);
             $progress->update(['last_page' => $interaction->page->page_number]);
@@ -89,6 +97,20 @@ class ProgressController extends Controller
     public function submitPostActivity(SubmitPostActivityRequest $request)
     {
         try {
+            $student = Auth::user();
+            $postActivity = PostActivity::findOrFail($request->post_activity_id);
+
+            $progress = StudentProgress::where('student_id', $student->id)
+                ->where('book_id', $postActivity->book_id)
+                ->firstOrFail();
+
+            if ($progress->completedPostActivities->contains($postActivity->id)) {
+                return $this->sendError(
+                    message: 'This post-activity has already been completed.',
+                    statusCode: 409, // Conflict
+                );
+            }
+
             if (!$request->is_correct) {
                 return $this->sendError(
                     message: 'Answer is incorrect, no points awarded.',
@@ -96,12 +118,8 @@ class ProgressController extends Controller
                 );
             }
 
-            $student = Auth::user();
-            $postActivity = PostActivity::findOrFail($request->post_activity_id);
-
-            $progress = StudentProgress::where('student_id', $student->id)
-                ->where('book_id', $postActivity->book_id)
-                ->firstOrFail();
+            // Catat bahwa aktivitas ini telah diselesaikan.
+            $progress->completedPostActivities()->attach($postActivity->id);
 
             $progress->increment('total_points', $postActivity->points);
 
