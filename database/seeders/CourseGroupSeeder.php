@@ -36,7 +36,12 @@ class CourseGroupSeeder extends Seeder
         $teacher2->assignRole(RolesEnum::T->value);
 
         // Buat 15 siswa menggunakan factory
-        $students = User::factory(15)->unverified()->create();
+        $students = User::factory(15)
+            ->unverified()
+            ->state([
+                'password' => Hash::make(config('seed.users.password')),
+            ])
+            ->create();
         $students->each(fn($student) => $student->assignRole(RolesEnum::S->value));
 
         // Buat Course
@@ -56,20 +61,20 @@ class CourseGroupSeeder extends Seeder
         $groupA = Group::create([
             'name' => 'Grup A - Pagi',
             'course_id' => $course1->id,
-            'teacher_id' => $teacher1->id,
         ]);
+        $groupA->teachers()->attach([$teacher1->id, $teacher2->id]);
 
         $groupB = Group::create([
             'name' => 'Grup B - Siang',
             'course_id' => $course1->id,
-            'teacher_id' => $teacher2->id,
         ]);
+        $groupB->teachers()->attach($teacher2->id);
 
         $groupC = Group::create([
             'name' => 'Grup C - Lanjutan',
             'course_id' => $course2->id,
-            'teacher_id' => $teacher1->id,
         ]);
+        $groupC->teachers()->attach($teacher1->id);
 
         // Masukkan siswa ke dalam grup
         // Ambil 8 siswa pertama untuk Grup A
