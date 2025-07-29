@@ -14,13 +14,10 @@ use App\Models\Interaction;
 use App\Models\PostActivity;
 use App\Models\StudentProgress;
 use App\Models\User;
-use App\Traits\AnswerChecker;
 use Illuminate\Support\Facades\Auth;
 
 class ProgressController extends Controller
 {
-    use AnswerChecker;
-
     // Start or continue a book's progress
     public function startOrContinueBook(StartBookRequest $request)
     {
@@ -54,29 +51,27 @@ class ProgressController extends Controller
     public function submitInteraction(SubmitInteractionRequest $request)
     {
         try {
-            $student = Auth::user();
-            $interaction = Interaction::with('page.book')->findOrFail($request->interaction_id);
-            $book = $interaction->page->book;
-
-            // Dapatkan progres siswa untuk buku ini
-            $progress = StudentProgress::where('student_id', $student->id)
-                ->where('book_id', $book->id)
-                ->firstOrFail();
-
-            // Cek jawaban menggunakan trait
-            $isCorrect = $this->checkInteractionAnswer($interaction, $request->answer);
-
-            if ($isCorrect) {
-                // Tambahkan poin dan update halaman terakhir yang diakses
-                $progress->increment('total_points', $interaction->points);
-                $progress->update(['last_page' => $interaction->page->page_number]);
+            if (!$request->is_correct) {
+                return $this->sendError(
+                    message: 'Answer is incorrect, no points awarded.',
+                    statusCode: 400,
+                );
             }
 
+            $student = Auth::user();
+            $interaction = Interaction::with('page.book')->findOrFail($request->interaction_id);
+
+            $progress = StudentProgress::where('student_id', $student->id)
+                ->where('book_id', $interaction->page->book->id)
+                ->firstOrFail();
+
+            $progress->increment('total_points', $interaction->points);
+            $progress->update(['last_page' => $interaction->page->page_number]);
+
             return $this->sendSuccess(
-                message: 'Interaction submitted successfully.',
+                message: 'Point awarded for interaction.',
                 data: [
-                    'correct' => $isCorrect,
-                    'points_awarded' => $isCorrect ? $interaction->points : 0,
+                    'points_awarded' => $interaction->points,
                     'total_points' => $progress->total_points,
                 ]
             );
@@ -92,24 +87,26 @@ class ProgressController extends Controller
     public function submitPostActivity(SubmitPostActivityRequest $request)
     {
         try {
+            if (!$request->is_correct) {
+                return $this->sendError(
+                    message: 'Answer is incorrect, no points awarded.',
+                    statusCode: 400,
+                );
+            }
+
             $student = Auth::user();
-            $postActivity = PostActivity::with('book')->findOrFail($request->post_activity_id);
+            $postActivity = PostActivity::findOrFail($request->post_activity_id);
 
             $progress = StudentProgress::where('student_id', $student->id)
                 ->where('book_id', $postActivity->book_id)
                 ->firstOrFail();
 
-            $isCorrect = $this->checkPostActivityAnswer($postActivity, $request->answer);
-
-            if ($isCorrect) {
-                $progress->increment('total_points', $postActivity->points);
-            }
+            $progress->increment('total_points', $postActivity->points);
 
             return $this->sendSuccess(
-                message: 'Post-activity submitted successfully.',
+                message: 'Point awarded for post-activity.',
                 data: [
-                    'correct' => $isCorrect,
-                    'points_awarded' => $isCorrect ? $postActivity->points : 0,
+                    'points_awarded' => $postActivity->points,
                     'total_points' => $progress->total_points,
                 ]
             );

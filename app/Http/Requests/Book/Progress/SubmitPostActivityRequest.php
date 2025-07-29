@@ -27,8 +27,9 @@ class SubmitPostActivityRequest extends FormRequest
                 'required',
                 Rule::exists('post_activities', 'id')
             ],
-            'answer' => [
-                'present'
+            'is_correct' => [
+                'required',
+                'boolean',
             ],
         ];
     }

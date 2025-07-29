@@ -27,8 +27,9 @@ class SubmitInteractionRequest extends FormRequest
                 'required',
                 Rule::exists('interactions', 'id'),
             ],
-            'answer' => [
-                'present' // 'present' memastikan field dikirim, bahkan jika nilainya null/kosong
+            'is_correct' => [
+                'required',
+                'boolean',
             ],
         ];
     }
