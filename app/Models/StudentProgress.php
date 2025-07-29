@@ -10,6 +10,8 @@ class StudentProgress extends Model
 {
     use HasFactory;
 
+    protected $table = 'student_progresses';
+
     /**
      * The attributes that are mass assignable.
      *
