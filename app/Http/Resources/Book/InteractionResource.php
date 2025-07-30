@@ -17,7 +17,7 @@ class InteractionResource extends JsonResource
         return [
             'id' => $this->id,
             'type' => $this->type,
-            'data' => $this->data,
+            // 'data' => $this->data,
             'points' => $this->points,
             'passed' => $this->when(isset($this->passed), $this->passed, false),
         ];

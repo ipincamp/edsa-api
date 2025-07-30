@@ -19,7 +19,8 @@ class PostActivityResource extends JsonResource
             'type' => $this->type,
             'order' => $this->order,
             'points' => $this->points,
-            'data' => $this->data,
+            'passed' => $this->passed,
+            // 'data' => $this->data,
         ];
     }
 }

@@ -15,6 +15,7 @@ use App\Models\Interaction;
 use App\Models\PostActivity;
 use App\Models\StudentProgress;
 use App\Models\User;
+use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Auth;
 
 class ProgressController extends Controller
@@ -151,18 +152,17 @@ class ProgressController extends Controller
             if ($progress->completedPostActivities->contains($postActivity->id)) {
                 return $this->sendError(
                     message: 'This post-activity has already been completed.',
-                    statusCode: 409, // Conflict
+                    statusCode: Response::HTTP_CONFLICT,
                 );
             }
 
             if (!$request->is_correct) {
                 return $this->sendError(
                     message: 'Answer is incorrect, no points awarded.',
-                    statusCode: 400,
+                    statusCode: Response::HTTP_BAD_REQUEST,
                 );
             }
 
-            // Catat bahwa aktivitas ini telah diselesaikan.
             $progress->completedPostActivities()->attach($postActivity->id);
 
             $progress->increment('total_points', $postActivity->points);
@@ -172,11 +172,12 @@ class ProgressController extends Controller
                 data: [
                     'points_awarded' => $postActivity->points,
                     'total_points' => $progress->total_points,
+                    'passed' => true,
                 ]
             );
         } catch (\Exception $e) {
             return $this->sendError(
-                message: 'Failed to submit post-activity.',
+                message: 'Failed to submit post-activity: ' . $e->getMessage(),
                 statusCode: 500
             );
         }

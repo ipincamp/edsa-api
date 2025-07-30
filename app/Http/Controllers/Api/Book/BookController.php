@@ -82,28 +82,30 @@ class BookController extends Controller
     {
         try {
             $user = Auth::user();
-            $completedInteractionIds = collect(); // Default koleksi kosong
+            $completedInteractionIds = collect();
+            $completedPostActivityIds = collect();
 
-            // Jika pengguna adalah siswa, dapatkan progresnya
             if ($user->role === RolesEnum::S->value) {
                 $progress = StudentProgress::where('student_id', $user->id)
                     ->where('book_id', $book->id)
                     ->first();
 
                 if ($progress) {
-                    // Ambil semua ID interaksi yang sudah diselesaikan untuk buku ini
                     $completedInteractionIds = $progress->completedInteractions()->pluck('interactions.id');
+                    $completedPostActivityIds = $progress->completedPostActivities()->pluck('post_activities.id');
                 }
             }
 
-            // Muat relasi buku
             $book->load(['pages.interaction', 'postActivities']);
 
-            // Tambahkan properti 'passed' secara manual ke setiap interaksi
             foreach ($book->pages as $page) {
                 if ($page->interaction) {
                     $page->interaction->passed = $completedInteractionIds->contains($page->interaction->id);
                 }
+            }
+
+            foreach ($book->postActivities as $activity) {
+                $activity->passed = $completedPostActivityIds->contains($activity->id);
             }
 
             return $this->sendSuccess(
@@ -112,7 +114,7 @@ class BookController extends Controller
             );
         } catch (\Exception $e) {
             return $this->sendError(
-                message: 'An error occurred while retrieving the book.',
+                message: 'An error occurred while fetching the book details.',
                 statusCode: 500
             );
         }

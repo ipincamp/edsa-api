@@ -17,7 +17,7 @@ class PageResource extends JsonResource
         return [
             'id' => $this->id,
             'page_number' => $this->page_number,
-            'content' => $this->content,
+            // 'content' => $this->content,
             'interaction' => new InteractionResource($this->whenLoaded('interaction')),
         ];
     }
