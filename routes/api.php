@@ -54,11 +54,18 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // User Progress
     Route::middleware(['role:student'])->prefix('progress')->group(function () {
-        Route::post('/start-book', [ProgressController::class, 'startOrContinueBook']);
-        Route::post('/submit-interaction', [ProgressController::class, 'submitInteraction']);
-        Route::post('/submit-post-activity', [ProgressController::class, 'submitPostActivity']);
-        Route::post('/complete-book', [ProgressController::class, 'completeBook']);
+        Route::post('/start-book', [ProgressController::class, 'startOrContinueBook'])
+            ->name('progress.start-book');
+        Route::patch('/update-page', [ProgressController::class, 'updateLastPage'])
+            ->name('progress.update-last-page');
+        Route::post('/submit-interaction', [ProgressController::class, 'submitInteraction'])
+            ->name('progress.submit-interaction');
+        Route::post('/submit-post-activity', [ProgressController::class, 'submitPostActivity'])
+            ->name('progress.submit-post-activity');
+        Route::post('/complete-book', [ProgressController::class, 'completeBook'])
+            ->name('progress.complete-book');
     });
     Route::get('/students/{user}/progress', [ProgressController::class, 'viewStudentProgress'])
-        ->middleware(['role:admin|teacher']);
+        ->middleware(['role:admin|teacher'])
+        ->name('progress.view-student-progress');
 });

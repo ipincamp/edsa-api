@@ -9,6 +9,7 @@ use App\Http\Requests\Book\Progress\CompleteBookRequest;
 use App\Http\Requests\Book\Progress\StartBookRequest;
 use App\Http\Requests\Book\Progress\SubmitInteractionRequest;
 use App\Http\Requests\Book\Progress\SubmitPostActivityRequest;
+use App\Http\Requests\Book\Progress\UpdateLastPageRequest;
 use App\Http\Resources\Book\StudentProgressResource;
 use App\Models\Interaction;
 use App\Models\PostActivity;
@@ -43,6 +44,29 @@ class ProgressController extends Controller
             return $this->sendError(
                 message: 'Failed to start or continue book progress.',
                 statusCode: 500
+            );
+        }
+    }
+
+    // Update the last page read by the student
+    public function updateLastPage(UpdateLastPageRequest $request)
+    {
+        try {
+            $student = Auth::user();
+
+            $progress = StudentProgress::where('student_id', $student->id)
+                ->where('book_id', $request->book_id)
+                ->firstOrFail();
+
+            $progress->update(['last_page' => $request->page_number]);
+
+            return $this->sendSuccess(
+                message: 'Last page updated successfully.',
+            );
+        } catch (\Exception $e) {
+            return $this->sendError(
+                message: 'Failed to update last page.',
+                statusCode: 500,
             );
         }
     }

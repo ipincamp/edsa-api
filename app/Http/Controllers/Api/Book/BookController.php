@@ -22,7 +22,6 @@ class BookController extends Controller
             $user = Auth::user();
             $allBooks = Book::orderBy('order_sequence', 'asc')->get();
 
-            // if ($user->hasRole(RolesEnum::A->value) || $user->hasRole(RolesEnum::T->value)) {
             if ($user->role === RolesEnum::A->value || $user->role === RolesEnum::T->value) {
                 return $this->sendSuccess(
                     message: 'Books retrieved successfully.',
