@@ -9,6 +9,7 @@ use App\Http\Requests\Auth\RegisterRequest;
 use App\Http\Requests\Auth\UpdateDetailRequest;
 use App\Http\Requests\Auth\UpdatePasswordRequest;
 use App\Http\Resources\Auth\AuthResource;
+use App\Http\Resources\User\ProfileResource;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -81,7 +82,7 @@ class AuthController extends Controller
         try {
             return $this->sendSuccess(
                 message: 'User profile retrieved successfully',
-                data: new AuthResource($request->user()),
+                data: new ProfileResource($request->user()),
             );
         } catch (\Exception $e) {
             return $this->sendError(
