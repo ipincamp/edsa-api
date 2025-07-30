@@ -29,25 +29,26 @@ class BookController extends Controller
                 );
             }
 
-            $studentProgress = StudentProgress::where('student_id', $user->id)
-                ->where('status', 'completed')
-                ->pluck('book_id');
+            $studentProgresses = StudentProgress::where('student_id', $user->id)
+                ->get()
+                ->keyBy('book_id');
 
-            $lastCompletedBookOrder = Book::whereIn('id', $studentProgress)
+            $lastCompletedBookOrder = Book::whereIn('id', $studentProgresses->where('status', 'completed')->pluck('book_id'))
                 ->max('order_sequence') ?? 0;
 
-            $unlockedBooks = $allBooks->filter(function ($book) use ($lastCompletedBookOrder) {
-                return $book->order_sequence <= $lastCompletedBookOrder + 1;
-            });
+            $booksWithStatusAndProgress = $allBooks->map(function ($book) use ($studentProgresses, $lastCompletedBookOrder) {
+                $progress = $studentProgresses->get($book->id);
 
-            $booksWithLockStatus = $allBooks->map(function ($book) use ($unlockedBooks) {
-                $book->is_locked = !$unlockedBooks->contains('id', $book->id);
+                $book->is_locked = $book->order_sequence > ($lastCompletedBookOrder + 1);
+                $book->latest_page = $progress ? $progress->latest_page : 0;
+                $book->last_page = $progress ? $progress->last_page : 0;
+
                 return $book;
             });
 
             return $this->sendSuccess(
                 message: 'Books retrieved successfully.',
-                data: AllBookResource::collection($booksWithLockStatus),
+                data: AllBookResource::collection($booksWithStatusAndProgress),
             );
         } catch (\Exception $e) {
             return $this->sendError(

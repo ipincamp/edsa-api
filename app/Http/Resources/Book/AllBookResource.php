@@ -20,6 +20,9 @@ class AllBookResource extends JsonResource
             'cover_image' => $this->cover_image_url,
             'order_sequence' => $this->order_sequence,
             'is_locked' => $this->when(isset($this->is_locked), $this->is_locked),
+            'latest_page' => $this->when(isset($this->latest_page), $this->latest_page),
+            'last_page' => $this->when(isset($this->last_page), $this->last_page),
+            'total_pages' => $this->pages_count,
         ];
     }
 }

@@ -31,8 +31,14 @@ class ProgressController extends Controller
                 ['status' => BookProgressEnum::IN_PROGRESS->value] // Default value jika baru dibuat
             );
 
-            // Jika statusnya 'not_started', ubah menjadi 'in_progress'
-            if ($progress->status === BookProgressEnum::NOT_STARTED->value) {
+            // Cek jika progres ini baru saja dibuat
+            if ($progress->wasRecentlyCreated) {
+                $progress->update([
+                    'status' => BookProgressEnum::IN_PROGRESS->value,
+                    'last_page' => 1,
+                    'latest_page' => 1,
+                ]);
+            } elseif ($progress->status === BookProgressEnum::NOT_STARTED->value) {
                 $progress->update(['status' => BookProgressEnum::IN_PROGRESS->value]);
             }
 
@@ -58,7 +64,13 @@ class ProgressController extends Controller
                 ->where('book_id', $request->book_id)
                 ->firstOrFail();
 
-            $progress->update(['last_page' => $request->page_number]);
+            $progress->last_page = $request->page_number;
+
+            if ($request->page_number > $progress->latest_page) {
+                $progress->latest_page = $request->page_number;
+            }
+
+            $progress->save();
 
             return $this->sendSuccess(
                 message: 'Last page updated successfully.',
@@ -100,7 +112,15 @@ class ProgressController extends Controller
             $progress->completedInteractions()->attach($interaction->id);
 
             $progress->increment('total_points', $interaction->points);
-            $progress->update(['last_page' => $interaction->page->page_number]);
+
+            $pageNumber = $interaction->page->page_number;
+            $progress->last_page = $pageNumber;
+
+            if ($pageNumber > $progress->latest_page) {
+                $progress->latest_page = $pageNumber;
+            }
+
+            $progress->save();
 
             return $this->sendSuccess(
                 message: 'Point awarded for interaction.',

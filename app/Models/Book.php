@@ -28,6 +28,13 @@ class Book extends Model
     ];
 
     /**
+     * Count the pages associated with the book.
+     */
+    protected $withCount = [
+        'pages',
+    ];
+
+    /**
      * Accessor untuk mendapatkan URL lengkap dari cover image.
      *
      * @return string

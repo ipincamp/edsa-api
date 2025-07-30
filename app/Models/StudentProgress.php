@@ -22,6 +22,7 @@ class StudentProgress extends Model
         'student_id',
         'book_id',
         'last_page',
+        'latest_page',
         'total_points',
         'status',
     ];
