@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Facades\Storage;
 
 class Book extends Model
 {
@@ -21,10 +22,23 @@ class Book extends Model
         'year',
         'genre',
         'focus',
-        'status',
         'cover_image',
         'order_sequence',
     ];
+
+    /**
+     * Accessor untuk mendapatkan URL lengkap dari cover image.
+     *
+     * @return string
+     */
+    public function getCoverImageUrlAttribute(): string
+    {
+        if ($this->cover_image && Storage::disk('public')->exists($this->cover_image)) {
+            return asset('assets/' . $this->cover_image);
+        }
+
+        return 'https://placehold.co/800x400/cccccc/FFFFFF/png?text=No+Image';
+    }
 
     /**
      * Get all of the pages for the Book

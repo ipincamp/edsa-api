@@ -23,6 +23,11 @@ class BookSeeder extends Seeder
         $this->createTenHillsBook();
         $this->createBawangPutihBook();
         $this->createFamilyTreeBook();
+        // tambahkan 4 buku lagi
+        $this->createBigMangoTreeBook();
+        $this->createAnimalFriendsBook();
+        $this->createMagicGardenBook();
+        $this->createSpaceAdventureBook();
     }
 
     /**
@@ -36,7 +41,7 @@ class BookSeeder extends Seeder
             'year' => '2025',
             'genre' => 'Fiction',
             'focus' => 'Alphabet',
-            'cover_image' => 'https://placehold.co/400x600/81C784/FFFFFF?text=Dewi+Sri',
+            'cover_image' => 'covers/book1.png',
             'order_sequence' => 1,
         ]);
 
@@ -175,7 +180,7 @@ class BookSeeder extends Seeder
             'year' => '2025',
             'genre' => 'Fiction',
             'focus' => 'Numbers',
-            'cover_image' => 'https://placehold.co/400x600/89CFF0/FFFFFF?text=Ten+Hills',
+            'cover_image' => 'covers/book2.png',
             'order_sequence' => 2,
         ]);
 
@@ -268,7 +273,7 @@ class BookSeeder extends Seeder
             'year' => '2025',
             'genre' => 'Moral Folklore',
             'focus' => 'Body Parts',
-            'cover_image' => 'https://placehold.co/400x600/D8BFD8/FFFFFF?text=Bawang+Putih',
+            'cover_image' => 'covers/book3.png',
             'order_sequence' => 3,
         ]);
 
@@ -345,7 +350,7 @@ class BookSeeder extends Seeder
             'year' => '2025',
             'genre' => 'Fiction',
             'focus' => 'Family',
-            'cover_image' => 'https://placehold.co/400x600/FFD54F/FFFFFF?text=The+Big+Mango+Tree',
+            'cover_image' => 'covers/book4.png',
             'order_sequence' => 4,
         ]);
 
@@ -424,6 +429,78 @@ class BookSeeder extends Seeder
                     ['member' => 'Baby', 'task_list' => ['make everyone smile']],
                 ]
             ],
+        ]);
+    }
+
+    /**
+     * Buku 5: "The Big Mango Tree and the Family of Five"
+     *
+     * Not Yet
+     */
+    private function createBigMangoTreeBook(): void
+    {
+        $book5 = Book::create([
+            'title' => 'The Big Mango Tree and the Family of Five',
+            'author' => 'Miss Ani',
+            'year' => '2025',
+            'genre' => 'Fiction',
+            'focus' => 'Family',
+            'cover_image' => 'https://placehold.co/800x400/81C784/FFFFFF?text=The+Big+Mango+Tree',
+            'order_sequence' => 5,
+        ]);
+    }
+
+    /**
+     * Buku 6: "Animal Friends"
+     *
+     * Not Yet
+     */
+    private function createAnimalFriendsBook(): void
+    {
+        $book6 = Book::create([
+            'title' => 'Animal Friends',
+            'author' => 'Miss Ani',
+            'year' => '2026',
+            'genre' => 'Fiction',
+            'focus' => 'Friendship',
+            'cover_image' => 'https://placehold.co/800x400/81C784/FFFFFF?text=Animal+Friends',
+            'order_sequence' => 6,
+        ]);
+    }
+
+    /**
+     * Buku 7: "The Magical Forest"
+     *
+     * Not Yet
+     */
+    private function createMagicGardenBook(): void
+    {
+        $book7 = Book::create([
+            'title' => 'The Magical Forest',
+            'author' => 'Miss Ani',
+            'year' => '2026',
+            'genre' => 'Fantasy',
+            'focus' => 'Imagination',
+            'cover_image' => 'https://placehold.co/800x400/81C784/FFFFFF?text=The+Magical+Forest',
+            'order_sequence' => 7,
+        ]);
+    }
+
+    /**
+     * Buku 8: "The Adventures of Little Star"
+     *
+     * Not Yet
+     */
+    private function createSpaceAdventureBook(): void
+    {
+        $book8 = Book::create([
+            'title' => 'The Adventures of Little Star',
+            'author' => 'Miss Ani',
+            'year' => '2026',
+            'genre' => 'Adventure',
+            'focus' => 'Space',
+            'cover_image' => 'https://placehold.co/800x400/81C784/FFFFFF?text=The+Adventures+of+Little+Star',
+            'order_sequence' => 8,
         ]);
     }
 }

@@ -38,7 +38,7 @@ class AuthResource extends JsonResource
             'id' => $this->id,
             'name' => $this->name,
             'email' => $this->email,
-            'role' => $this->getRoleNames()->first(),
+            'role' => $this->role,
             'token' => $this->when($this->token, $this->token),
             'joined_at' => $this->created_at->format('Y-m-d H:i:s'),
         ];

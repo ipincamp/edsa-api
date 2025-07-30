@@ -51,6 +51,16 @@ class User extends Authenticatable
     }
 
     /**
+     * Accessor untuk mendapatkan nama role.
+     *
+     * @return string
+     */
+    public function getRoleAttribute(): string
+    {
+        return $this->getRoleNames()->first() ?? 'No Role';
+    }
+
+    /**
      * The groups that belong to the User
      *
      * Grup di mana user ini adalah seorang siswa

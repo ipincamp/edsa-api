@@ -6,6 +6,7 @@ use App\Enums\RolesEnum;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Book\StoreBookRequest;
 use App\Http\Requests\Book\UpdateBookRequest;
+use App\Http\Resources\Book\AllBookResource;
 use App\Http\Resources\Book\BookResource;
 use App\Models\Book;
 use App\Models\StudentProgress;
@@ -21,10 +22,11 @@ class BookController extends Controller
             $user = Auth::user();
             $allBooks = Book::orderBy('order_sequence', 'asc')->get();
 
-            if ($user->hasRole(RolesEnum::A->value) || $user->hasRole(RolesEnum::T->value)) {
+            // if ($user->hasRole(RolesEnum::A->value) || $user->hasRole(RolesEnum::T->value)) {
+            if ($user->role === RolesEnum::A->value || $user->role === RolesEnum::T->value) {
                 return $this->sendSuccess(
                     message: 'Books retrieved successfully.',
-                    data: BookResource::collection($allBooks),
+                    data: AllBookResource::collection($allBooks),
                 );
             }
 
@@ -46,7 +48,7 @@ class BookController extends Controller
 
             return $this->sendSuccess(
                 message: 'Books retrieved successfully.',
-                data: BookResource::collection($booksWithLockStatus),
+                data: AllBookResource::collection($booksWithLockStatus),
             );
         } catch (\Exception $e) {
             return $this->sendError(
@@ -83,7 +85,7 @@ class BookController extends Controller
             $completedInteractionIds = collect(); // Default koleksi kosong
 
             // Jika pengguna adalah siswa, dapatkan progresnya
-            if ($user->hasRole(RolesEnum::S->value)) {
+            if ($user->role === RolesEnum::S->value) {
                 $progress = StudentProgress::where('student_id', $user->id)
                     ->where('book_id', $book->id)
                     ->first();

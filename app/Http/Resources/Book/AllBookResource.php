@@ -5,7 +5,7 @@ namespace App\Http\Resources\Book;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
-class BookResource extends JsonResource
+class AllBookResource extends JsonResource
 {
     /**
      * Transform the resource into an array.
@@ -17,15 +17,9 @@ class BookResource extends JsonResource
         return [
             'id' => $this->id,
             'title' => $this->title,
-            'author' => $this->author,
-            'year' => $this->year,
-            'genre' => $this->genre,
-            'focus' => $this->focus,
             'cover_image' => $this->cover_image_url,
             'order_sequence' => $this->order_sequence,
             'is_locked' => $this->when(isset($this->is_locked), $this->is_locked),
-            'pages' => PageResource::collection($this->whenLoaded('pages')),
-            'post_activities' => PostActivityResource::collection($this->whenLoaded('postActivities')),
         ];
     }
 }
