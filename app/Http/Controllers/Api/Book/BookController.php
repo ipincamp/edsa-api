@@ -96,7 +96,7 @@ class BookController extends Controller
                 }
             }
 
-            $book->load(['pages.interaction', 'postActivities']);
+            $book->load(['pages.interaction', 'pages.book', 'postActivities']);
 
             foreach ($book->pages as $page) {
                 if ($page->interaction) {
