@@ -17,8 +17,8 @@ class PageResource extends JsonResource
         return [
             'id' => $this->id,
             'page_number' => $this->page_number,
-            // 'content' => $this->content,
-            'image' => $this->book->cover_image_url,
+            'content' => $this->when($this->page_number === 0, $this->content),
+            'image' => $this->when($this->page_number === 0, $this->book->cover_image_url),
             'interaction' => new InteractionResource($this->whenLoaded('interaction')),
         ];
     }
