@@ -55,6 +55,7 @@ class StudentProgress extends Model
     public function completedInteractions(): BelongsToMany
     {
         return $this->belongsToMany(Interaction::class, 'interaction_progress')
+            ->withPivot(['correct', 'total'])
             ->withTimestamps();
     }
 

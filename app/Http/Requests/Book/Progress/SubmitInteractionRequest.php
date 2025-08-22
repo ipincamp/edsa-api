@@ -27,10 +27,14 @@ class SubmitInteractionRequest extends FormRequest
                 'required',
                 Rule::exists('interactions', 'id'),
             ],
-            'is_correct' => [
+            "correct" => [
                 'required',
-                'boolean',
+                'numeric',
             ],
+            "total" => [
+                'required',
+                'numeric',
+            ]
         ];
     }
 }

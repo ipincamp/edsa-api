@@ -84,7 +84,13 @@ class ProgressController extends Controller
         }
     }
 
-    // Submit interaction answer
+    /**
+     * Submit interaction answer and save temporary score.
+     * Points are only awarded once upon achieving a perfect score.
+     *
+     * @param  \App\Http\Requests\Book\Progress\SubmitInteractionRequest  $request
+     * @return \Illuminate\Http\JsonResponse
+     */
     public function submitInteraction(SubmitInteractionRequest $request)
     {
         try {
@@ -95,44 +101,55 @@ class ProgressController extends Controller
                 ->where('book_id', $interaction->page->book->id)
                 ->firstOrFail();
 
-            if ($progress->completedInteractions->contains($interaction->id)) {
+            // Cek apakah interaksi ini sudah pernah mendapatkan skor sempurna sebelumnya
+            $existingAttempt = $progress->completedInteractions()
+                ->where('interaction_id', $interaction->id)
+                ->first();
+
+            if ($existingAttempt && $existingAttempt->pivot->correct === $existingAttempt->pivot->total) {
                 return $this->sendError(
-                    message: 'This interaction has already been completed.',
+                    message: 'This interaction has already been completed with a perfect score.',
                     statusCode: 409, // Conflict
                 );
             }
 
-            if (!$request->is_correct) {
-                return $this->sendError(
-                    message: 'Answer is incorrect, no points awarded.',
-                    statusCode: 400,
-                );
+            // Simpan atau update skor sementara (terbaru)
+            // syncWithoutDetaching akan membuat record baru jika belum ada, atau update jika sudah ada
+            $progress->completedInteractions()->syncWithoutDetaching([
+                $interaction->id => [
+                    'correct' => $request->correct,
+                    'total' => $request->total,
+                ]
+            ]);
+
+            $points_awarded = 0;
+            $isPerfectScore = (int) $request->correct === (int) $request->total;
+
+            // Berikan poin HANYA JIKA skor saat ini sempurna DAN ini adalah pertama kalinya sempurna
+            if ($isPerfectScore) {
+                $points_awarded = $interaction->points;
+                $progress->increment('total_points', $points_awarded);
             }
 
-            // Catat bahwa interaksi ini telah diselesaikan.
-            $progress->completedInteractions()->attach($interaction->id);
-
-            $progress->increment('total_points', $interaction->points);
-
+            // Update halaman terakhir yang diakses
             $pageNumber = $interaction->page->page_number;
             $progress->last_page = $pageNumber;
-
             if ($pageNumber > $progress->latest_page) {
                 $progress->latest_page = $pageNumber;
             }
-
             $progress->save();
 
             return $this->sendSuccess(
-                message: 'Point awarded for interaction.',
+                message: 'Interaction score has been saved.',
                 data: [
-                    'points_awarded' => $interaction->points,
+                    'points_awarded' => $points_awarded,
                     'total_points' => $progress->total_points,
+                    'is_perfect_score' => $isPerfectScore,
                 ]
             );
         } catch (\Exception $e) {
             return $this->sendError(
-                message: 'Failed to submit interaction.',
+                message: 'Failed to submit interaction: ' . $e->getMessage(),
                 statusCode: 500
             );
         }
