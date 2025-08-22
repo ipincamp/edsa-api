@@ -7,12 +7,14 @@ import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/ipincamp/edsa/internal/api/routes"
 	"github.com/ipincamp/edsa/internal/config"
+	"github.com/ipincamp/edsa/internal/database"
 )
 
 func main() {
 	env := config.LoadEnv()
-	app := fiber.New()
+	database.ConnectDB(env)
 
+	app := fiber.New()
 	routes.SetupRoutes(app)
 
 	port := env.AppPort
