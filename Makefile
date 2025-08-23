@@ -9,8 +9,8 @@ MAIN_APP = ./cmd/app/main.go
 # Build: Membuat executable aplikasi
 build:
 	@echo "Building application..."
-	go build -o ./tmp/runner $(MAIN_APP)
-	@echo "Build successful! Executable is at ./tmp/runner"
+	go build -o ./bin/server $(MAIN_APP)
+	@echo "Build successful! Executable is at ./bin/server"
 
 # Run: Menjalankan aplikasi di mode pengembangan
 run:
@@ -20,7 +20,7 @@ run:
 # Run-prod: Menjalankan executable yang sudah di-build
 run-prod: build
 	@echo "Running application in production mode..."
-	APP_ENV=production ./tmp/runner
+	APP_ENV=production ./bin/server
 
 # Migrasi: Membuat file migrasi baru
 # Contoh: make new-migration name=create_products_table
@@ -47,7 +47,7 @@ seed:
 clean:
 	@echo "Cleaning temporary files and cache..."
 	go clean -modcache
-	rm -rf ./tmp
+	rm -rf ./bin
 	@echo "Clean complete!"
 
 .DEFAULT_GOAL := run
