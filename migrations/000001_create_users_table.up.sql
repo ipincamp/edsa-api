@@ -3,6 +3,7 @@ CREATE TABLE `users` (
   `name` varchar(100) NOT NULL,
   `email` varchar(255) NOT NULL,
   `password` varchar(255) NOT NULL,
+  `status` TINYINT NOT NULL DEFAULT 1,
   `created_at` timestamp NULL,
   `updated_at` timestamp NULL,
   `deleted_at` timestamp NULL DEFAULT NULL,

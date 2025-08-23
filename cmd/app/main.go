@@ -20,12 +20,12 @@ func main() {
 	env := config.LoadEnv()
 	database.ConnectDB(env)
 
-	numWorkers := max(runtime.NumCPU()/2, 1)
-	worker.StartHasherWorkers(numWorkers)
-
 	customValidator := validator.New()
-
 	userRepo := repositories.NewUserRepository(database.DB)
+
+	numWorkers := max(runtime.NumCPU()/2, 1)
+	worker.StartRegistrationWorkers(numWorkers, userRepo)
+
 	authService := services.NewAuthService(userRepo)
 	authHandler := handlers.NewAuthHandler(authService, env, customValidator)
 	userHandler := handlers.NewUserHandler(userRepo)

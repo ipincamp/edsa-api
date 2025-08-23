@@ -12,7 +12,7 @@ import (
 )
 
 type AuthService interface {
-	Register(req *dto.RegisterRequest) (*models.User, error)
+	Register(req *dto.RegisterRequest) error
 	Login(req *dto.LoginRequest) (*models.User, error)
 }
 
@@ -24,31 +24,23 @@ func NewAuthService(userRepo repositories.UserRepository) AuthService {
 	return &authService{userRepo}
 }
 
-func (s *authService) Register(req *dto.RegisterRequest) (*models.User, error) {
+func (s *authService) Register(req *dto.RegisterRequest) error {
 	existingUser, err := s.userRepo.FindUserByEmail(req.Email)
 	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
-		return nil, err
+		return err
 	}
 	if existingUser != nil {
-		return nil, errors.New("email already exists")
+		return errors.New("email already exists")
 	}
 
-	hashedPassword, err := worker.HashPasswordAsync(req.Password)
-	if err != nil {
-		return nil, err
-	}
-
-	newUser := &models.User{
+	job := worker.RegistrationJob{
 		Name:     req.Name,
 		Email:    req.Email,
-		Password: hashedPassword,
+		Password: req.Password,
 	}
+	worker.QueueRegistrationJob(job)
 
-	if err := s.userRepo.CreateUser(newUser); err != nil {
-		return nil, err
-	}
-
-	return newUser, nil
+	return nil
 }
 
 func (s *authService) Login(req *dto.LoginRequest) (*models.User, error) {
