@@ -20,13 +20,18 @@ func main() {
 	env := config.LoadEnv()
 	database.ConnectDB(env)
 
+	emailCache := repositories.NewEmailCache(database.DB)
+	if err := emailCache.LoadAllEmails(); err != nil {
+		log.Fatalf("Failed to load emails into cache: %v", err)
+	}
+
 	customValidator := validator.New()
-	userRepo := repositories.NewUserRepository(database.DB)
 
 	numWorkers := max(runtime.NumCPU()/2, 1)
-	worker.StartRegistrationWorkers(numWorkers, userRepo)
+	worker.StartRegistrationWorkers(numWorkers, repositories.NewUserRepository(database.DB), emailCache)
 
-	authService := services.NewAuthService(userRepo)
+	userRepo := repositories.NewUserRepository(database.DB)
+	authService := services.NewAuthService(userRepo, emailCache)
 	authHandler := handlers.NewAuthHandler(authService, env, customValidator)
 	userHandler := handlers.NewUserHandler(userRepo)
 

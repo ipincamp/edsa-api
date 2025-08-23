@@ -21,16 +21,18 @@ type RegistrationProcessor struct {
 	failedRegistrations map[string]string
 	mu                  sync.Mutex
 	userRepo            repositories.UserRepository
+	emailCache          repositories.EmailCache
 }
 
 var processor *RegistrationProcessor
 
-func StartRegistrationWorkers(numWorkers int, repo repositories.UserRepository) {
+func StartRegistrationWorkers(numWorkers int, repo repositories.UserRepository, cache repositories.EmailCache) {
 	processor = &RegistrationProcessor{
 		jobQueue:            make(chan RegistrationJob, 100),
 		processingEmails:    make(map[string]bool),
 		failedRegistrations: make(map[string]string),
 		userRepo:            repo,
+		emailCache:          cache,
 	}
 
 	for i := 1; i <= numWorkers; i++ {
@@ -61,6 +63,7 @@ func (p *RegistrationProcessor) worker(id int) {
 			log.Printf("Worker %d: Failed to create user %s: %v", id, job.Email, err)
 			p.markAsFailed(job.Email, "Could not save user data.")
 		} else {
+			p.emailCache.AddEmail(job.Email)
 			log.Printf("Worker %d: Successfully registered user %s", id, job.Email)
 			p.markAsDone(job.Email)
 		}

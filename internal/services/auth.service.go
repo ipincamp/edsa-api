@@ -3,7 +3,6 @@ package services
 import (
 	"errors"
 	"fmt"
-	"log"
 
 	"github.com/ipincamp/edsa/internal/api/dto"
 	"github.com/ipincamp/edsa/internal/models"
@@ -19,28 +18,28 @@ type AuthService interface {
 }
 
 type authService struct {
-	userRepo repositories.UserRepository
+	userRepo   repositories.UserRepository
+	emailCache repositories.EmailCache
 }
 
-func NewAuthService(userRepo repositories.UserRepository) AuthService {
-	return &authService{userRepo}
+func NewAuthService(userRepo repositories.UserRepository, emailCache repositories.EmailCache) AuthService {
+	return &authService{userRepo, emailCache}
 }
 
 func (s *authService) Register(req *dto.RegisterRequest) error {
+	if s.emailCache.EmailExists(req.Email) {
+		return errors.New("email already exists")
+	}
 	if worker.IsEmailBeingProcessed(req.Email) {
 		return errors.New("registration for this email is already in progress")
 	}
 
-	if reason, failed := worker.GetRegistrationFailureReason(req.Email); failed {
-		log.Printf("Allowing re-registration for a previously failed email: %s (Reason: %s)", req.Email, reason)
-	} else {
-		existingUser, err := s.userRepo.FindUserByEmail(req.Email)
-		if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
-			return err
-		}
-		if existingUser != nil {
-			return errors.New("email already exists")
-		}
+	existingUser, err := s.userRepo.FindUserByEmail(req.Email)
+	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
+		return err
+	}
+	if existingUser != nil {
+		return errors.New("email already exists")
 	}
 
 	job := worker.RegistrationJob{
@@ -58,15 +57,16 @@ func (s *authService) Login(req *dto.LoginRequest) (*models.User, error) {
 		return nil, errors.New("your account is still being processed, please try again in a moment")
 	}
 
+	if !s.emailCache.EmailExists(req.Email) {
+		if reason, failed := worker.GetRegistrationFailureReason(req.Email); failed {
+			return nil, fmt.Errorf("your account registration failed: %s Please try to register again", reason)
+		}
+		return nil, errors.New("invalid credentials")
+	}
+
 	user, err := s.userRepo.FindUserByEmail(req.Email)
 	if err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			if reason, failed := worker.GetRegistrationFailureReason(req.Email); failed {
-				return nil, fmt.Errorf("your account registration failed: %s Please try to register again", reason)
-			}
-			return nil, errors.New("invalid credentials")
-		}
-		return nil, err
+		return nil, errors.New("invalid credentials")
 	}
 
 	if user.Status != models.StatusActive {
