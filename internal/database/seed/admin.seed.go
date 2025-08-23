@@ -18,6 +18,7 @@ func SeedAdmin(db *gorm.DB, env *config.Env) {
 	adminUser := models.User{
 		Name:     env.AdminName,
 		Password: hashedPassword,
+		Status:   models.StatusActive,
 	}
 
 	result := db.Where(models.User{Email: env.AdminEmail}).

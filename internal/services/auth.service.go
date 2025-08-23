@@ -25,6 +25,10 @@ func NewAuthService(userRepo repositories.UserRepository) AuthService {
 }
 
 func (s *authService) Register(req *dto.RegisterRequest) error {
+	if worker.IsEmailBeingProcessed(req.Email) {
+		return errors.New("registration for this email is already in progress")
+	}
+
 	existingUser, err := s.userRepo.FindUserByEmail(req.Email)
 	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
 		return err

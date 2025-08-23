@@ -2,6 +2,7 @@ package worker
 
 import (
 	"log"
+	"sync"
 
 	"github.com/ipincamp/edsa/internal/models"
 	"github.com/ipincamp/edsa/internal/repositories"
@@ -14,27 +15,36 @@ type RegistrationJob struct {
 	Password string
 }
 
-var jobQueue chan RegistrationJob
+type RegistrationProcessor struct {
+	jobQueue   chan RegistrationJob
+	inProgress map[string]bool
+	mu         sync.Mutex
+	userRepo   repositories.UserRepository
+}
 
-var userRepo repositories.UserRepository
+var processor *RegistrationProcessor
 
 func StartRegistrationWorkers(numWorkers int, repo repositories.UserRepository) {
-	jobQueue = make(chan RegistrationJob, 100)
-	userRepo = repo
+	processor = &RegistrationProcessor{
+		jobQueue:   make(chan RegistrationJob, 100),
+		inProgress: make(map[string]bool),
+		userRepo:   repo,
+	}
 
 	for i := 1; i <= numWorkers; i++ {
-		go worker(i, jobQueue)
+		go processor.worker(i)
 	}
 	log.Printf("Started %d registration workers.", numWorkers)
 }
 
-func worker(id int, jobs <-chan RegistrationJob) {
-	for job := range jobs {
+func (p *RegistrationProcessor) worker(id int) {
+	for job := range p.jobQueue {
 		log.Printf("Worker %d: Processing registration for %s", id, job.Email)
 
 		hashedPassword, err := utils.HashPassword(job.Password)
 		if err != nil {
 			log.Printf("Worker %d: Failed to hash password for %s: %v", id, job.Email, err)
+			p.markAsDone(job.Email)
 			continue
 		}
 
@@ -45,14 +55,33 @@ func worker(id int, jobs <-chan RegistrationJob) {
 			Status:   models.StatusActive,
 		}
 
-		if err := userRepo.CreateUser(newUser); err != nil {
+		if err := p.userRepo.CreateUser(newUser); err != nil {
 			log.Printf("Worker %d: Failed to create user %s: %v", id, job.Email, err)
 		} else {
 			log.Printf("Worker %d: Successfully registered user %s", id, job.Email)
 		}
+
+		p.markAsDone(job.Email)
 	}
 }
 
 func QueueRegistrationJob(job RegistrationJob) {
-	jobQueue <- job
+	processor.mu.Lock()
+	processor.inProgress[job.Email] = true
+	processor.mu.Unlock()
+
+	processor.jobQueue <- job
+}
+
+func IsEmailBeingProcessed(email string) bool {
+	processor.mu.Lock()
+	defer processor.mu.Unlock()
+	_, exists := processor.inProgress[email]
+	return exists
+}
+
+func (p *RegistrationProcessor) markAsDone(email string) {
+	processor.mu.Lock()
+	defer processor.mu.Unlock()
+	delete(p.inProgress, email)
 }
