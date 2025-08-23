@@ -2,20 +2,11 @@ package routes
 
 import (
 	"github.com/gofiber/fiber/v2"
-	"github.com/ipincamp/edsa/internal/api/response"
+	"github.com/ipincamp/edsa/internal/api/handlers"
+	"github.com/ipincamp/edsa/internal/api/middleware"
+	"github.com/ipincamp/edsa/internal/config"
 )
 
-func UserRoutes(app fiber.Router) {
-	users := app.Group("/users")
-
-	users.Get("/", func(c *fiber.Ctx) error {
-		return response.Success(c, fiber.StatusOK, "List of users", nil)
-	})
-
-	users.Get("/:id", func(c *fiber.Ctx) error {
-		id := c.Params("id")
-		return response.Success(c, fiber.StatusOK, "User details", fiber.Map{
-			"id": id,
-		})
-	})
+func UserRoutes(router fiber.Router, userHandler *handlers.UserHandler, env *config.Env) {
+	router.Get("/profile", middleware.Protected(env), userHandler.GetProfile)
 }
