@@ -14,7 +14,7 @@ func SetupRoutes(app *fiber.App, authHandler *handlers.AuthHandler, userHandler 
 
 	api := app.Group("/api")
 
-	AuthRoutes(api, authHandler)
+	AuthRoutes(api, authHandler, env)
 	UserRoutes(api, userHandler, env)
 
 	app.Use(func(c *fiber.Ctx) error {

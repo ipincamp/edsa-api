@@ -93,6 +93,7 @@ Gunakan `Makefile` untuk menjalankan perintah-perintah berikut dari terminal And
 
 * **`POST /api/auth/register`**: Mendaftarkan pengguna baru.
 * **`POST /api/auth/login`**: Login untuk mendapatkan token Paseto.
+* **`POST /api/auth/logout`**: Logout pengguna (memerlukan token).
 
 #### Pengguna (Memerlukan Autentikasi)
 

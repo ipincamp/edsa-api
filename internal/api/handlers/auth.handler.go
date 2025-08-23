@@ -70,3 +70,7 @@ func (h *AuthHandler) Login(c *fiber.Ctx) error {
 
 	return response.Success(c, fiber.StatusOK, "Login successful", fiber.Map{"token": token})
 }
+
+func (h *AuthHandler) Logout(c *fiber.Ctx) error {
+	return response.Success(c, fiber.StatusOK, "Logout successful", nil)
+}
