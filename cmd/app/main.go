@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"log"
+	"runtime"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/ipincamp/edsa/internal/api/handlers"
@@ -12,11 +13,15 @@ import (
 	"github.com/ipincamp/edsa/internal/database"
 	"github.com/ipincamp/edsa/internal/repositories"
 	"github.com/ipincamp/edsa/internal/services"
+	"github.com/ipincamp/edsa/internal/worker"
 )
 
 func main() {
 	env := config.LoadEnv()
 	database.ConnectDB(env)
+
+	numWorkers := max(runtime.NumCPU()/2, 1)
+	worker.StartHasherWorkers(numWorkers)
 
 	customValidator := validator.New()
 

@@ -7,6 +7,7 @@ import (
 	"github.com/ipincamp/edsa/internal/models"
 	"github.com/ipincamp/edsa/internal/repositories"
 	"github.com/ipincamp/edsa/internal/utils"
+	"github.com/ipincamp/edsa/internal/worker"
 	"gorm.io/gorm"
 )
 
@@ -32,7 +33,7 @@ func (s *authService) Register(req *dto.RegisterRequest) (*models.User, error) {
 		return nil, errors.New("email already exists")
 	}
 
-	hashedPassword, err := utils.HashPassword(req.Password)
+	hashedPassword, err := worker.HashPasswordAsync(req.Password)
 	if err != nil {
 		return nil, err
 	}
