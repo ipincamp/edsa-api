@@ -6,6 +6,8 @@ Proyek ini adalah REST API untuk melakukan tracking progres belajar siswa. Diban
 
 * **Go Fiber**: Framework web yang cepat dan minimalis.
 * **Struktur Terlapis**: Memisahkan kode ke dalam lapisan `handler`, `service`, dan `repository`.
+* **Registrasi Asinkronus**: Menggunakan worker pool untuk memproses registrasi di latar belakang, membuat API lebih responsif.
+* **Penanganan Kegagalan**: Memberikan notifikasi yang jelas jika proses registrasi di latar belakang gagal.
 * **Autentikasi Aman dengan Paseto**: Menggunakan token Paseto sebagai alternatif yang lebih aman dari JWT.
 * **Password Hashing dengan Argon2**: Mengamankan password pengguna dengan algoritma *hashing* modern.
 * **GORM**: ORM yang tangguh untuk operasi database.
@@ -91,7 +93,7 @@ Gunakan `Makefile` untuk menjalankan perintah-perintah berikut dari terminal And
 
 #### Autentikasi
 
-* **`POST /api/auth/register`**: Mendaftarkan pengguna baru.
+* **`POST /api/auth/register`**: Mendaftarkan pengguna baru. Proses ini berjalan secara asinkronus. Anda akan menerima respons 202 Accepted yang menandakan permintaan Anda sedang diproses.
 * **`POST /api/auth/login`**: Login untuk mendapatkan token Paseto.
 * **`POST /api/auth/logout`**: Logout pengguna (memerlukan token).
 

@@ -2,6 +2,8 @@ package services
 
 import (
 	"errors"
+	"fmt"
+	"log"
 
 	"github.com/ipincamp/edsa/internal/api/dto"
 	"github.com/ipincamp/edsa/internal/models"
@@ -29,12 +31,16 @@ func (s *authService) Register(req *dto.RegisterRequest) error {
 		return errors.New("registration for this email is already in progress")
 	}
 
-	existingUser, err := s.userRepo.FindUserByEmail(req.Email)
-	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
-		return err
-	}
-	if existingUser != nil {
-		return errors.New("email already exists")
+	if reason, failed := worker.GetRegistrationFailureReason(req.Email); failed {
+		log.Printf("Allowing re-registration for a previously failed email: %s (Reason: %s)", req.Email, reason)
+	} else {
+		existingUser, err := s.userRepo.FindUserByEmail(req.Email)
+		if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
+			return err
+		}
+		if existingUser != nil {
+			return errors.New("email already exists")
+		}
 	}
 
 	job := worker.RegistrationJob{
@@ -48,12 +54,23 @@ func (s *authService) Register(req *dto.RegisterRequest) error {
 }
 
 func (s *authService) Login(req *dto.LoginRequest) (*models.User, error) {
+	if worker.IsEmailBeingProcessed(req.Email) {
+		return nil, errors.New("your account is still being processed, please try again in a moment")
+	}
+
 	user, err := s.userRepo.FindUserByEmail(req.Email)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
+			if reason, failed := worker.GetRegistrationFailureReason(req.Email); failed {
+				return nil, fmt.Errorf("your account registration failed: %s Please try to register again", reason)
+			}
 			return nil, errors.New("invalid credentials")
 		}
 		return nil, err
+	}
+
+	if user.Status != models.StatusActive {
+		return nil, fmt.Errorf("your account is not active (status: %s)", user.Status)
 	}
 
 	match, err := utils.CheckPasswordHash(req.Password, user.Password)

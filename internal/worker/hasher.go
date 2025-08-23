@@ -16,19 +16,21 @@ type RegistrationJob struct {
 }
 
 type RegistrationProcessor struct {
-	jobQueue   chan RegistrationJob
-	inProgress map[string]bool
-	mu         sync.Mutex
-	userRepo   repositories.UserRepository
+	jobQueue            chan RegistrationJob
+	processingEmails    map[string]bool
+	failedRegistrations map[string]string
+	mu                  sync.Mutex
+	userRepo            repositories.UserRepository
 }
 
 var processor *RegistrationProcessor
 
 func StartRegistrationWorkers(numWorkers int, repo repositories.UserRepository) {
 	processor = &RegistrationProcessor{
-		jobQueue:   make(chan RegistrationJob, 100),
-		inProgress: make(map[string]bool),
-		userRepo:   repo,
+		jobQueue:            make(chan RegistrationJob, 100),
+		processingEmails:    make(map[string]bool),
+		failedRegistrations: make(map[string]string),
+		userRepo:            repo,
 	}
 
 	for i := 1; i <= numWorkers; i++ {
@@ -43,8 +45,8 @@ func (p *RegistrationProcessor) worker(id int) {
 
 		hashedPassword, err := utils.HashPassword(job.Password)
 		if err != nil {
-			log.Printf("Worker %d: Failed to hash password for %s: %v", id, job.Email, err)
-			p.markAsDone(job.Email)
+			log.Printf("Worker %d: Hashing failed for %s: %v", id, job.Email, err)
+			p.markAsFailed(job.Email, "Internal server error during processing.")
 			continue
 		}
 
@@ -57,31 +59,45 @@ func (p *RegistrationProcessor) worker(id int) {
 
 		if err := p.userRepo.CreateUser(newUser); err != nil {
 			log.Printf("Worker %d: Failed to create user %s: %v", id, job.Email, err)
+			p.markAsFailed(job.Email, "Could not save user data.")
 		} else {
 			log.Printf("Worker %d: Successfully registered user %s", id, job.Email)
+			p.markAsDone(job.Email)
 		}
-
-		p.markAsDone(job.Email)
 	}
 }
 
 func QueueRegistrationJob(job RegistrationJob) {
 	processor.mu.Lock()
-	processor.inProgress[job.Email] = true
-	processor.mu.Unlock()
-
+	defer processor.mu.Unlock()
+	processor.processingEmails[job.Email] = true
+	delete(processor.failedRegistrations, job.Email)
 	processor.jobQueue <- job
 }
 
 func IsEmailBeingProcessed(email string) bool {
 	processor.mu.Lock()
 	defer processor.mu.Unlock()
-	_, exists := processor.inProgress[email]
+	_, exists := processor.processingEmails[email]
 	return exists
 }
 
-func (p *RegistrationProcessor) markAsDone(email string) {
+func GetRegistrationFailureReason(email string) (string, bool) {
 	processor.mu.Lock()
 	defer processor.mu.Unlock()
-	delete(p.inProgress, email)
+	reason, exists := processor.failedRegistrations[email]
+	return reason, exists
+}
+
+func (p *RegistrationProcessor) markAsDone(email string) {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	delete(p.processingEmails, email)
+}
+
+func (p *RegistrationProcessor) markAsFailed(email, reason string) {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	delete(p.processingEmails, email)
+	p.failedRegistrations[email] = reason
 }
