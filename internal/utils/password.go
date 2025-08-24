@@ -69,7 +69,6 @@ func CheckPasswordHash(password, encodedHash string) (bool, error) {
 	if err != nil {
 		return false, err
 	}
-	p.saltLength = uint32(len(salt))
 
 	hash, err := base64.RawStdEncoding.DecodeString(parts[5])
 	if err != nil {

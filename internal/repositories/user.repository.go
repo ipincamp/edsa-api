@@ -6,6 +6,7 @@ import (
 )
 
 type UserRepository interface {
+	WithTx(tx *gorm.DB) UserRepository
 	CreateUser(user *models.User) error
 	FindUserByEmail(email string) (*models.User, error)
 	FindUserByID(id string) (*models.User, error)
@@ -17,6 +18,10 @@ type userRepository struct {
 
 func NewUserRepository(db *gorm.DB) UserRepository {
 	return &userRepository{db}
+}
+
+func (r *userRepository) WithTx(tx *gorm.DB) UserRepository {
+	return &userRepository{db: tx}
 }
 
 func (r *userRepository) CreateUser(user *models.User) error {

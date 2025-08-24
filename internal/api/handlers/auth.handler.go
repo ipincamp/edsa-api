@@ -32,12 +32,13 @@ func (h *AuthHandler) Register(c *fiber.Ctx) error {
 		return response.Error(c, fiber.StatusBadRequest, "Validation failed", errs)
 	}
 
-	err := h.authService.Register(&req)
+	user, err := h.authService.Register(&req)
 	if err != nil {
 		return response.Error(c, fiber.StatusConflict, err.Error())
 	}
 
-	return response.Success(c, fiber.StatusAccepted, "Registration request accepted and is being processed", nil)
+	formattedUser := dto.FormatUser(user)
+	return response.Success(c, fiber.StatusCreated, "Registration successful", formattedUser)
 }
 
 func (h *AuthHandler) Login(c *fiber.Ctx) error {

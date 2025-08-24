@@ -3,7 +3,6 @@ package main
 import (
 	"fmt"
 	"log"
-	"runtime"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/ipincamp/edsa/internal/api/handlers"
@@ -13,25 +12,16 @@ import (
 	"github.com/ipincamp/edsa/internal/database"
 	"github.com/ipincamp/edsa/internal/repositories"
 	"github.com/ipincamp/edsa/internal/services"
-	"github.com/ipincamp/edsa/internal/worker"
 )
 
 func main() {
 	env := config.LoadEnv()
 	database.ConnectDB(env)
 
-	emailCache := repositories.NewEmailCache(database.DB)
-	if err := emailCache.LoadAllEmails(); err != nil {
-		log.Fatalf("Failed to load emails into cache: %v", err)
-	}
-
 	customValidator := validator.New()
 
-	numWorkers := max(runtime.NumCPU()/2, 1)
-	worker.StartRegistrationWorkers(numWorkers, repositories.NewUserRepository(database.DB), emailCache)
-
 	userRepo := repositories.NewUserRepository(database.DB)
-	authService := services.NewAuthService(userRepo, emailCache)
+	authService := services.NewAuthService(userRepo)
 	authHandler := handlers.NewAuthHandler(authService, env, customValidator)
 	userHandler := handlers.NewUserHandler(userRepo)
 
