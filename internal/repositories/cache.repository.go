@@ -8,22 +8,28 @@ import (
 	"gorm.io/gorm"
 )
 
+const (
+	StatusRegistered = "registered"
+	StatusProcessing = "processing"
+)
+
 type EmailCache interface {
 	LoadAllEmails() error
-	EmailExists(email string) bool
-	AddEmail(email string)
+	GetEmailStatus(email string) (status string, exists bool)
+	SetEmailStatus(email, status string)
+	RemoveEmail(email string)
 }
 
 type emailCache struct {
 	db    *gorm.DB
-	cache map[string]bool
-	mu    sync.Mutex
+	cache map[string]string
+	mu    sync.RWMutex
 }
 
 func NewEmailCache(db *gorm.DB) EmailCache {
 	return &emailCache{
 		db:    db,
-		cache: make(map[string]bool),
+		cache: make(map[string]string),
 	}
 }
 
@@ -37,21 +43,29 @@ func (c *emailCache) LoadAllEmails() error {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	for _, email := range emails {
-		c.cache[email] = true
+		c.cache[email] = StatusRegistered
 	}
 	log.Printf("Successfully loaded %d emails into cache.", len(emails))
 	return nil
 }
 
-func (c *emailCache) EmailExists(email string) bool {
-	c.mu.Lock()
-	defer c.mu.Unlock()
-	_, exists := c.cache[email]
-	return exists
+func (c *emailCache) GetEmailStatus(email string) (string, bool) {
+	c.mu.RLock()
+	defer c.mu.RUnlock()
+	status, exists := c.cache[email]
+	return status, exists
 }
 
-func (c *emailCache) AddEmail(email string) {
+func (c *emailCache) SetEmailStatus(email, status string) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
-	c.cache[email] = true
+	c.cache[email] = status
+	log.Printf("Set status for email %s to %s in cache.", email, status)
+}
+
+func (c *emailCache) RemoveEmail(email string) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	delete(c.cache, email)
+	log.Printf("Removed email %s from cache.", email)
 }

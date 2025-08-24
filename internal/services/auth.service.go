@@ -2,80 +2,73 @@ package services
 
 import (
 	"errors"
+	"fmt"
 
 	"github.com/ipincamp/edsa/internal/api/dto"
-	"github.com/ipincamp/edsa/internal/database"
+	"github.com/ipincamp/edsa/internal/batcher"
 	"github.com/ipincamp/edsa/internal/models"
 	"github.com/ipincamp/edsa/internal/repositories"
 	"github.com/ipincamp/edsa/internal/utils"
-	"gorm.io/gorm"
 )
 
 type AuthService interface {
-	Register(req *dto.RegisterRequest) (*models.User, error)
+	Register(req *dto.RegisterRequest) error
 	Login(req *dto.LoginRequest) (*models.User, error)
 }
 
 type authService struct {
-	userRepo repositories.UserRepository
+	userRepo   repositories.UserRepository
+	emailCache repositories.EmailCache
+	processor  *batcher.Processor
 }
 
-func NewAuthService(userRepo repositories.UserRepository) AuthService {
-	return &authService{userRepo}
+func NewAuthService(userRepo repositories.UserRepository, emailCache repositories.EmailCache, processor *batcher.Processor) AuthService {
+	return &authService{userRepo, emailCache, processor}
 }
 
-func (s *authService) Register(req *dto.RegisterRequest) (*models.User, error) {
-	var newUser *models.User
+func (s *authService) Register(req *dto.RegisterRequest) error {
+	// Cek status email langsung di cache.
+	status, exists := s.emailCache.GetEmailStatus(req.Email)
 
-	err := database.DB.Transaction(func(tx *gorm.DB) error {
-		txUserRepo := s.userRepo.WithTx(tx)
-
-		existingUser, err := txUserRepo.FindUserByEmail(req.Email)
-		if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
-			return err
+	if exists {
+		if status == repositories.StatusProcessing {
+			return errors.New("registration for this email is already in progress")
 		}
-		if existingUser != nil {
+		if status == repositories.StatusRegistered {
 			return errors.New("email already exists")
 		}
-
-		hashedPassword, err := utils.HashPassword(req.Password)
-		if err != nil {
-			return err
-		}
-
-		userToCreate := &models.User{
-			Name:     req.Name,
-			Email:    req.Email,
-			Password: hashedPassword,
-			Status:   models.StatusActive,
-		}
-
-		if err := txUserRepo.CreateUser(userToCreate); err != nil {
-			return err
-		}
-
-		newUser = userToCreate
-		return nil
-	})
-
-	if err != nil {
-		return nil, err
 	}
 
-	return newUser, nil
+	// Jika tidak ada di cache, tambahkan ke antrian dan set status ke "processing".
+	s.processor.AddToQueue(batcher.RegistrationRequest{
+		Name:     req.Name,
+		Email:    req.Email,
+		Password: req.Password,
+	})
+	s.emailCache.SetEmailStatus(req.Email, repositories.StatusProcessing)
+
+	return nil
 }
 
 func (s *authService) Login(req *dto.LoginRequest) (*models.User, error) {
+	status, exists := s.emailCache.GetEmailStatus(req.Email)
+
+	if !exists {
+		return nil, errors.New("invalid credentials")
+	}
+
+	if status == repositories.StatusProcessing {
+		return nil, errors.New("your account registration is still being processed, please try again in a few minutes")
+	}
+
+	// Jika status "registered", baru ambil data dari database.
 	user, err := s.userRepo.FindUserByEmail(req.Email)
 	if err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, errors.New("invalid credentials")
-		}
-		return nil, err
+		return nil, errors.New("invalid credentials")
 	}
 
 	if user.Status != models.StatusActive {
-		return nil, errors.New("your account is not active")
+		return nil, fmt.Errorf("your account is not active (status: %s)", user.Status)
 	}
 
 	match, err := utils.CheckPasswordHash(req.Password, user.Password)

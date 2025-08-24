@@ -3,11 +3,13 @@ package main
 import (
 	"fmt"
 	"log"
+	"time"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/ipincamp/edsa/internal/api/handlers"
 	"github.com/ipincamp/edsa/internal/api/routes"
 	"github.com/ipincamp/edsa/internal/api/validator"
+	"github.com/ipincamp/edsa/internal/batcher"
 	"github.com/ipincamp/edsa/internal/config"
 	"github.com/ipincamp/edsa/internal/database"
 	"github.com/ipincamp/edsa/internal/repositories"
@@ -18,10 +20,19 @@ func main() {
 	env := config.LoadEnv()
 	database.ConnectDB(env)
 
+	emailCache := repositories.NewEmailCache(database.DB)
+	if err := emailCache.LoadAllEmails(); err != nil {
+		log.Fatalf("Failed to load emails into cache: %v", err)
+	}
+
 	customValidator := validator.New()
 
 	userRepo := repositories.NewUserRepository(database.DB)
-	authService := services.NewAuthService(userRepo)
+
+	processor := batcher.NewProcessor(userRepo, emailCache, 1*time.Minute)
+	processor.Start()
+
+	authService := services.NewAuthService(userRepo, emailCache, processor)
 	authHandler := handlers.NewAuthHandler(authService, env, customValidator)
 	userHandler := handlers.NewUserHandler(userRepo)
 

@@ -8,6 +8,7 @@ import (
 type UserRepository interface {
 	WithTx(tx *gorm.DB) UserRepository
 	CreateUser(user *models.User) error
+	CreateUsersInBatch(users []models.User) error
 	FindUserByEmail(email string) (*models.User, error)
 	FindUserByID(id string) (*models.User, error)
 }
@@ -26,6 +27,10 @@ func (r *userRepository) WithTx(tx *gorm.DB) UserRepository {
 
 func (r *userRepository) CreateUser(user *models.User) error {
 	return r.db.Create(user).Error
+}
+
+func (r *userRepository) CreateUsersInBatch(users []models.User) error {
+	return r.db.CreateInBatches(users, 100).Error
 }
 
 func (r *userRepository) FindUserByEmail(email string) (*models.User, error) {

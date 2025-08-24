@@ -63,7 +63,7 @@ func (p *RegistrationProcessor) worker(id int) {
 			log.Printf("Worker %d: Failed to create user %s: %v", id, job.Email, err)
 			p.markAsFailed(job.Email, "Could not save user data.")
 		} else {
-			p.emailCache.AddEmail(job.Email)
+			p.emailCache.SetEmailStatus(job.Email, repositories.StatusRegistered)
 			log.Printf("Worker %d: Successfully registered user %s", id, job.Email)
 			p.markAsDone(job.Email)
 		}
