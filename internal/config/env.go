@@ -11,13 +11,15 @@ import (
 
 type Env struct {
 	AppEnv              string
+	AppName             string
+	AppTimezone         string
+	AppHost             string
 	AppPort             string
-	AppTZ               string
-	DBHost              string
-	DBPort              string
-	DBUser              string
-	DBPass              string
-	DBName              string
+	DbHost              string
+	DbPort              string
+	DbName              string
+	DbUsername          string
+	DbPassword          string
 	AdminName           string
 	AdminEmail          string
 	AdminPassword       string
@@ -44,13 +46,15 @@ func LoadEnv() *Env {
 
 	return &Env{
 		AppEnv:              os.Getenv("APP_ENV"),
+		AppName:             os.Getenv("APP_NAME"),
+		AppTimezone:         os.Getenv("APP_TIMEZONE"),
+		AppHost:             os.Getenv("APP_HOST"),
 		AppPort:             os.Getenv("APP_PORT"),
-		AppTZ:               os.Getenv("TZ"),
-		DBHost:              os.Getenv("DB_HOST"),
-		DBPort:              os.Getenv("DB_PORT"),
-		DBUser:              os.Getenv("DB_USER"),
-		DBPass:              os.Getenv("DB_PASS"),
-		DBName:              os.Getenv("DB_NAME"),
+		DbHost:              os.Getenv("DB_HOST"),
+		DbPort:              os.Getenv("DB_PORT"),
+		DbName:              os.Getenv("DB_NAME"),
+		DbUsername:          os.Getenv("DB_USER"),
+		DbPassword:          os.Getenv("DB_PASS"),
 		AdminName:           os.Getenv("USER_ADMIN_NAME"),
 		AdminEmail:          os.Getenv("USER_ADMIN_EMAIL"),
 		AdminPassword:       os.Getenv("USER_ADMIN_PASSWORD"),

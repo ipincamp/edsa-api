@@ -17,12 +17,12 @@ func ConnectDB(env *config.Env) {
 	var err error
 
 	dsn := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?charset=utf8mb4&parseTime=True&loc=%s",
-		env.DBUser,
-		env.DBPass,
-		env.DBHost,
-		env.DBPort,
-		env.DBName,
-		url.QueryEscape(env.AppTZ),
+		env.DbUsername,
+		env.DbPassword,
+		env.DbHost,
+		env.DbPort,
+		env.DbName,
+		url.QueryEscape(env.AppTimezone),
 	)
 
 	DB, err = gorm.Open(mysql.Open(dsn), &gorm.Config{})
