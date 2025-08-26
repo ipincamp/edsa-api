@@ -39,6 +39,19 @@ func (h *AuthHandler) Register(c *fiber.Ctx) error {
 	return response.Success(c, fiber.StatusAccepted, "Registration request accepted and is being processed", nil)
 }
 
+func (h *AuthHandler) VerifyEmail(c *fiber.Ctx) error {
+	token := c.Query("token")
+	if token == "" {
+		return response.Error(c, fiber.StatusBadRequest, "Missing verification token")
+	}
+
+	if err := h.authService.VerifyEmail(token); err != nil {
+		return response.Error(c, fiber.StatusUnauthorized, err.Error())
+	}
+
+	return response.Success(c, fiber.StatusOK, "Email verified successfully", nil)
+}
+
 func (h *AuthHandler) Login(c *fiber.Ctx) error {
 	var req dto.LoginRequest
 	if err := c.BodyParser(&req); err != nil {

@@ -23,6 +23,11 @@ type Env struct {
 	AdminPassword       string
 	PasetoSymmetricKey  string
 	PasetoExpireInHours time.Duration
+	MailHost            string
+	MailPort            int
+	MailUsername        string
+	MailPassword        string
+	MailFrom            string
 }
 
 func LoadEnv() *Env {
@@ -35,6 +40,7 @@ func LoadEnv() *Env {
 	if err != nil {
 		hours = 24
 	}
+	mailPort, _ := strconv.Atoi(os.Getenv("MAIL_PORT"))
 
 	return &Env{
 		AppEnv:              os.Getenv("APP_ENV"),
@@ -50,5 +56,10 @@ func LoadEnv() *Env {
 		AdminPassword:       os.Getenv("USER_ADMIN_PASSWORD"),
 		PasetoSymmetricKey:  os.Getenv("PASETO_SYMMETRIC_KEY"),
 		PasetoExpireInHours: time.Duration(hours) * time.Hour,
+		MailHost:            os.Getenv("MAIL_HOST"),
+		MailPort:            mailPort,
+		MailUsername:        os.Getenv("MAIL_USERNAME"),
+		MailPassword:        os.Getenv("MAIL_PASSWORD"),
+		MailFrom:            os.Getenv("MAIL_FROM"),
 	}
 }

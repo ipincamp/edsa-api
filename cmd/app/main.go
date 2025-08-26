@@ -12,6 +12,7 @@ import (
 	"github.com/ipincamp/edsa/internal/batcher"
 	"github.com/ipincamp/edsa/internal/config"
 	"github.com/ipincamp/edsa/internal/database"
+	"github.com/ipincamp/edsa/internal/mailer"
 	"github.com/ipincamp/edsa/internal/repositories"
 	"github.com/ipincamp/edsa/internal/services"
 )
@@ -19,6 +20,8 @@ import (
 func main() {
 	env := config.LoadEnv()
 	database.ConnectDB(env)
+
+	appMailer := mailer.New(env)
 
 	emailCache := repositories.NewEmailCache(database.DB)
 	if err := emailCache.LoadAllEmails(); err != nil {
@@ -32,7 +35,7 @@ func main() {
 	processor := batcher.NewProcessor(userRepo, emailCache, 1*time.Minute)
 	processor.Start()
 
-	authService := services.NewAuthService(userRepo, emailCache, processor)
+	authService := services.NewAuthService(userRepo, emailCache, processor, appMailer)
 	authHandler := handlers.NewAuthHandler(authService, env, customValidator)
 	userHandler := handlers.NewUserHandler(userRepo)
 

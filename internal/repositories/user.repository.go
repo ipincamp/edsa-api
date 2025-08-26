@@ -11,6 +11,8 @@ type UserRepository interface {
 	CreateUsersInBatch(users []models.User) error
 	FindUserByEmail(email string) (*models.User, error)
 	FindUserByID(id string) (*models.User, error)
+	FindUserByVerificationToken(token string) (*models.User, error)
+	UpdateUser(user *models.User) error
 }
 
 type userRepository struct {
@@ -49,4 +51,17 @@ func (r *userRepository) FindUserByID(id string) (*models.User, error) {
 		return nil, err
 	}
 	return &user, nil
+}
+
+func (r *userRepository) FindUserByVerificationToken(token string) (*models.User, error) {
+	var user models.User
+	err := r.db.Where("verification_token = ?", token).First(&user).Error
+	if err != nil {
+		return nil, err
+	}
+	return &user, nil
+}
+
+func (r *userRepository) UpdateUser(user *models.User) error {
+	return r.db.Save(user).Error
 }
