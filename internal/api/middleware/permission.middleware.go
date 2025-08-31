@@ -5,7 +5,7 @@ import (
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/ipincamp/go-edsa-api/domain"
-	"github.com/ipincamp/go-edsa-api/dto"
+	"github.com/ipincamp/go-edsa-api/domain/dto"
 	"gorm.io/gorm"
 )
 

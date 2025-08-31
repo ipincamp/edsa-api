@@ -1,6 +1,7 @@
 package config
 
 type Config struct {
+	Env      string
 	Server   Server
 	Database Database
 	Paseto   Paseto

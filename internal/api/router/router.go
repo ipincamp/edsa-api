@@ -43,9 +43,9 @@ func Setup(
 func PrintRoutes(app *fiber.App) {
 	methodColors := map[string]string{
 		"GET":     constant.Color("green"),
-		"POST":    constant.Color("blue"),
-		"PUT":     constant.Color("yellow"),
-		"PATCH":   constant.Color("yellow"),
+		"POST":    constant.Color("yellow"),
+		"PUT":     constant.Color("blue"),
+		"PATCH":   constant.Color("blue"),
 		"DELETE":  constant.Color("red"),
 		"HEAD":    constant.Color("cyan"),
 		"OPTIONS": constant.Color("gray"),

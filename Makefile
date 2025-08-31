@@ -8,11 +8,17 @@ MAIN_GO=./main.go
 TIMEZONE=Asia/Jakarta
 
 # Default command
-all: help ## Show available commands
+help: ## Show available commands
+	@echo "Available commands:"
+	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-20s\033[0m %s\n", $$1, $$2}'
 
 ## --------------------------------------
 ## Build & Run Commands
 ## --------------------------------------
+
+clean: ## Clean up build artifacts
+	@echo "Cleaning up..."
+	@rm -rf ./bin/*
 
 build: ## Compile Go code into binary
 	@echo "Building binary..."
@@ -75,12 +81,4 @@ db-seed: ## Run all registered seeders
 	@echo "Running database seeders..."
 	@go run $(MAIN_GO) --seed
 
-## --------------------------------------
-## Helper
-## --------------------------------------
-
-help: ## Show available commands
-	@echo "Available commands:"
-	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-20s\033[0m %s\n", $$1, $$2}'
-
-.PHONY: all build run run-dev debug migrate-create migrate-up migrate-down help
+.PHONY: build clean db-seed debug help migrate-create migrate-down migrate-up run run-dev seed-create

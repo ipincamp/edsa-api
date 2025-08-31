@@ -4,7 +4,7 @@ import (
 	"context"
 	"time"
 
-	"github.com/ipincamp/go-edsa-api/dto"
+	"github.com/ipincamp/go-edsa-api/domain/dto"
 	"gorm.io/gorm"
 )
 
@@ -54,7 +54,7 @@ type UserService interface {
 }
 
 type AuthService interface {
-	Register(ctx context.Context, request dto.RegisterRequest) (dto.AuthData, error)
-	Login(ctx context.Context, request dto.LoginRequest) (dto.AuthData, error)
+	Register(ctx context.Context, request dto.RegisterRequest) (dto.AuthResponse, error)
+	Login(ctx context.Context, request dto.LoginRequest) (dto.AuthResponse, error)
 	Logout(ctx context.Context, user User) error
 }

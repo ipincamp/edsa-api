@@ -12,7 +12,7 @@ type LoginRequest struct {
 	Password string `json:"password" validate:"required"`
 }
 
-type AuthData struct {
+type AuthResponse struct {
 	Token string   `json:"token"`
 	User  UserData `json:"user"`
 }

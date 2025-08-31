@@ -37,6 +37,10 @@ func main() {
 		return
 	}
 	if *seedFlag {
+		if cnf.Env == "production" {
+			log.Println("Seeder is disabled in production environment.")
+			return
+		}
 		seeder.Seed(dbConnection, cnf)
 		return
 	}

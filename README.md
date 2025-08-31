@@ -46,26 +46,27 @@ Buat file `.env` di root proyek dan isi dengan konfigurasi berikut. **Pastikan u
 
 ```dotenv
 # Application
-TZ=Asia/Jakarta
-APP_PORT=8080
-APP_ENV=development
+ENV=development
+SERVER_HOST=localhost
+SERVER_PORT=8000
 
-# Database Connection
+# Database Connection (PostgreSQL)
 DB_HOST=127.0.0.1
-DB_PORT=3306
+DB_PORT=5432
 DB_USER=root
 DB_PASS=password
 DB_NAME=edsa_db
+DB_TZ=Asia/Jakarta
 
 # Paseto Token Configuration
 # HARUS TEPAT 32 KARAKTER
-PASETO_SYMMETRIC_KEY="your-super-secret-key-must-be-32-bytes"
-PASETO_EXPIRE_IN_HOURS=8
+PASETO_SECRET_KEY="your-super-secret-key-must-be-32-bytes"
+PASETO_TOKEN_TTL_MIN=480
 
 # Admin Seeder Credentials
-AdminName=Admin
-AdminEmail=admin@edsa.app
-AdminPassword=secret
+ADMIN_NAME=Admin
+ADMIN_EMAIL=admin@edsa.app
+ADMIN_PASSWORD=secret
 ```
 
 ---
@@ -74,16 +75,19 @@ AdminPassword=secret
 
 Gunakan `Makefile` untuk menjalankan perintah-perintah berikut dari terminal Anda:
 
-| Perintah                               | Deskripsi                                                                        |
-| -------------------------------------- | -------------------------------------------------------------------------------- |
-| `make run`                             | Menjalankan aplikasi dalam mode pengembangan.                                    |
-| `make build`                           | Membangun executable aplikasi.                                                   |
-| `make run-prod`                        | Menjalankan aplikasi dalam mode produksi.                                        |
-| `make new-migration NAME=nama_migrasi` | Membuat file migrasi baru. Contoh: `make new-migration NAME=create_users_table`. |
-| `make migrate-up`                      | Menjalankan semua migrasi yang belum dieksekusi.                                 |
-| `make migrate-down`                    | Mengembalikan (rollback) migrasi satu langkah.                                   |
-| `make seed`                            | Menjalankan seeder database untuk menyuntikkan data awal (termasuk admin).       |
-| `make clean`                           | Membersihkan file cache dan file sementara.                                      |
+| Perintah               | Deskripsi                                                                         |
+| ---------------------- | --------------------------------------------------------------------------------- |
+| `make help`            | Menampilkan semua perintah yang tersedia.                                         |
+| `make clean`           | Membersihkan file cache dan file sementara.                                       |
+| `make build`           | Membangun executable aplikasi.                                                    |
+| `make run`             | Menjalankan aplikasi dalam mode produksi.                                         |
+| `make run-dev`         | Menjalankan aplikasi dalam mode pengembangan.                                     |
+| `make debug`           | Menjalankan aplikasi dengan debugger Delve.                                       |
+| `make migrate-create`  | Membuat file migrasi baru. Contoh: `make migrate-create name=create_users_table`. |
+| `make migrate-up`      | Menjalankan semua migrasi yang belum dieksekusi.                                  |
+| `make migrate-down`    | Mengembalikan (rollback) migrasi satu langkah.                                    |
+| `make seed-create`     | Membuat file seeder baru. Contoh: `make seed-create name=product`.                |
+| `make db-seed`         | Menjalankan seeder database untuk menyuntikkan data awal (termasuk admin).        |
 
 ---
 
@@ -105,33 +109,34 @@ Gunakan `Makefile` untuk menjalankan perintah-perintah berikut dari terminal And
 
 ```text
 .
-├── cmd/
-│   ├── app/
-│   │   └── main.go       # Titik masuk aplikasi utama
-│   └── seeder/
-│       └── main.go       # Titik masuk untuk seeder database
+├── domain/
+│   ├── dto/                  # Data Transfer Objects (Request & Response)
+│   └── user.domain.go        # Definisi model data utama (entitas)
 ├── internal/
 │   ├── api/
-│   │   ├── dto/          # Data Transfer Objects (Request & Response)
-│   │   ├── handlers/     # Berisi fungsi-fungsi handler API
-│   │   ├── middleware/   # Middleware (e.g., autentikasi)
-│   │   ├── response/     # Helper untuk respons JSON standar
-│   │   ├── routes/       # Mendefinisikan endpoint API
-│   │   └── validator/    # Logika validasi
-│   ├── config/           # Mengatur konfigurasi aplikasi (.env)
-│   ├── database/         # Koneksi database dan seeder
-│   ├── models/           # Definisi model data
-│   ├── repositories/     # Logika interaksi dengan database
-│   └── services/         # Logika bisnis utama
-│   └── utils/            # Utilitas (hashing, token)
-├── migrations/           # File-file SQL untuk migrasi
-├── scripts/              # Skrip pembantu (misal: untuk migrasi)
-├── .env                  # Variabel lingkungan
-├── .env.example          # Contoh variabel lingkungan
+│   │   ├── handler/          # Pengelola permintaan HTTP
+│   │   ├── middleware/       # Middleware untuk penanganan permintaan
+│   │   └── router/           # Pengaturan rute API
+│   ├── config/               # Pengelola konfigurasi dari .env
+│   ├── constant/             # Menyimpan nilai konstan aplikasi
+│   ├── database/
+│   │   ├── connection/       # Koneksi ke database
+│   │   ├── migration/
+│   │   │   ├── migrations/   # Berkas-berkas migrasi
+│   │   │   └── migration.go  # Logika migrasi
+│   │   └── seeder/           # Penyuntikan data awal
+│   │   │   ├── seeders/      # Berkas-berkas seeder
+│   │   │   └── seeder.go     # Logika seeder
+│   ├── repository/           # Logika interaksi langsung dengan database
+│   ├── service/              # Logika bisnis utama aplikasi
+│   └── util/                 # Utilitas
+├── .env.example              # Contoh variabel lingkungan
 ├── .gitignore
 ├── go.mod
 ├── go.sum
-└── Makefile              # Skrip untuk otomatisasi
+├── main.go                   # Titik masuk utama aplikasi
+├── Makefile                  # Skrip untuk otomatisasi tugas
+└── README.md
 
 ```
 

@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"github.com/ipincamp/go-edsa-api/domain"
-	"github.com/ipincamp/go-edsa-api/dto"
+	"github.com/ipincamp/go-edsa-api/domain/dto"
 	"github.com/ipincamp/go-edsa-api/internal/config"
 	"github.com/ipincamp/go-edsa-api/internal/constant"
 	"github.com/ipincamp/go-edsa-api/internal/util"
@@ -27,8 +27,8 @@ func NewAuth(userRepository domain.UserRepository, db *gorm.DB, cfg *config.Conf
 	}
 }
 
-func (s *authService) Register(ctx context.Context, request dto.RegisterRequest) (dto.AuthData, error) {
-	var res dto.AuthData
+func (s *authService) Register(ctx context.Context, request dto.RegisterRequest) (dto.AuthResponse, error) {
+	var res dto.AuthResponse
 	var newUser domain.User
 	var defaultRole domain.Role
 
@@ -70,21 +70,21 @@ func (s *authService) Register(ctx context.Context, request dto.RegisterRequest)
 	})
 
 	if err != nil {
-		return dto.AuthData{}, err
+		return dto.AuthResponse{}, err
 	}
 
 	newUser.Role = defaultRole
 	tokenTTL := time.Duration(s.config.Paseto.TokenTTLMin) * time.Minute
 	pasetoMaker, err := util.NewPasetoMaker(s.config.Paseto.SecretKey)
 	if err != nil {
-		return dto.AuthData{}, err
+		return dto.AuthResponse{}, err
 	}
 	token, err := pasetoMaker.CreateToken(newUser.ID, newUser.Role.ID, tokenTTL)
 	if err != nil {
-		return dto.AuthData{}, err
+		return dto.AuthResponse{}, err
 	}
 
-	res = dto.AuthData{
+	res = dto.AuthResponse{
 		Token: token,
 		User: dto.UserData{
 			ID:        newUser.ID,
@@ -99,35 +99,35 @@ func (s *authService) Register(ctx context.Context, request dto.RegisterRequest)
 	return res, nil
 }
 
-func (s *authService) Login(ctx context.Context, request dto.LoginRequest) (dto.AuthData, error) {
+func (s *authService) Login(ctx context.Context, request dto.LoginRequest) (dto.AuthResponse, error) {
 	user, err := s.userRepository.FindByEmail(ctx, s.db, request.Email)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return dto.AuthData{}, errors.New("invalid credentials")
+			return dto.AuthResponse{}, errors.New("invalid credentials")
 		}
-		return dto.AuthData{}, err
+		return dto.AuthResponse{}, err
 	}
 
 	match, err := util.CheckPasswordHash(request.Password, user.Password)
 	if err != nil {
-		return dto.AuthData{}, err
+		return dto.AuthResponse{}, err
 	}
 
 	if !match {
-		return dto.AuthData{}, errors.New("invalid credentials")
+		return dto.AuthResponse{}, errors.New("invalid credentials")
 	}
 
 	tokenTTL := time.Duration(s.config.Paseto.TokenTTLMin) * time.Minute
 	pasetoMaker, err := util.NewPasetoMaker(s.config.Paseto.SecretKey)
 	if err != nil {
-		return dto.AuthData{}, err
+		return dto.AuthResponse{}, err
 	}
 	token, err := pasetoMaker.CreateToken(user.ID, user.Role.ID, tokenTTL)
 	if err != nil {
-		return dto.AuthData{}, err
+		return dto.AuthResponse{}, err
 	}
 
-	res := dto.AuthData{
+	res := dto.AuthResponse{
 		Token: token,
 		User: dto.UserData{
 			ID:        user.ID,

@@ -20,6 +20,7 @@ func Get() *Config {
 	}
 
 	return &Config{
+		Env: os.Getenv("ENV"),
 		Server: Server{
 			Host: os.Getenv("SERVER_HOST"),
 			Port: os.Getenv("SERVER_PORT"),
