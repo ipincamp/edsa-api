@@ -1,12 +1,12 @@
 package config
 
 type Config struct {
-	Env             string
-	BloomFilterPath string
-	Server          Server
-	Database        Database
-	Paseto          Paseto
-	Seeder          Seeder
+	Env      string
+	Server   Server
+	Database Database
+	Paseto   Paseto
+	Seeder   Seeder
+	Bloom    Bloom
 }
 
 type Server struct {
@@ -36,4 +36,9 @@ type Admin struct {
 	Name     string
 	Email    string
 	Password string
+}
+
+type Bloom struct {
+	EmailFilterPath      string
+	IntervalRegeneration int
 }

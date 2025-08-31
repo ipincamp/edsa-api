@@ -11,11 +11,15 @@ type BloomFilterManager struct {
 	filter   *bloom.BloomFilter
 	filePath string
 	mu       sync.RWMutex
+	n        uint
+	fp       float64
 }
 
 func NewBloomFilterManager(filePath string, n uint, fp float64) (*BloomFilterManager, error) {
 	manager := &BloomFilterManager{
 		filePath: filePath,
+		n:        n,
+		fp:       fp,
 	}
 
 	file, err := os.Open(filePath)
@@ -62,4 +66,15 @@ func (m *BloomFilterManager) Save() error {
 
 	_, err = m.filter.WriteTo(file)
 	return err
+}
+
+func (m *BloomFilterManager) Regenerate(emails []string) {
+	newFilter := bloom.NewWithEstimates(m.n, m.fp)
+	for _, email := range emails {
+		newFilter.Add([]byte(email))
+	}
+
+	m.mu.Lock()
+	m.filter = newFilter
+	m.mu.Unlock()
 }

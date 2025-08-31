@@ -19,6 +19,13 @@ func Get() *Config {
 		log.Fatal("Error parsing PASETO_TOKEN_TTL_MIN", err.Error())
 	}
 
+	regen := os.Getenv("BLOOM_REGENERATION_INTERVAL_IN_HOURS")
+	intervalRegenerationHours, err := strconv.Atoi(regen)
+	if err != nil {
+		log.Printf("Error parsing BLOOM_REGENERATION_INTERVAL_IN_HOURS: %v", err)
+		intervalRegenerationHours = 1
+	}
+
 	return &Config{
 		Env: os.Getenv("ENV"),
 		Server: Server{
@@ -44,6 +51,9 @@ func Get() *Config {
 				Password: os.Getenv("ADMIN_PASSWORD"),
 			},
 		},
-		BloomFilterPath: os.Getenv("BLOOM_FILTER_PATH"),
+		Bloom: Bloom{
+			EmailFilterPath:      os.Getenv("BLOOM_FILTER_PATH"),
+			IntervalRegeneration: intervalRegenerationHours,
+		},
 	}
 }

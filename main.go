@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/gofiber/fiber/v2"
+	"github.com/ipincamp/go-edsa-api/domain"
 	"github.com/ipincamp/go-edsa-api/internal/api/handler"
 	"github.com/ipincamp/go-edsa-api/internal/api/middleware"
 	"github.com/ipincamp/go-edsa-api/internal/api/router"
@@ -63,7 +64,11 @@ func main() {
 		constant.Color("yellow"),
 		constant.Color("reset"),
 	)
-	bloomFilter, err := util.NewBloomFilterManager(cnf.BloomFilterPath, 10000, 0.01)
+	bloomFilter, err := util.NewBloomFilterManager(
+		cnf.Bloom.EmailFilterPath,
+		10000,
+		0.01,
+	)
 	if err != nil {
 		log.Fatalf("Failed to initialize bloom filter: %v", err)
 	}
@@ -77,13 +82,25 @@ func main() {
 		log.Fatalf("Failed to fetch users to populate bloom filter: %v", err)
 	}
 
+	var initialEmails []string
 	for _, user := range allUsers {
-		bloomFilter.Add(user.Email)
+		initialEmails = append(initialEmails, user.Email)
 	}
+	bloomFilter.Regenerate(initialEmails)
 	if err := bloomFilter.Save(); err != nil {
 		log.Printf("Warning: Failed to save initial bloom filter: %v", err)
 	}
-	log.Printf("│   └── %sEmail bloom filter loaded with %d entries.%s", constant.Color("green"), len(allUsers), constant.Color("reset"))
+	log.Printf(
+		"│   └── %sEmail bloom filter loaded with %d entries.%s",
+		constant.Color("green"),
+		len(allUsers),
+		constant.Color("reset"),
+	)
+	go scheduleBloomFilterRegeneration(
+		userRepository,
+		bloomFilter,
+		cnf.Bloom.IntervalRegeneration,
+	)
 
 	validator := util.NewValidator()
 	userService := service.NewUser(userRepository)
@@ -124,5 +141,51 @@ func main() {
 	err = app.Listen(cnf.Server.Host + ":" + cnf.Server.Port)
 	if err != nil {
 		log.Fatalf("Failed to start server: %v", err)
+	}
+}
+
+func scheduleBloomFilterRegeneration(
+	userRepo domain.UserRepository,
+	bloomFilter *util.BloomFilterManager,
+	interval int,
+) {
+	intervalHours := time.Duration(interval) * time.Hour
+	ticker := time.NewTicker(intervalHours)
+	defer ticker.Stop()
+
+	log.Printf(
+		"├── %s%sBloom filter regeneration scheduled every %d hours.%s",
+		constant.Color("bold"),
+		constant.Color("cyan"),
+		int(intervalHours.Hours()),
+		constant.Color("reset"),
+	)
+
+	for range ticker.C {
+		log.Printf("[SCHEDULER] Regenerating bloom filter...")
+
+		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+
+		users, err := userRepo.FindAll(ctx)
+		if err != nil {
+			log.Printf("[SCHEDULER] Error fetching users for bloom filter regeneration: %v", err)
+			cancel()
+			continue
+		}
+
+		var emails []string
+		for _, user := range users {
+			emails = append(emails, user.Email)
+		}
+
+		bloomFilter.Regenerate(emails)
+
+		if err := bloomFilter.Save(); err != nil {
+			log.Printf("[SCHEDULER] Error saving regenerated bloom filter: %v", err)
+		} else {
+			log.Printf("[SCHEDULER] Bloom filter regenerated and saved successfully with %d entries.", len(emails))
+		}
+
+		cancel()
 	}
 }
