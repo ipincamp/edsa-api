@@ -4,41 +4,54 @@ import (
 	"strings"
 
 	"github.com/gofiber/fiber/v2"
-	"github.com/ipincamp/edsa/internal/api/response"
-	"github.com/ipincamp/edsa/internal/config"
-	"github.com/ipincamp/edsa/internal/utils"
+	"github.com/ipincamp/go-edsa-api/domain"
+	"github.com/ipincamp/go-edsa-api/dto"
+	"github.com/ipincamp/go-edsa-api/internal/config"
+	"github.com/ipincamp/go-edsa-api/internal/util"
 )
 
-const (
-	AuthorizationHeaderKey  = "Authorization"
-	AuthorizationTypeBearer = "Bearer"
-	AuthorizationPayloadKey = "authorization_payload"
-)
+type AuthMiddleware struct {
+	config *config.Config
+}
 
-func Protected(env *config.Env) fiber.Handler {
-	return func(c *fiber.Ctx) error {
-		authHeader := c.Get(AuthorizationHeaderKey)
-		if len(authHeader) == 0 {
-			return response.Error(c, fiber.StatusUnauthorized, "Authorization header is not provided")
+func NewAuth(config *config.Config) *AuthMiddleware {
+	return &AuthMiddleware{
+		config: config,
+	}
+}
+
+func (m *AuthMiddleware) Auth() fiber.Handler {
+	return func(ctx *fiber.Ctx) error {
+		authHeader := ctx.Get("Authorization")
+		if authHeader == "" {
+			return dto.SendError(ctx, fiber.StatusUnauthorized, "Authorization header is required", nil)
 		}
 
-		fields := strings.Fields(authHeader)
-		if len(fields) < 2 {
-			return response.Error(c, fiber.StatusUnauthorized, "Invalid authorization header format")
+		parts := strings.Split(authHeader, " ")
+		if len(parts) != 2 || parts[0] != "Bearer" {
+			return dto.SendError(ctx, fiber.StatusUnauthorized, "Invalid authorization header format", nil)
 		}
 
-		authType := strings.ToLower(fields[0])
-		if authType != strings.ToLower(AuthorizationTypeBearer) {
-			return response.Error(c, fiber.StatusUnauthorized, "Unsupported authorization type")
-		}
-
-		accessToken := fields[1]
-		payload, err := utils.VerifyToken(accessToken, env.PasetoSymmetricKey)
+		tokenString := parts[1]
+		pasetoMaker, err := util.NewPasetoMaker(m.config.Paseto.SecretKey)
 		if err != nil {
-			return response.Error(c, fiber.StatusUnauthorized, "Invalid or expired token")
+			return dto.SendError(ctx, fiber.StatusInternalServerError, "Failed to create token maker", err)
 		}
 
-		c.Locals(AuthorizationPayloadKey, payload)
-		return c.Next()
+		payload, err := pasetoMaker.VerifyToken(tokenString)
+		if err != nil {
+			return dto.SendError(ctx, fiber.StatusUnauthorized, "Invalid or expired token", err)
+		}
+
+		userFromToken := domain.User{
+			ID: payload.UserID,
+			Role: domain.Role{
+				ID: payload.RoleID,
+			},
+		}
+
+		ctx.Locals("user", userFromToken)
+
+		return ctx.Next()
 	}
 }
