@@ -44,5 +44,6 @@ func Get() *Config {
 				Password: os.Getenv("ADMIN_PASSWORD"),
 			},
 		},
+		BloomFilterPath: os.Getenv("BLOOM_FILTER_PATH"),
 	}
 }

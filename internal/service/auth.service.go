@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"errors"
+	"log"
 	"time"
 
 	"github.com/ipincamp/go-edsa-api/domain"
@@ -17,23 +18,21 @@ type authService struct {
 	userRepository domain.UserRepository
 	db             *gorm.DB
 	config         *config.Config
+	bloomFilter    *util.BloomFilterManager
 }
 
-func NewAuth(userRepository domain.UserRepository, db *gorm.DB, cfg *config.Config) domain.AuthService {
+func NewAuth(userRepository domain.UserRepository, db *gorm.DB, cfg *config.Config, bloomFilter *util.BloomFilterManager) domain.AuthService {
 	return &authService{
 		userRepository: userRepository,
 		db:             db,
 		config:         cfg,
+		bloomFilter:    bloomFilter,
 	}
 }
 
 func (s *authService) Register(ctx context.Context, request dto.RegisterRequest) (dto.AuthResponse, error) {
-	_, err := s.userRepository.FindByEmail(ctx, request.Email)
-	if err == nil {
+	if s.bloomFilter.Test(request.Email) {
 		return dto.AuthResponse{}, errors.New("email already exists")
-	}
-	if !errors.Is(err, gorm.ErrRecordNotFound) {
-		return dto.AuthResponse{}, err
 	}
 
 	defaultRole, found := util.GetRoleByName(constant.RoleStudent.String())
@@ -56,6 +55,13 @@ func (s *authService) Register(ctx context.Context, request dto.RegisterRequest)
 	if err := s.userRepository.Save(ctx, &newUser); err != nil {
 		return dto.AuthResponse{}, err
 	}
+
+	s.bloomFilter.Add(newUser.Email)
+	go func() {
+		if err := s.bloomFilter.Save(); err != nil {
+			log.Printf("Error saving bloom filter after registration: %v", err)
+		}
+	}()
 
 	newUser.Role = defaultRole
 	return s.createAuthResponse(newUser)

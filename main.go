@@ -1,8 +1,10 @@
 package main
 
 import (
+	"context"
 	"flag"
 	"log"
+	"time"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/ipincamp/go-edsa-api/internal/api/handler"
@@ -55,12 +57,37 @@ func main() {
 		constant.Color("reset"),
 	)
 
-	app := fiber.New()
-	validator := util.NewValidator()
+	log.Printf(
+		"├── %s%sLoading email bloom filter...%s",
+		constant.Color("bold"),
+		constant.Color("yellow"),
+		constant.Color("reset"),
+	)
+	bloomFilter, err := util.NewBloomFilterManager(cnf.BloomFilterPath, 10000, 0.01)
+	if err != nil {
+		log.Fatalf("Failed to initialize bloom filter: %v", err)
+	}
 
 	userRepository := repository.NewUser(dbConnection)
+
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+	allUsers, err := userRepository.FindAll(ctx)
+	if err != nil {
+		log.Fatalf("Failed to fetch users to populate bloom filter: %v", err)
+	}
+
+	for _, user := range allUsers {
+		bloomFilter.Add(user.Email)
+	}
+	if err := bloomFilter.Save(); err != nil {
+		log.Printf("Warning: Failed to save initial bloom filter: %v", err)
+	}
+	log.Printf("│   └── %sEmail bloom filter loaded with %d entries.%s", constant.Color("green"), len(allUsers), constant.Color("reset"))
+
+	validator := util.NewValidator()
 	userService := service.NewUser(userRepository)
-	authService := service.NewAuth(userRepository, dbConnection, cnf)
+	authService := service.NewAuth(userRepository, dbConnection, cnf, bloomFilter)
 
 	authMiddleware := middleware.NewAuth(cnf)
 	permissionMiddleware := middleware.NewPermission()
@@ -69,6 +96,7 @@ func main() {
 	authHandler := handler.NewAuth(authService, validator)
 	userHandler := handler.NewUser(userService, validator)
 
+	app := fiber.New()
 	router.Setup(
 		app,
 		authHandler,
@@ -93,7 +121,7 @@ func main() {
 		cnf.Server.Port,
 		constant.Color("reset"),
 	)
-	err := app.Listen(cnf.Server.Host + ":" + cnf.Server.Port)
+	err = app.Listen(cnf.Server.Host + ":" + cnf.Server.Port)
 	if err != nil {
 		log.Fatalf("Failed to start server: %v", err)
 	}

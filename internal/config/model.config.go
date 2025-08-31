@@ -1,11 +1,12 @@
 package config
 
 type Config struct {
-	Env      string
-	Server   Server
-	Database Database
-	Paseto   Paseto
-	Seeder   Seeder
+	Env             string
+	BloomFilterPath string
+	Server          Server
+	Database        Database
+	Paseto          Paseto
+	Seeder          Seeder
 }
 
 type Server struct {
