@@ -30,46 +30,26 @@ func (r *userRepository) FindByID(ctx context.Context, id string) (result domain
 	return
 }
 
-func (r *userRepository) FindByEmail(ctx context.Context, db *gorm.DB, email string) (result domain.User, err error) {
-	err = db.WithContext(ctx).
-		Preload("Role.Permissions").
-		Preload("Permissions").
-		Where("email = ?", email).First(&result).Error
+func (r *userRepository) FindByEmail(ctx context.Context, email string) (result domain.User, err error) {
+	err = r.db.WithContext(ctx).
+		Preload("Role").
+		Where("email = ?", email).
+		First(&result).Error
 	return
 }
 
-func (r *userRepository) Save(ctx context.Context, db *gorm.DB, user *domain.User) error {
-	return db.WithContext(ctx).Create(user).Error
+func (r *userRepository) Save(ctx context.Context, user *domain.User) error {
+	return r.db.WithContext(ctx).Create(user).Error
 }
 
 func (r *userRepository) Update(ctx context.Context, user *domain.User) error {
 	return r.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
-		if err := tx.Save(user).Error; err != nil {
-			return err
-		}
-		return nil
-	})
-}
-
-func (r *userRepository) UpdateWithPassword(ctx context.Context, user *domain.User) error {
-	return r.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
-		if err := tx.Model(&user).Update("password", user.Password).Error; err != nil {
-			return err
-		}
-
-		if err := tx.Save(user).Error; err != nil {
-			return err
-		}
-
-		return nil
+		return tx.Model(user).Updates(user).Error
 	})
 }
 
 func (r *userRepository) Delete(ctx context.Context, id string) error {
 	return r.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
-		if err := tx.Where("id = ?", id).Delete(&domain.User{}).Error; err != nil {
-			return err
-		}
-		return nil
+		return tx.Delete(&domain.User{}, "id = ?", id).Error
 	})
 }

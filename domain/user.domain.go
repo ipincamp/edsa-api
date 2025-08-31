@@ -28,7 +28,7 @@ type User struct {
 	Name            string `gorm:"type:varchar(100);not null"`
 	Email           string `gorm:"type:varchar(255);uniqueIndex;not null"`
 	EmailVerifiedAt *time.Time
-	Password        string `gorm:"type:varchar(255);not null;->;<-:create"`
+	Password        string `gorm:"type:varchar(255);not null" json:"-"`
 	RoleID          string `gorm:"type:uuid"`
 	Role            Role
 	Permissions     []Permission `gorm:"many2many:user_permissions;"`
@@ -40,15 +40,14 @@ type User struct {
 type UserRepository interface {
 	FindAll(ctx context.Context) ([]User, error)
 	FindByID(ctx context.Context, id string) (User, error)
-	FindByEmail(ctx context.Context, db *gorm.DB, email string) (User, error)
-	Save(ctx context.Context, db *gorm.DB, user *User) error
+	FindByEmail(ctx context.Context, email string) (User, error)
+	Save(ctx context.Context, user *User) error
 	Update(ctx context.Context, user *User) error
-	UpdateWithPassword(ctx context.Context, user *User) error
 	Delete(ctx context.Context, id string) error
 }
 
 type UserService interface {
-	Index(ctx context.Context) ([]dto.UserData, error)
+	GetAll(ctx context.Context) ([]dto.UserData, error)
 	Profile(ctx context.Context, userID string) (dto.UserData, error)
 	Update(ctx context.Context, userID string, request dto.UpdateUserRequest) error
 }

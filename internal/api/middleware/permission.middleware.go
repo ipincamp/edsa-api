@@ -6,37 +6,13 @@ import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/ipincamp/go-edsa-api/domain"
 	"github.com/ipincamp/go-edsa-api/domain/dto"
-	"gorm.io/gorm"
+	"github.com/ipincamp/go-edsa-api/internal/util"
 )
 
 type PermissionMiddleware struct{}
 
-var permissionCache = make(map[string]map[string]bool)
-var roleIdToNameCache = make(map[string]string)
-
 func NewPermission() *PermissionMiddleware {
 	return &PermissionMiddleware{}
-}
-
-func LoadAndCachePermissions(db *gorm.DB) ([]domain.Role, error) {
-	var roles []domain.Role
-	if err := db.Preload("Permissions").Find(&roles).Error; err != nil {
-		return nil, err
-	}
-
-	permissionCache = make(map[string]map[string]bool)
-	roleIdToNameCache = make(map[string]string)
-
-	for _, role := range roles {
-		roleIdToNameCache[role.ID] = role.Name
-		perms := make(map[string]bool)
-		for _, p := range role.Permissions {
-			perms[p.Name] = true
-		}
-		permissionCache[role.Name] = perms
-	}
-
-	return roles, nil
 }
 
 func (m *PermissionMiddleware) CheckRole(requiredRoles ...string) fiber.Handler {
@@ -61,14 +37,15 @@ func (m *PermissionMiddleware) CheckPermission(requiredPermission string) fiber.
 			return dto.SendError(ctx, fiber.StatusForbidden, "User data not found in context")
 		}
 
-		userRoleID := user.Role.ID
-		userRoleName, ok := roleIdToNameCache[userRoleID]
-		if !ok {
+		userRole, found := util.GetRoleByID(user.Role.ID)
+		if !found {
 			return dto.SendError(ctx, fiber.StatusForbidden, "Invalid user role")
 		}
 
-		if rolesPermissions, ok := permissionCache[userRoleName]; ok && rolesPermissions[requiredPermission] {
-			return ctx.Next()
+		for _, p := range userRole.Permissions {
+			if p.Name == requiredPermission {
+				return ctx.Next()
+			}
 		}
 
 		return dto.SendError(ctx, fiber.StatusForbidden, "You don't have the required permission")
@@ -82,17 +59,19 @@ func (m *PermissionMiddleware) CheckRoleOrPermission(roleName string, permission
 			return dto.SendError(ctx, fiber.StatusForbidden, "User data not found in context")
 		}
 
-		userRoleName, ok := roleIdToNameCache[user.Role.ID]
-		if !ok {
+		userRole, found := util.GetRoleByID(user.Role.ID)
+		if !found {
 			return dto.SendError(ctx, fiber.StatusForbidden, "Invalid user role")
 		}
 
-		if userRoleName == roleName {
+		if userRole.Name == roleName {
 			return ctx.Next()
 		}
 
-		if rolesPermissions, ok := permissionCache[userRoleName]; ok && rolesPermissions[permissionName] {
-			return ctx.Next()
+		for _, p := range userRole.Permissions {
+			if p.Name == permissionName {
+				return ctx.Next()
+			}
 		}
 
 		return dto.SendError(ctx, fiber.StatusForbidden, "You don't have the required role or permission")

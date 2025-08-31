@@ -24,16 +24,12 @@ func NewAuth(authService domain.AuthService, validator *util.GoValidator) *AuthH
 }
 
 func (h *AuthHandler) Register(ctx *fiber.Ctx) error {
-	c, cancel := context.WithTimeout(ctx.Context(), 10*time.Second)
-	defer cancel()
-
 	var request dto.RegisterRequest
-	if err := ctx.BodyParser(&request); err != nil {
-		return dto.SendError(ctx, fiber.StatusBadRequest, "Invalid request body", err)
+	c, cancel, err := parseAndValidate(ctx, h.Validator, &request)
+	if err != nil {
+		return err
 	}
-	if errs := h.Validator.Validate(request); errs != nil {
-		return dto.SendError(ctx, fiber.StatusUnprocessableEntity, "Validation failed", errs)
-	}
+	defer cancel()
 
 	res, err := h.AuthService.Register(c, request)
 	if err != nil {
@@ -47,16 +43,12 @@ func (h *AuthHandler) Register(ctx *fiber.Ctx) error {
 }
 
 func (h *AuthHandler) Login(ctx *fiber.Ctx) error {
-	c, cancel := context.WithTimeout(ctx.Context(), 10*time.Second)
-	defer cancel()
-
 	var request dto.LoginRequest
-	if err := ctx.BodyParser(&request); err != nil {
-		return dto.SendError(ctx, fiber.StatusBadRequest, "Invalid request body", err)
+	c, cancel, err := parseAndValidate(ctx, h.Validator, &request)
+	if err != nil {
+		return err
 	}
-	if errs := h.Validator.Validate(request); errs != nil {
-		return dto.SendError(ctx, fiber.StatusUnprocessableEntity, "Validation failed", errs)
-	}
+	defer cancel()
 
 	res, err := h.AuthService.Login(c, request)
 	if err != nil {

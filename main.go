@@ -5,7 +5,6 @@ import (
 	"log"
 
 	"github.com/gofiber/fiber/v2"
-	"github.com/ipincamp/go-edsa-api/domain"
 	"github.com/ipincamp/go-edsa-api/internal/api/handler"
 	"github.com/ipincamp/go-edsa-api/internal/api/middleware"
 	"github.com/ipincamp/go-edsa-api/internal/api/router"
@@ -45,18 +44,16 @@ func main() {
 		return
 	}
 
-	roles, err := middleware.LoadAndCachePermissions(dbConnection)
-	if err != nil {
-		log.Fatalf("Failed to load and cache permissions: %v", err)
-	}
+	util.LoadRolesAndPermissions(dbConnection)
+	roles := util.GetAllRoles()
 
+	util.PrintPermissionTree(roles)
 	log.Printf(
-		"%s%sStarting server...%s",
+		"├── %s%sStarting server...%s",
 		constant.Color("bold"),
 		constant.Color("yellow"),
 		constant.Color("reset"),
 	)
-	printPermissionTree(roles)
 
 	app := fiber.New()
 	validator := util.NewValidator()
@@ -67,11 +64,19 @@ func main() {
 
 	authMiddleware := middleware.NewAuth(cnf)
 	permissionMiddleware := middleware.NewPermission()
+	limiterMiddleware := middleware.NewLimiter()
 
 	authHandler := handler.NewAuth(authService, validator)
 	userHandler := handler.NewUser(userService, validator)
 
-	router.Setup(app, authHandler, userHandler, authMiddleware, permissionMiddleware)
+	router.Setup(
+		app,
+		authHandler,
+		userHandler,
+		authMiddleware,
+		permissionMiddleware,
+		limiterMiddleware,
+	)
 	app.Use(func(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
 			"status":  false,
@@ -88,55 +93,8 @@ func main() {
 		cnf.Server.Port,
 		constant.Color("reset"),
 	)
-	err = app.Listen(cnf.Server.Host + ":" + cnf.Server.Port)
+	err := app.Listen(cnf.Server.Host + ":" + cnf.Server.Port)
 	if err != nil {
 		log.Fatalf("Failed to start server: %v", err)
 	}
-}
-
-func printPermissionTree(roles []domain.Role) {
-	log.Printf(
-		"├── %s%sCaching roles and permissions...%s",
-		constant.Color("bold"),
-		constant.Color("yellow"),
-		constant.Color("reset"),
-	)
-
-	basePrefix := "│   "
-	for i, role := range roles {
-		isLastRole := i == len(roles)-1
-		roleConnector := "├──"
-		if isLastRole {
-			roleConnector = "└──"
-		}
-
-		log.Printf(
-			"%s%s%s %s%s%s%s",
-			basePrefix, roleConnector, constant.Color("reset"),
-			constant.Color("bold"), constant.Color("yellow"), role.Name, constant.Color("reset"),
-		)
-
-		permParentPrefix := basePrefix + "│   "
-		if isLastRole {
-			permParentPrefix = basePrefix + "    "
-		}
-
-		for j, p := range role.Permissions {
-			isLastPerm := j == len(role.Permissions)-1
-			permConnector := "├──"
-			if isLastPerm {
-				permConnector = "└──"
-			}
-			log.Printf(
-				"%s%s%s %s%s%s%s",
-				permParentPrefix, constant.Color("gray"), permConnector, constant.Color("reset"),
-				constant.Color("green"), p.Name, constant.Color("reset"),
-			)
-		}
-	}
-
-	log.Printf(
-		"├── %s%sCached permissions for %d roles.%s",
-		constant.Color("bold"), constant.Color("green"), len(roles), constant.Color("reset"),
-	)
 }

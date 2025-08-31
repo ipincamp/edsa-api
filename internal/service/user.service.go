@@ -20,7 +20,7 @@ func NewUser(userRepository domain.UserRepository) domain.UserService {
 	}
 }
 
-func (s *userService) Index(ctx context.Context) ([]dto.UserData, error) {
+func (s *userService) GetAll(ctx context.Context) ([]dto.UserData, error) {
 	users, err := s.userRepository.FindAll(ctx)
 	if err != nil {
 		return nil, err
@@ -67,9 +67,8 @@ func (s *userService) Update(ctx context.Context, userID string, request dto.Upd
 	}
 
 	isModified := false
-	passwordChanged := false
 
-	if request.Name != "" {
+	if request.Name != "" && request.Name != user.Name {
 		user.Name = request.Name
 		isModified = true
 	}
@@ -93,13 +92,9 @@ func (s *userService) Update(ctx context.Context, userID string, request dto.Upd
 		}
 		user.Password = newHashedPassword
 		isModified = true
-		passwordChanged = true
 	}
 
 	if isModified {
-		if passwordChanged {
-			return s.userRepository.UpdateWithPassword(ctx, &user)
-		}
 		return s.userRepository.Update(ctx, &user)
 	}
 

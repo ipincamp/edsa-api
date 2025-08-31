@@ -26,7 +26,7 @@ func (h *UserHandler) Index(ctx *fiber.Ctx) error {
 	c, cancel := context.WithTimeout(ctx.Context(), 10*time.Second)
 	defer cancel()
 
-	res, err := h.UserService.Index(c)
+	res, err := h.UserService.GetAll(c)
 	if err != nil {
 		return dto.SendError(ctx, fiber.StatusInternalServerError, "Failed to retrieve users", err)
 	}
@@ -52,9 +52,6 @@ func (h *UserHandler) Profile(ctx *fiber.Ctx) error {
 }
 
 func (h *UserHandler) Update(ctx *fiber.Ctx) error {
-	c, cancel := context.WithTimeout(ctx.Context(), 10*time.Second)
-	defer cancel()
-
 	userID := ctx.Params("userID")
 	if userID == "" {
 		loggedInUser, ok := ctx.Locals("user").(domain.User)
@@ -65,14 +62,13 @@ func (h *UserHandler) Update(ctx *fiber.Ctx) error {
 	}
 
 	var request dto.UpdateUserRequest
-	if err := ctx.BodyParser(&request); err != nil {
-		return dto.SendError(ctx, fiber.StatusBadRequest, "Invalid request body", err)
+	c, cancel, err := parseAndValidate(ctx, h.Validator, &request)
+	if err != nil {
+		return err
 	}
-	if errs := h.Validator.Validate(request); errs != nil {
-		return dto.SendError(ctx, fiber.StatusUnprocessableEntity, "Validation failed", errs)
-	}
+	defer cancel()
 
-	err := h.UserService.Update(c, userID, request)
+	err = h.UserService.Update(c, userID, request)
 	if err != nil {
 		switch err.Error() {
 		case "user not found":
