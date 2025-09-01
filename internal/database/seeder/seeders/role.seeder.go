@@ -14,6 +14,7 @@ func RoleSeeder(db *gorm.DB) error {
 		{Name: constant.RoleAdmin.String()},
 		{Name: constant.RoleTeacher.String()},
 		{Name: constant.RoleStudent.String()},
+		{Name: constant.RoleGuest.String()},
 	}
 
 	for _, role := range roles {

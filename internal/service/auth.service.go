@@ -35,9 +35,9 @@ func (s *authService) Register(ctx context.Context, request dto.RegisterRequest)
 		return dto.AuthResponse{}, errors.New("email already exists")
 	}
 
-	defaultRole, found := util.GetRoleByName(constant.RoleStudent.String())
+	defaultRole, found := util.GetRoleByName(constant.RoleGuest.String())
 	if !found {
-		return dto.AuthResponse{}, errors.New("default student role not found in cache")
+		return dto.AuthResponse{}, errors.New("default role not found in cache")
 	}
 
 	hashedPassword, err := util.HashPassword(request.Password)
