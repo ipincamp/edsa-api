@@ -1,0 +1,27 @@
+# Direktori Git
+.git
+.github
+
+# Hasil build dan log sebelumnya
+# Folder ini berisi binary yang sudah jadi, tidak perlu dimasukkan ke build context lagi.
+bin/
+
+# File konfigurasi Docker dan skrip build itu sendiri
+Dockerfile
+docker-compose.yml
+build.sh
+.dockerignore
+
+# File konfigurasi environment, JANGAN PERNAH masukkan ke dalam image
+.env
+
+# Konfigurasi editor kode
+.vscode/
+
+# File Go yang tidak perlu
+go.work
+
+# File umum lainnya
+Makefile
+README.md
+*.log
