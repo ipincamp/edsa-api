@@ -26,7 +26,9 @@ func (h *UserHandler) Index(ctx *fiber.Ctx) error {
 	c, cancel := context.WithTimeout(ctx.Context(), 10*time.Second)
 	defer cancel()
 
-	res, err := h.UserService.GetAll(c)
+	page, limit := util.GetPaginationParams(ctx)
+
+	res, err := h.UserService.GetAll(c, page, limit)
 	if err != nil {
 		return dto.SendError(ctx, fiber.StatusInternalServerError, "Failed to retrieve users", err)
 	}

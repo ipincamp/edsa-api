@@ -11,7 +11,7 @@ func AddRoleIdToUsersTable() *gormigrate.Migration {
 	}
 
 	return &gormigrate.Migration{
-		ID: "20250830141645",
+		ID: "20250830141630",
 		Migrate: func(tx *gorm.DB) error {
 			return tx.AutoMigrate(&User{})
 		},

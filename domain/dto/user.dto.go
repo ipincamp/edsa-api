@@ -8,10 +8,10 @@ type UpdateUserRequest struct {
 }
 
 type UserData struct {
-	ID        string `json:"id"`
-	Name      string `json:"name"`
-	Email     string `json:"email"`
-	Role      string `json:"role"`
-	JoinedAt  string `json:"joined_at"`
-	UpdatedAt string `json:"updated_at"`
+	ID        string `json:"id,omitempty"`
+	Name      string `json:"name,omitempty"`
+	Email     string `json:"email,omitempty"`
+	Role      string `json:"role,omitempty"`
+	JoinedAt  string `json:"joined_at,omitempty"`
+	UpdatedAt string `json:"updated_at,omitempty"`
 }

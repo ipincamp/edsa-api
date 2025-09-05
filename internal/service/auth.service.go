@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"log"
-	"time"
 
 	"github.com/ipincamp/go-edsa-api/domain"
 	"github.com/ipincamp/go-edsa-api/domain/dto"
@@ -64,7 +63,7 @@ func (s *authService) Register(ctx context.Context, request dto.RegisterRequest)
 	}()
 
 	newUser.Role = defaultRole
-	return s.createAuthResponse(newUser)
+	return createAuthResponse(newUser, s)
 }
 
 func (s *authService) Login(ctx context.Context, request dto.LoginRequest) (dto.AuthResponse, error) {
@@ -81,35 +80,9 @@ func (s *authService) Login(ctx context.Context, request dto.LoginRequest) (dto.
 		return dto.AuthResponse{}, errors.New("invalid credentials")
 	}
 
-	return s.createAuthResponse(user)
+	return createAuthResponse(user, s)
 }
 
 func (s *authService) Logout(ctx context.Context, user domain.User) error {
 	return nil
-}
-
-func (s *authService) createAuthResponse(user domain.User) (dto.AuthResponse, error) {
-	tokenTTL := time.Duration(s.config.Paseto.TokenTTLMin) * time.Minute
-	pasetoMaker, err := util.NewPasetoMaker(s.config.Paseto.SecretKey)
-	if err != nil {
-		return dto.AuthResponse{}, err
-	}
-
-	token, err := pasetoMaker.CreateToken(user.ID, user.Role.ID, tokenTTL)
-	if err != nil {
-		return dto.AuthResponse{}, err
-	}
-
-	res := dto.AuthResponse{
-		Token: token,
-		User: dto.UserData{
-			ID:        user.ID,
-			Name:      user.Name,
-			Email:     user.Email,
-			Role:      user.Role.Name,
-			JoinedAt:  user.CreatedAt.Format("2006-01-02 15:04:05"),
-			UpdatedAt: user.UpdatedAt.Format("2006-01-02 15:04:05"),
-		},
-	}
-	return res, nil
 }

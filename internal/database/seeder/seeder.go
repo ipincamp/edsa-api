@@ -13,8 +13,6 @@ type Seeder func(db *gorm.DB) error
 func getSeeders(cnf *config.Config) []Seeder {
 	return []Seeder{
 		seeders.RoleSeeder,
-		seeders.PermissionSeeder,
-		seeders.RolePermissionSeeder,
 		seeders.UserSeeder(cnf),
 		// Other seeders can be added here
 	}

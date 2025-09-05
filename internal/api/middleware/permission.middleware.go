@@ -1,6 +1,7 @@
 package middleware
 
 import (
+	"encoding/json"
 	"slices"
 
 	"github.com/gofiber/fiber/v2"
@@ -22,7 +23,12 @@ func (m *PermissionMiddleware) CheckRole(requiredRoles ...string) fiber.Handler 
 			return dto.SendError(ctx, fiber.StatusForbidden, "User data not found in context")
 		}
 
-		if slices.Contains(requiredRoles, user.Role.Name) {
+		userRole, found := util.GetRoleByID(user.Role.ID)
+		if !found {
+			return dto.SendError(ctx, fiber.StatusForbidden, "Invalid user role")
+		}
+
+		if slices.Contains(requiredRoles, userRole.Name) {
 			return ctx.Next()
 		}
 
@@ -42,10 +48,13 @@ func (m *PermissionMiddleware) CheckPermission(requiredPermission string) fiber.
 			return dto.SendError(ctx, fiber.StatusForbidden, "Invalid user role")
 		}
 
-		for _, p := range userRole.Permissions {
-			if p.Name == requiredPermission {
-				return ctx.Next()
-			}
+		var permissions map[string]bool
+		if err := json.Unmarshal(userRole.Permissions, &permissions); err != nil {
+			return dto.SendError(ctx, fiber.StatusInternalServerError, "Failed to parse user permissions")
+		}
+
+		if hasPermission, ok := permissions[requiredPermission]; ok && hasPermission {
+			return ctx.Next()
 		}
 
 		return dto.SendError(ctx, fiber.StatusForbidden, "You don't have the required permission")
@@ -68,10 +77,13 @@ func (m *PermissionMiddleware) CheckRoleOrPermission(roleName string, permission
 			return ctx.Next()
 		}
 
-		for _, p := range userRole.Permissions {
-			if p.Name == permissionName {
-				return ctx.Next()
-			}
+		var permissions map[string]bool
+		if err := json.Unmarshal(userRole.Permissions, &permissions); err != nil {
+			return dto.SendError(ctx, fiber.StatusInternalServerError, "Failed to parse user permissions")
+		}
+
+		if hasPermission, ok := permissions[permissionName]; ok && hasPermission {
+			return ctx.Next()
 		}
 
 		return dto.SendError(ctx, fiber.StatusForbidden, "You don't have the required role or permission")

@@ -11,8 +11,7 @@ import (
 func getMigrations(db *gorm.DB) []*gormigrate.Migration {
 	return []*gormigrate.Migration{
 		migrations.CreateUsersTable(),
-		migrations.CreateRolesAndPermissionsTable(),
-		migrations.CreateUserPermissionsTable(),
+		migrations.CreateRolesTable(),
 		migrations.AddRoleIdToUsersTable(),
 		// Other migrations can be added here
 	}

@@ -17,15 +17,24 @@ func NewUser(db *gorm.DB) domain.UserRepository {
 	}
 }
 
-func (r *userRepository) FindAll(ctx context.Context) (result []domain.User, err error) {
+func (r *userRepository) LoadAll(ctx context.Context) (result []domain.User, err error) {
 	err = r.db.WithContext(ctx).Find(&result).Error
+	return
+}
+
+func (r *userRepository) FindAll(ctx context.Context, limit int, offset int) (result []domain.User, err error) {
+	err = r.db.WithContext(ctx).Limit(limit).Offset(offset).Find(&result).Error
+	return
+}
+
+func (r *userRepository) Count(ctx context.Context) (total int64, err error) {
+	err = r.db.WithContext(ctx).Model(&domain.User{}).Count(&total).Error
 	return
 }
 
 func (r *userRepository) FindByID(ctx context.Context, id string) (result domain.User, err error) {
 	err = r.db.WithContext(ctx).
-		Preload("Role.Permissions").
-		Preload("Permissions").
+		Preload("Role").
 		First(&result, "id = ?", id).Error
 	return
 }

@@ -1,12 +1,26 @@
 package dto
 
-import "github.com/gofiber/fiber/v2"
+import (
+	"github.com/gofiber/fiber/v2"
+)
 
 type responseJSON struct {
 	Status  bool        `json:"status"`
 	Message string      `json:"message"`
 	Data    interface{} `json:"data,omitempty"`
 	Error   interface{} `json:"error,omitempty"`
+}
+
+type Pagination struct {
+	Page       int   `json:"page"`
+	Limit      int   `json:"limit"`
+	Total      int64 `json:"total"`
+	TotalPages int   `json:"total_pages"`
+}
+
+type PaginatedResponse struct {
+	Data       interface{} `json:"data"`
+	Pagination *Pagination `json:"pagination"`
 }
 
 func SendSuccess(c *fiber.Ctx, statusCode int, message string, data interface{}) error {

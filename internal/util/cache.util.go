@@ -1,7 +1,9 @@
 package util
 
 import (
+	"encoding/json"
 	"log"
+	"sort"
 	"sync"
 
 	"github.com/ipincamp/go-edsa-api/domain"
@@ -18,7 +20,7 @@ var (
 func LoadRolesAndPermissions(db *gorm.DB) {
 	once.Do(func() {
 		var roles []domain.Role
-		if err := db.Preload("Permissions").Find(&roles).Error; err != nil {
+		if err := db.Find(&roles).Error; err != nil {
 			log.Fatalf("Failed to load roles for cache: %v", err)
 		}
 
@@ -59,12 +61,18 @@ func PrintPermissionTree(roles []domain.Role) {
 		constant.Color("reset"),
 	)
 
+	sort.Slice(roles, func(i, j int) bool {
+		return roles[i].Name < roles[j].Name
+	})
+
 	basePrefix := "│   "
 	for i, role := range roles {
 		isLastRole := i == len(roles)-1
 		roleConnector := "├──"
+		permParentPrefix := basePrefix + "│   "
 		if isLastRole {
 			roleConnector = "└──"
+			permParentPrefix = basePrefix + "    "
 		}
 
 		log.Printf(
@@ -73,22 +81,30 @@ func PrintPermissionTree(roles []domain.Role) {
 			constant.Color("bold"), constant.Color("yellow"), role.Name, constant.Color("reset"),
 		)
 
-		permParentPrefix := basePrefix + "│   "
-		if isLastRole {
-			permParentPrefix = basePrefix + "    "
+		var permissions map[string]bool
+		if err := json.Unmarshal(role.Permissions, &permissions); err != nil {
+			continue
 		}
 
-		for j, p := range role.Permissions {
-			isLastPerm := j == len(role.Permissions)-1
+		permKeys := make([]string, 0, len(permissions))
+		for pKey := range permissions {
+			permKeys = append(permKeys, pKey)
+		}
+		sort.Strings(permKeys)
+
+		for j, pName := range permKeys {
+			isLastPerm := j == len(permKeys)-1
 			permConnector := "├──"
 			if isLastPerm {
 				permConnector = "└──"
 			}
-			log.Printf(
-				"%s%s%s %s%s%s%s",
-				permParentPrefix, constant.Color("gray"), permConnector, constant.Color("reset"),
-				constant.Color("green"), p.Name, constant.Color("reset"),
-			)
+			if permissions[pName] {
+				log.Printf(
+					"%s%s%s %s%s%s%s",
+					permParentPrefix, constant.Color("gray"), permConnector, constant.Color("reset"),
+					constant.Color("green"), pName, constant.Color("reset"),
+				)
+			}
 		}
 	}
 

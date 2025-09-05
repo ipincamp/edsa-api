@@ -20,8 +20,15 @@ func NewUser(userRepository domain.UserRepository) domain.UserService {
 	}
 }
 
-func (s *userService) GetAll(ctx context.Context) ([]dto.UserData, error) {
-	users, err := s.userRepository.FindAll(ctx)
+func (s *userService) GetAll(ctx context.Context, page, limit int) (*dto.PaginatedResponse, error) {
+	offset := util.CalculateOffset(page, limit)
+
+	users, err := s.userRepository.FindAll(ctx, limit, offset)
+	if err != nil {
+		return nil, err
+	}
+
+	total, err := s.userRepository.Count(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -29,14 +36,18 @@ func (s *userService) GetAll(ctx context.Context) ([]dto.UserData, error) {
 	var userData []dto.UserData
 	for _, v := range users {
 		userData = append(userData, dto.UserData{
-			ID:       v.ID,
-			Name:     v.Name,
-			Email:    v.Email,
-			JoinedAt: v.CreatedAt.Format("2006-01-02 15:04:05"),
+			ID:   v.ID,
+			Name: v.Name,
+			Role: v.Role.Name,
 		})
 	}
 
-	return userData, nil
+	pagination := util.GeneratePagination(page, limit, total)
+
+	return &dto.PaginatedResponse{
+		Data:       userData,
+		Pagination: pagination,
+	}, nil
 }
 
 func (s *userService) Profile(ctx context.Context, userID string) (dto.UserData, error) {
@@ -52,6 +63,7 @@ func (s *userService) Profile(ctx context.Context, userID string) (dto.UserData,
 		ID:        user.ID,
 		Name:      user.Name,
 		Email:     user.Email,
+		Role:      user.Role.Name,
 		JoinedAt:  user.CreatedAt.Format("2006-01-02 15:04:05"),
 		UpdatedAt: user.UpdatedAt.Format("2006-01-02 15:04:05"),
 	}, nil
