@@ -82,14 +82,14 @@ func (s *authService) Login(ctx context.Context, request dto.LoginRequest) (dto.
 	user, err := s.userRepository.FindByEmail(ctx, request.Email)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return dto.AuthResponse{}, constant.ErrInvalidCredentials
+			return dto.AuthResponse{}, constant.ErrInvalidInput
 		}
 		return dto.AuthResponse{}, err
 	}
 
 	match, err := util.CheckPasswordHash(request.Password, user.Password)
 	if err != nil || !match {
-		return dto.AuthResponse{}, constant.ErrInvalidCredentials
+		return dto.AuthResponse{}, constant.ErrInvalidInput
 	}
 
 	return s.createAuthResponse(user)

@@ -21,7 +21,7 @@ type User struct {
 }
 
 type UserRepository interface {
-	List(ctx context.Context, limit, offset int) ([]User, int64, error)
+	List(ctx context.Context, limit, offset int, roleName string) ([]User, int64, error)
 	FindByID(ctx context.Context, id string) (User, error)
 	FindByEmail(ctx context.Context, email string) (User, error)
 	Create(ctx context.Context, user *User) error

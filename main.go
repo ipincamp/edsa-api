@@ -76,7 +76,7 @@ func main() {
 
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
-	allUsers, _, err := userRepository.List(ctx, 0, 0)
+	allUsers, _, err := userRepository.List(ctx, 0, 0, "")
 	if err != nil {
 		log.Fatalf("Failed to fetch users to populate bloom filter: %v", err)
 	}
@@ -162,7 +162,7 @@ func scheduleBloomFilterRegeneration(
 
 		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 
-		users, _, err := userRepo.List(ctx, 0, 0)
+		users, _, err := userRepo.List(ctx, 0, 0, "")
 		if err != nil {
 			log.Printf("[SCHEDULER] Error fetching users for bloom filter regeneration: %v", err)
 			cancel()

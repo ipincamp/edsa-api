@@ -21,23 +21,15 @@ func NewUser(userRepository domain.UserRepository) UserService {
 	}
 }
 
-func (s *userService) All(ctx context.Context, page int, limit int) (*dto.PaginatedResponse, error) {
+func (s *userService) All(ctx context.Context, page int, limit int, roleName string) (*dto.PaginatedResponse, error) {
 	offset := util.CalculateOffset(page, limit)
 
-	users, total, err := s.userRepository.List(ctx, limit, offset)
+	users, total, err := s.userRepository.List(ctx, limit, offset, roleName)
 	if err != nil {
 		return nil, err
 	}
 
-	userData := make([]dto.UserResponse, len(users))
-	for i, v := range users {
-		userData[i] = dto.UserResponse{
-			ID:       v.ID,
-			Name:     v.Name,
-			JoinedAt: v.CreatedAt.Format("2006-01-02 15:04:05"),
-		}
-	}
-
+	userData := dto.ToUserListResponse(users)
 	metaData := util.GeneratePagination(page, limit, total)
 
 	return &dto.PaginatedResponse{
@@ -73,11 +65,11 @@ func (s *userService) UpdateProfile(ctx context.Context, userID string, request 
 
 	if request.NewPassword != "" {
 		if request.OldPassword == "" {
-			return errors.New("old password is required to set a new password")
+			return constant.ErrInvalidInput
 		}
 		match, err := util.CheckPasswordHash(request.OldPassword, user.Password)
 		if err != nil || !match {
-			return errors.New("invalid old password")
+			return constant.ErrInvalidInput
 		}
 		newHashedPassword, err := util.HashPassword(request.NewPassword)
 		if err != nil {

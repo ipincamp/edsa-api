@@ -26,7 +26,7 @@ func NewAuth(authService service.AuthService, validator *util.GoValidator) *Auth
 
 func (h *AuthHandler) Register(ctx *fiber.Ctx) error {
 	var request dto.RegisterRequest
-	c, cancel, err := parseAndValidate(ctx, h.Validator, &request)
+	c, cancel, err := parseAndValidateBody(ctx, h.Validator, &request)
 	if err != nil {
 		return err
 	}
@@ -45,7 +45,7 @@ func (h *AuthHandler) Register(ctx *fiber.Ctx) error {
 
 func (h *AuthHandler) Login(ctx *fiber.Ctx) error {
 	var request dto.LoginRequest
-	c, cancel, err := parseAndValidate(ctx, h.Validator, &request)
+	c, cancel, err := parseAndValidateBody(ctx, h.Validator, &request)
 	if err != nil {
 		return err
 	}

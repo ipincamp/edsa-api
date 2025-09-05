@@ -17,21 +17,27 @@ func NewUser(db *gorm.DB) domain.UserRepository {
 	}
 }
 
-func (r *userRepository) List(ctx context.Context, limit, offset int) ([]domain.User, int64, error) {
+func (r *userRepository) List(ctx context.Context, limit, offset int, roleName string) ([]domain.User, int64, error) {
 	var users []domain.User
 	var total int64
 
 	err := r.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
-		if err := tx.Model(&domain.User{}).Preload("Role").Count(&total).Error; err != nil {
+		query := tx.Model(&domain.User{})
+
+		if roleName != "" {
+			query = query.Joins("JOIN roles ON roles.id = users.role_id").Where("roles.name = ?", roleName)
+		}
+
+		if err := query.Count(&total).Error; err != nil {
 			return err
 		}
 
-		query := tx
+		paginatedQuery := query
 		if limit > 0 {
-			query = query.Limit(limit).Offset(offset)
+			paginatedQuery = paginatedQuery.Limit(limit).Offset(offset)
 		}
 
-		if err := query.Preload("Role").Find(&users).Error; err != nil {
+		if err := paginatedQuery.Preload("Role").Find(&users).Error; err != nil {
 			return err
 		}
 		return nil

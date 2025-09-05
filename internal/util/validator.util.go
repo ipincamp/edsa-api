@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/go-playground/validator/v10"
+	"github.com/google/uuid"
 )
 
 type GoValidator struct {
@@ -12,8 +13,18 @@ type GoValidator struct {
 }
 
 func NewValidator() *GoValidator {
+	v := validator.New()
+
+	v.RegisterValidation("uuid4", func(fl validator.FieldLevel) bool {
+		if val, ok := fl.Field().Interface().(string); ok {
+			_, err := uuid.Parse(val)
+			return err == nil
+		}
+		return false
+	})
+
 	return &GoValidator{
-		validate: validator.New(),
+		validate: v,
 	}
 }
 
@@ -55,6 +66,8 @@ func generateErrorMessage(err validator.FieldError) string {
 		return fmt.Sprintf("Field '%s' must be at least %s characters long", field, param)
 	case "eqfield":
 		return fmt.Sprintf("Field '%s' must be the same as field '%s'", field, toSnakeCase(param))
+	case "uuid4":
+		return fmt.Sprintf("Field '%s' must be a valid UUID v4", field)
 	default:
 		return fmt.Sprintf("Field '%s' is not valid", field)
 	}

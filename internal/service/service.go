@@ -8,7 +8,7 @@ import (
 )
 
 type UserService interface {
-	All(ctx context.Context, page int, limit int) (*dto.PaginatedResponse, error)
+	All(ctx context.Context, page int, limit int, roleName string) (*dto.PaginatedResponse, error)
 	Profile(ctx context.Context, userID string) (dto.UserResponse, error)
 	UpdateProfile(ctx context.Context, userID string, request dto.UpdateProfileUserRequest) error
 }

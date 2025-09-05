@@ -1,5 +1,15 @@
 package dto
 
+type UserIDRequest struct {
+	UserId string `params:"userId" validate:"required,uuid4"`
+}
+
+type UserFilterRequest struct {
+	Page  int    `query:"page" validate:"omitempty,min=1"`
+	Limit int    `query:"limit" validate:"omitempty,min=1,max=100"`
+	Role  string `query:"role" validate:"omitempty,oneof=teacher student guest"`
+}
+
 type UpdateProfileUserRequest struct {
 	Name                    string `json:"name,omitempty" validate:"omitempty,min=3"`
 	OldPassword             string `json:"old_password,omitempty" validate:"omitempty"`
