@@ -4,7 +4,6 @@ import (
 	"strings"
 
 	"github.com/gofiber/fiber/v2"
-	"github.com/ipincamp/go-edsa-api/domain"
 	"github.com/ipincamp/go-edsa-api/domain/dto"
 	"github.com/ipincamp/go-edsa-api/internal/config"
 	"github.com/ipincamp/go-edsa-api/internal/util"
@@ -24,12 +23,12 @@ func (m *AuthMiddleware) Auth() fiber.Handler {
 	return func(ctx *fiber.Ctx) error {
 		authHeader := ctx.Get("Authorization")
 		if authHeader == "" {
-			return dto.SendError(ctx, fiber.StatusUnauthorized, "Authorization header is required", nil)
+			return dto.SendError(ctx, fiber.StatusUnauthorized, "Authorization header is required")
 		}
 
 		parts := strings.Split(authHeader, " ")
 		if len(parts) != 2 || parts[0] != "Bearer" {
-			return dto.SendError(ctx, fiber.StatusUnauthorized, "Invalid authorization header format", nil)
+			return dto.SendError(ctx, fiber.StatusUnauthorized, "Invalid authorization header format")
 		}
 
 		tokenString := parts[1]
@@ -40,17 +39,15 @@ func (m *AuthMiddleware) Auth() fiber.Handler {
 
 		payload, err := pasetoMaker.VerifyToken(tokenString)
 		if err != nil {
-			return dto.SendError(ctx, fiber.StatusUnauthorized, "Invalid or expired token", err)
+			return dto.SendError(ctx, fiber.StatusUnauthorized, "Invalid or expired token")
 		}
 
-		userFromToken := domain.User{
-			ID: payload.UserID,
-			Role: domain.Role{
-				ID: payload.RoleID,
-			},
+		user, found := util.GetUserFromCacheByID(payload.UserID)
+		if !found {
+			return dto.SendError(ctx, fiber.StatusUnauthorized, "User for this token not found")
 		}
 
-		ctx.Locals("user", userFromToken)
+		ctx.Locals("user", user)
 
 		return ctx.Next()
 	}

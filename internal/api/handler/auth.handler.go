@@ -8,15 +8,16 @@ import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/ipincamp/go-edsa-api/domain"
 	"github.com/ipincamp/go-edsa-api/domain/dto"
+	"github.com/ipincamp/go-edsa-api/internal/service"
 	"github.com/ipincamp/go-edsa-api/internal/util"
 )
 
 type AuthHandler struct {
-	AuthService domain.AuthService
+	AuthService service.AuthService
 	Validator   *util.GoValidator
 }
 
-func NewAuth(authService domain.AuthService, validator *util.GoValidator) *AuthHandler {
+func NewAuth(authService service.AuthService, validator *util.GoValidator) *AuthHandler {
 	return &AuthHandler{
 		AuthService: authService,
 		Validator:   validator,

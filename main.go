@@ -8,6 +8,7 @@ import (
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/ipincamp/go-edsa-api/domain"
+	"github.com/ipincamp/go-edsa-api/domain/dto"
 	"github.com/ipincamp/go-edsa-api/internal/api/handler"
 	"github.com/ipincamp/go-edsa-api/internal/api/middleware"
 	"github.com/ipincamp/go-edsa-api/internal/api/router"
@@ -47,16 +48,14 @@ func main() {
 		return
 	}
 
-	util.LoadRolesAndPermissions(dbConnection)
-	roles := util.GetAllRoles()
-
-	util.PrintPermissionTree(roles)
 	log.Printf(
 		"├── %s%sStarting server...%s",
 		constant.Color("bold"),
 		constant.Color("yellow"),
 		constant.Color("reset"),
 	)
+
+	util.LoadCache(dbConnection)
 
 	log.Printf(
 		"├── %s%sLoading email bloom filter...%s",
@@ -77,7 +76,7 @@ func main() {
 
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
-	allUsers, err := userRepository.LoadAll(ctx)
+	allUsers, _, err := userRepository.List(ctx, 0, 0)
 	if err != nil {
 		log.Fatalf("Failed to fetch users to populate bloom filter: %v", err)
 	}
@@ -123,10 +122,7 @@ func main() {
 		limiterMiddleware,
 	)
 	app.Use(func(c *fiber.Ctx) error {
-		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
-			"status":  false,
-			"message": "Resource not found",
-		})
+		return dto.SendError(c, fiber.StatusInternalServerError, constant.ErrNotFound.Error())
 	})
 
 	router.PrintRoutes(app)
@@ -166,7 +162,7 @@ func scheduleBloomFilterRegeneration(
 
 		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 
-		users, err := userRepo.LoadAll(ctx)
+		users, _, err := userRepo.List(ctx, 0, 0)
 		if err != nil {
 			log.Printf("[SCHEDULER] Error fetching users for bloom filter regeneration: %v", err)
 			cancel()

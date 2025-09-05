@@ -6,6 +6,7 @@ import (
 
 	"github.com/ipincamp/go-edsa-api/domain"
 	"github.com/ipincamp/go-edsa-api/domain/dto"
+	"github.com/ipincamp/go-edsa-api/internal/constant"
 	"github.com/ipincamp/go-edsa-api/internal/util"
 	"gorm.io/gorm"
 )
@@ -14,101 +15,76 @@ type userService struct {
 	userRepository domain.UserRepository
 }
 
-func NewUser(userRepository domain.UserRepository) domain.UserService {
+func NewUser(userRepository domain.UserRepository) UserService {
 	return &userService{
 		userRepository: userRepository,
 	}
 }
 
-func (s *userService) GetAll(ctx context.Context, page, limit int) (*dto.PaginatedResponse, error) {
+func (s *userService) All(ctx context.Context, page int, limit int) (*dto.PaginatedResponse, error) {
 	offset := util.CalculateOffset(page, limit)
 
-	users, err := s.userRepository.FindAll(ctx, limit, offset)
+	users, total, err := s.userRepository.List(ctx, limit, offset)
 	if err != nil {
 		return nil, err
 	}
 
-	total, err := s.userRepository.Count(ctx)
-	if err != nil {
-		return nil, err
+	userData := make([]dto.UserResponse, len(users))
+	for i, v := range users {
+		userData[i] = dto.UserResponse{
+			ID:       v.ID,
+			Name:     v.Name,
+			JoinedAt: v.CreatedAt.Format("2006-01-02 15:04:05"),
+		}
 	}
 
-	var userData []dto.UserData
-	for _, v := range users {
-		userData = append(userData, dto.UserData{
-			ID:   v.ID,
-			Name: v.Name,
-			Role: v.Role.Name,
-		})
-	}
-
-	pagination := util.GeneratePagination(page, limit, total)
+	metaData := util.GeneratePagination(page, limit, total)
 
 	return &dto.PaginatedResponse{
-		Data:       userData,
-		Pagination: pagination,
+		Data: userData,
+		Meta: metaData,
 	}, nil
 }
 
-func (s *userService) Profile(ctx context.Context, userID string) (dto.UserData, error) {
+func (s *userService) Profile(ctx context.Context, userID string) (dto.UserResponse, error) {
 	user, err := s.userRepository.FindByID(ctx, userID)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return dto.UserData{}, errors.New("user not found")
+			return dto.UserResponse{}, constant.ErrNotFound
 		}
-		return dto.UserData{}, err
+		return dto.UserResponse{}, err
 	}
 
-	return dto.UserData{
-		ID:        user.ID,
-		Name:      user.Name,
-		Email:     user.Email,
-		Role:      user.Role.Name,
-		JoinedAt:  user.CreatedAt.Format("2006-01-02 15:04:05"),
-		UpdatedAt: user.UpdatedAt.Format("2006-01-02 15:04:05"),
-	}, nil
+	return dto.ToUserResponse(user), nil
 }
 
-func (s *userService) Update(ctx context.Context, userID string, request dto.UpdateUserRequest) error {
+func (s *userService) UpdateProfile(ctx context.Context, userID string, request dto.UpdateProfileUserRequest) error {
 	user, err := s.userRepository.FindByID(ctx, userID)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return errors.New("user not found")
+			return constant.ErrNotFound
 		}
 		return err
 	}
 
-	isModified := false
-
-	if request.Name != "" && request.Name != user.Name {
+	if request.Name != "" {
 		user.Name = request.Name
-		isModified = true
 	}
 
 	if request.NewPassword != "" {
 		if request.OldPassword == "" {
 			return errors.New("old password is required to set a new password")
 		}
-
 		match, err := util.CheckPasswordHash(request.OldPassword, user.Password)
-		if err != nil {
-			return err
-		}
-		if !match {
+		if err != nil || !match {
 			return errors.New("invalid old password")
 		}
-
 		newHashedPassword, err := util.HashPassword(request.NewPassword)
 		if err != nil {
 			return err
 		}
 		user.Password = newHashedPassword
-		isModified = true
 	}
 
-	if isModified {
-		return s.userRepository.Update(ctx, &user)
-	}
-
-	return nil
+	return s.userRepository.Update(ctx, &user)
 }

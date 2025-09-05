@@ -17,48 +17,49 @@ func NewUser(db *gorm.DB) domain.UserRepository {
 	}
 }
 
-func (r *userRepository) LoadAll(ctx context.Context) (result []domain.User, err error) {
-	err = r.db.WithContext(ctx).Find(&result).Error
-	return
+func (r *userRepository) List(ctx context.Context, limit, offset int) ([]domain.User, int64, error) {
+	var users []domain.User
+	var total int64
+
+	err := r.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		if err := tx.Model(&domain.User{}).Preload("Role").Count(&total).Error; err != nil {
+			return err
+		}
+
+		query := tx
+		if limit > 0 {
+			query = query.Limit(limit).Offset(offset)
+		}
+
+		if err := query.Preload("Role").Find(&users).Error; err != nil {
+			return err
+		}
+		return nil
+	})
+
+	return users, total, err
 }
 
-func (r *userRepository) FindAll(ctx context.Context, limit int, offset int) (result []domain.User, err error) {
-	err = r.db.WithContext(ctx).Limit(limit).Offset(offset).Find(&result).Error
-	return
+func (r *userRepository) FindByID(ctx context.Context, id string) (domain.User, error) {
+	var user domain.User
+	err := r.db.WithContext(ctx).Preload("Role").First(&user, "id = ?", id).Error
+	return user, err
 }
 
-func (r *userRepository) Count(ctx context.Context) (total int64, err error) {
-	err = r.db.WithContext(ctx).Model(&domain.User{}).Count(&total).Error
-	return
+func (r *userRepository) FindByEmail(ctx context.Context, email string) (domain.User, error) {
+	var user domain.User
+	err := r.db.WithContext(ctx).Preload("Role").Where("email = ?", email).First(&user).Error
+	return user, err
 }
 
-func (r *userRepository) FindByID(ctx context.Context, id string) (result domain.User, err error) {
-	err = r.db.WithContext(ctx).
-		Preload("Role").
-		First(&result, "id = ?", id).Error
-	return
-}
-
-func (r *userRepository) FindByEmail(ctx context.Context, email string) (result domain.User, err error) {
-	err = r.db.WithContext(ctx).
-		Preload("Role").
-		Where("email = ?", email).
-		First(&result).Error
-	return
-}
-
-func (r *userRepository) Save(ctx context.Context, user *domain.User) error {
+func (r *userRepository) Create(ctx context.Context, user *domain.User) error {
 	return r.db.WithContext(ctx).Create(user).Error
 }
 
 func (r *userRepository) Update(ctx context.Context, user *domain.User) error {
-	return r.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
-		return tx.Model(user).Updates(user).Error
-	})
+	return r.db.WithContext(ctx).Save(user).Error
 }
 
 func (r *userRepository) Delete(ctx context.Context, id string) error {
-	return r.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
-		return tx.Delete(&domain.User{}, "id = ?", id).Error
-	})
+	return r.db.WithContext(ctx).Delete(&domain.User{}, "id = ?", id).Error
 }

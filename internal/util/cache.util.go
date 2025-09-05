@@ -1,9 +1,7 @@
 package util
 
 import (
-	"encoding/json"
 	"log"
-	"sort"
 	"sync"
 
 	"github.com/ipincamp/go-edsa-api/domain"
@@ -14,27 +12,68 @@ import (
 var (
 	rolesByID   = make(map[string]domain.Role)
 	rolesByName = make(map[string]domain.Role)
-	once        sync.Once
+	usersByID   = make(map[string]domain.User)
+
+	cacheMutex = &sync.RWMutex{}
+	once       sync.Once
 )
 
-func LoadRolesAndPermissions(db *gorm.DB) {
+func LoadCache(db *gorm.DB) {
+	log.Printf(
+		"├── %s%sCaching roles and permissions...%s",
+		constant.Color("bold"),
+		constant.Color("yellow"),
+		constant.Color("reset"),
+	)
+
 	once.Do(func() {
+		cacheMutex.Lock()
+		defer cacheMutex.Unlock()
+
 		var roles []domain.Role
 		if err := db.Find(&roles).Error; err != nil {
 			log.Fatalf("Failed to load roles for cache: %v", err)
 		}
-
-		rolesByID = make(map[string]domain.Role)
-		rolesByName = make(map[string]domain.Role)
-
 		for _, role := range roles {
 			rolesByID[role.ID] = role
 			rolesByName[role.Name] = role
 		}
+		log.Printf(
+			"│   ├── %s%sCached %d roles.%s",
+			constant.Color("bold"), constant.Color("green"), len(roles), constant.Color("reset"),
+		)
+
+		var users []domain.User
+		if err := db.Preload("Role").Find(&users).Error; err != nil {
+			log.Fatalf("Failed to load users for cache: %v", err)
+		}
+		for _, user := range users {
+			usersByID[user.ID] = user
+		}
+		log.Printf(
+			"│   └── %s%sCached %d users.%s",
+			constant.Color("bold"), constant.Color("green"), len(users), constant.Color("reset"),
+		)
 	})
 }
 
+func AddUserToCache(user domain.User) {
+	cacheMutex.Lock()
+	defer cacheMutex.Unlock()
+	usersByID[user.ID] = user
+	log.Printf("User %s added/updated in cache", user.ID)
+}
+
+func GetUserFromCacheByID(id string) (domain.User, bool) {
+	cacheMutex.RLock()
+	defer cacheMutex.RUnlock()
+	user, found := usersByID[id]
+	return user, found
+}
+
 func GetAllRoles() []domain.Role {
+	cacheMutex.RLock()
+	defer cacheMutex.RUnlock()
 	allRoles := make([]domain.Role, 0, len(rolesByID))
 	for _, role := range rolesByID {
 		allRoles = append(allRoles, role)
@@ -44,72 +83,15 @@ func GetAllRoles() []domain.Role {
 }
 
 func GetRoleByName(name string) (domain.Role, bool) {
+	cacheMutex.RLock()
+	defer cacheMutex.RUnlock()
 	role, found := rolesByName[name]
 	return role, found
 }
 
 func GetRoleByID(id string) (domain.Role, bool) {
+	cacheMutex.RLock()
+	defer cacheMutex.RUnlock()
 	role, found := rolesByID[id]
 	return role, found
-}
-
-func PrintPermissionTree(roles []domain.Role) {
-	log.Printf(
-		"├── %s%sCaching roles and permissions...%s",
-		constant.Color("bold"),
-		constant.Color("yellow"),
-		constant.Color("reset"),
-	)
-
-	sort.Slice(roles, func(i, j int) bool {
-		return roles[i].Name < roles[j].Name
-	})
-
-	basePrefix := "│   "
-	for i, role := range roles {
-		isLastRole := i == len(roles)-1
-		roleConnector := "├──"
-		permParentPrefix := basePrefix + "│   "
-		if isLastRole {
-			roleConnector = "└──"
-			permParentPrefix = basePrefix + "    "
-		}
-
-		log.Printf(
-			"%s%s%s %s%s%s%s",
-			basePrefix, roleConnector, constant.Color("reset"),
-			constant.Color("bold"), constant.Color("yellow"), role.Name, constant.Color("reset"),
-		)
-
-		var permissions map[string]bool
-		if err := json.Unmarshal(role.Permissions, &permissions); err != nil {
-			continue
-		}
-
-		permKeys := make([]string, 0, len(permissions))
-		for pKey := range permissions {
-			permKeys = append(permKeys, pKey)
-		}
-		sort.Strings(permKeys)
-
-		for j, pName := range permKeys {
-			isLastPerm := j == len(permKeys)-1
-			permConnector := "├──"
-			if isLastPerm {
-				permConnector = "└──"
-			}
-			if permissions[pName] {
-				log.Printf(
-					"%s%s%s %s%s%s%s",
-					permParentPrefix, constant.Color("gray"), permConnector, constant.Color("reset"),
-					constant.Color("green"), pName, constant.Color("reset"),
-				)
-			}
-		}
-	}
-
-	log.Printf(
-		"├── %s%sCached permissions for %d roles.%s",
-		constant.Color("bold"), constant.Color("green"), len(roles), constant.Color("reset"),
-	)
 }

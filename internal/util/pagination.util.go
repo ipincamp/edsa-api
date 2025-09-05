@@ -9,7 +9,7 @@ import (
 	"github.com/ipincamp/go-edsa-api/domain/dto"
 )
 
-func GeneratePagination(page, limit int, total int64) *dto.Pagination {
+func GeneratePagination(page int, limit int, totalData int64) *dto.Pagination {
 	if page <= 0 {
 		page = 1
 	}
@@ -17,13 +17,13 @@ func GeneratePagination(page, limit int, total int64) *dto.Pagination {
 		limit = 10
 	}
 
-	totalPages := int(math.Ceil(float64(total) / float64(limit)))
+	totalPage := int(math.Ceil(float64(totalData) / float64(limit)))
 
 	return &dto.Pagination{
-		Page:       page,
-		Limit:      limit,
-		Total:      total,
-		TotalPages: totalPages,
+		Page:      page,
+		Limit:     limit,
+		TotalData: totalData,
+		TotalPage: totalPage,
 	}
 }
 

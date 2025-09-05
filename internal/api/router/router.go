@@ -30,7 +30,7 @@ func Setup(
 	// User routes
 	user := api.Group("/users", authMiddleware.Auth())
 	user.Get("/profile", userHandler.Profile)
-	user.Patch("/:userID", userHandler.Update)
+	user.Patch("/profile", userHandler.UpdateProfile)
 
 	// Admin routes
 	admin := api.Group(
@@ -39,6 +39,7 @@ func Setup(
 		permissionMiddleware.CheckRole(constant.RoleAdmin.String()),
 	)
 	admin.Get("/users", userHandler.Index)
+	admin.Patch("/users/:userID", userHandler.UpdateUser)
 
 	// Root route
 	app.Get("/", func(c *fiber.Ctx) error {
