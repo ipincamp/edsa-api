@@ -59,19 +59,24 @@ func (s *userService) UpdateProfile(ctx context.Context, userID string, request 
 		return err
 	}
 
-	if request.Name != "" {
-		user.Name = request.Name
+	if request.Name != nil && *request.Name != "" {
+		user.Name = *request.Name
 	}
 
-	if request.NewPassword != "" {
-		if request.OldPassword == "" {
+	if request.NewPassword != nil && *request.NewPassword != "" {
+		if request.OldPassword == nil || *request.OldPassword == "" {
 			return constant.ErrInvalidInput
 		}
-		match, err := util.CheckPasswordHash(request.OldPassword, user.Password)
-		if err != nil || !match {
+
+		match, err := util.CheckPasswordHash(*request.OldPassword, user.Password)
+		if err != nil {
+			return err
+		}
+		if !match {
 			return constant.ErrInvalidInput
 		}
-		newHashedPassword, err := util.HashPassword(request.NewPassword)
+
+		newHashedPassword, err := util.HashPassword(*request.NewPassword)
 		if err != nil {
 			return err
 		}

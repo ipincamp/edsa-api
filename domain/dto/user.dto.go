@@ -11,10 +11,10 @@ type UserFilterRequest struct {
 }
 
 type UpdateProfileUserRequest struct {
-	Name                    string `json:"name,omitempty" validate:"omitempty,min=3"`
-	OldPassword             string `json:"old_password,omitempty" validate:"omitempty"`
-	NewPassword             string `json:"new_password,omitempty" validate:"omitempty,gte=8"`
-	NewPasswordConfirmation string `json:"new_password_confirmation,omitempty" validate:"omitempty,eqfield=NewPassword"`
+	Name                    *string `json:"name" validate:"omitempty,min=3"`
+	OldPassword             *string `json:"old_password,omitempty" validate:"required_with=NewPassword,omitempty"`
+	NewPassword             *string `json:"new_password,omitempty" validate:"omitempty,gte=8"`
+	NewPasswordConfirmation *string `json:"new_password_confirmation,omitempty" validate:"required_with=NewPassword,omitempty,eqfield=NewPassword"`
 }
 
 type UserResponse struct {
