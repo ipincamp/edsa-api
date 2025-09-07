@@ -7,6 +7,7 @@ import (
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/ipincamp/go-edsa-api/internal/config"
+	"github.com/ipincamp/go-edsa-api/internal/constant"
 	"github.com/ipincamp/go-edsa-api/internal/delivery/http/handler"
 	"github.com/ipincamp/go-edsa-api/internal/delivery/http/middleware"
 	"github.com/ipincamp/go-edsa-api/internal/repository"
@@ -101,21 +102,14 @@ func Setup(app *fiber.App, db *gorm.DB) {
 
 	// Protected user routes
 	users := v1.Group("/users").Use(authRequired)
-
-	// Self profile routes (accessible by all authenticated users)
 	users.Get("/profile", userHandler.GetProfile)      // DONE
 	users.Patch("/profile", userHandler.UpdateProfile) // DONE
 
-	// Admin-only routes
-	users.Get("/", middleware.RequireAdmin(), userHandler.GetAllUsers) // DONE
-
-	// Resource ownership or admin access
-	users.Get("/:userId", middleware.RequireOwnershipOrAdmin("userId"), userHandler.GetUserByID)      // DONE
-	users.Patch("/:userId", middleware.RequireOwnershipOrAdmin("userId"), userHandler.UpdateUserByID) // DONE
-
-	// Example of permission-based access (uncomment when needed)
-	// users.Post("/", middleware.RequirePermission("users.create"), userHandler.CreateUser)
-	// users.Delete("/:userId", middleware.RequirePermission("users.delete"), userHandler.DeleteUser)
+	// users.Post("/", middleware.RequirePermission(constant.UsersCreate), userHandler.CreateUser) // Uncomment jika diperlukan
+	users.Get("/", middleware.RequirePermission(constant.UsersListAll), userHandler.GetAllUsers)                                      // DONE
+	users.Get("/:userId", middleware.RequirePermissionOrOwnership(constant.UsersViewOther, "userId"), userHandler.GetUserByID)        // DONE
+	users.Patch("/:userId", middleware.RequirePermissionOrOwnership(constant.UsersUpdateOther, "userId"), userHandler.UpdateUserByID) // DONE
+	// users.Delete("/:userId", middleware.RequirePermission(constant.UsersDelete), userHandler.DeleteUser) // Uncomment jika diperlukan
 
 	app.Get("/", func(c *fiber.Ctx) error {
 		return c.SendString("Welcome to the API")

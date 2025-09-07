@@ -35,7 +35,7 @@ func RequireRole(roles ...string) fiber.Handler {
 
 // RequirePermission - Middleware to check if user has specific permission(s)
 // RequirePermission adalah middleware untuk memeriksa apakah user memiliki semua permission yang dibutuhkan
-func RequirePermission(permissions ...string) fiber.Handler {
+func RequirePermission(permissions ...constant.Permission) fiber.Handler {
 	return func(c *fiber.Ctx) error {
 		user := c.Locals("user").(*domain.User)
 		if user == nil {
@@ -53,7 +53,7 @@ func RequirePermission(permissions ...string) fiber.Handler {
 		}
 
 		for _, requiredPermission := range permissions {
-			if hasPermission, exists := rolePermissions[requiredPermission]; !exists || !hasPermission {
+			if hasPermission, exists := rolePermissions[requiredPermission.String()]; !exists || !hasPermission {
 				return sendPermError(c, fiber.StatusForbidden, "insufficient permissions")
 			}
 		}
@@ -80,20 +80,11 @@ func RequireTeacherOrAdmin() fiber.Handler {
 }
 
 // RequireOwnershipOrAdmin adalah middleware untuk membatasi akses hanya untuk owner resource atau admin
-func RequireOwnershipOrAdmin(paramName string) fiber.Handler {
+func RequirePermissionOrOwnership(permission constant.Permission, paramName string) fiber.Handler {
 	return func(c *fiber.Ctx) error {
 		user := c.Locals("user").(*domain.User)
 		if user == nil {
 			return sendPermError(c, fiber.StatusUnauthorized, "unauthorized")
-		}
-
-		userRole, found := cache.GetRoleByID(user.RoleID)
-		if !found {
-			return sendPermError(c, fiber.StatusForbidden, "user role not found")
-		}
-
-		if strings.EqualFold(userRole.Name, constant.RoleAdmin.String()) {
-			return c.Next()
 		}
 
 		resourceUserID := c.Params(paramName)
@@ -101,7 +92,21 @@ func RequireOwnershipOrAdmin(paramName string) fiber.Handler {
 			return c.Next()
 		}
 
-		return sendPermError(c, fiber.StatusForbidden, "access denied: you can only access your own resources")
+		userRole, found := cache.GetRoleByID(user.RoleID)
+		if !found {
+			return sendPermError(c, fiber.StatusForbidden, "user role not found")
+		}
+
+		rolePermissions, err := userRole.GetPermissions()
+		if err != nil {
+			return sendPermError(c, fiber.StatusInternalServerError, "failed to parse role permissions")
+		}
+
+		if hasPerm, exists := rolePermissions[permission.String()]; exists && hasPerm {
+			return c.Next()
+		}
+
+		return sendPermError(c, fiber.StatusForbidden, "access denied: insufficient permissions or not the resource owner")
 	}
 }
 

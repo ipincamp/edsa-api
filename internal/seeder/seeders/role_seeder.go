@@ -10,28 +10,32 @@ import (
 	"gorm.io/gorm"
 )
 
-// Permissions adalah tipe untuk mapping permission pada role
-type Permissions map[string]bool
+// Permissions adalah tipe untuk mapping permission pada role.
+type Permissions map[constant.Permission]bool
 
-// roleSeedData berisi data role dan permission yang akan di-seed
 var roleSeedData = map[string]Permissions{
 	constant.RoleAdmin.String(): {
-		"users.create": true,
-		"users.read":   true,
-		"users.update": true,
-		"users.delete": true,
-		"roles.manage": true,
+		constant.UsersCreate:      true,
+		constant.UsersListAll:     true,
+		constant.UsersViewOther:   true,
+		constant.UsersUpdateOther: true,
+		constant.UsersDelete:      true,
+		constant.RolesManage:      true,
 	},
 	constant.RoleTeacher.String(): {
-		"courses.create": true,
-		"courses.update": true,
-		"grades.manage":  true,
+		constant.CoursesCreate: true,
+		constant.CoursesUpdate: true,
+		constant.GradesManage:  true,
 	},
 	constant.RoleStudent.String(): {
-		"courses.read":      true,
-		"assignment.submit": true,
+		constant.CoursesRead:      true,
+		constant.AssignmentSubmit: true,
+		constant.UsersViewSelf:    true,
+		constant.UsersUpdateSelf:  true,
 	},
-	constant.RoleGuest.String(): {},
+	constant.RoleGuest.String(): {
+		// Guest tidak memiliki permission
+	},
 }
 
 // RoleSeeder melakukan seed data role ke database
@@ -47,7 +51,12 @@ func RoleSeeder(db *gorm.DB) error {
 
 // seedRole adalah helper untuk membuat satu role ke database
 func seedRole(db *gorm.DB, roleName string, permissions Permissions) error {
-	permissionsJSON, err := json.Marshal(permissions)
+	stringPermissions := make(map[string]bool)
+	for p, v := range permissions {
+		stringPermissions[p.String()] = v
+	}
+
+	permissionsJSON, err := json.Marshal(stringPermissions)
 	if err != nil {
 		return fmt.Errorf("failed to marshal permissions for role %s: %w", roleName, err)
 	}
