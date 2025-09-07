@@ -36,28 +36,32 @@ func LoadCache(db *gorm.DB) {
 		cacheMutex.Lock()
 		defer cacheMutex.Unlock()
 
-		var users []domain.User
-		if err := db.Preload("Role").Find(&users).Error; err != nil {
-			log.Fatalf("Failed to load users and roles for cache: %v", err)
-		}
-
-		roleSet := make(map[string]domain.Role)
-		for _, user := range users {
-			usersByID[user.ID] = user
-			if user.Role.ID != "" {
-				roleSet[user.Role.ID] = user.Role
-			}
+		// Load all roles first
+		var roles []domain.Role
+		if err := db.Find(&roles).Error; err != nil {
+			log.Fatalf("Failed to load roles for cache: %v", err)
 		}
 
 		// Populate role caches
-		for _, role := range roleSet {
+		for _, role := range roles {
 			rolesByID[role.ID] = role
 			rolesByName[role.Name] = role
 		}
 
+		// Load all users with their roles
+		var users []domain.User
+		if err := db.Preload("Role").Find(&users).Error; err != nil {
+			log.Fatalf("Failed to load users for cache: %v", err)
+		}
+
+		// Populate user cache
+		for _, user := range users {
+			usersByID[user.ID] = user
+		}
+
 		log.Printf(
 			"│   ├── %s%sCached %d roles.%s",
-			constant.Color("bold"), constant.Color("green"), len(roleSet), constant.Color("reset"),
+			constant.Color("bold"), constant.Color("green"), len(roles), constant.Color("reset"),
 		)
 		log.Printf(
 			"│   └── %s%sCached %d users.%s",

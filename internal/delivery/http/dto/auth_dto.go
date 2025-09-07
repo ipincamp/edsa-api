@@ -14,11 +14,6 @@ type LoginRequest struct {
 	Password string `json:"password" validate:"required"`
 }
 
-// RefreshTokenRequest adalah DTO untuk request refresh token
-type RefreshTokenRequest struct {
-	RefreshToken string `json:"refresh_token" validate:"required"`
-}
-
 // AuthResponse adalah DTO untuk response autentikasi
 type AuthResponse struct {
 	Token Token        `json:"token"`

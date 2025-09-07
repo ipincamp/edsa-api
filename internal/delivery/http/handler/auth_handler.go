@@ -2,6 +2,7 @@ package handler
 
 import (
 	"errors"
+	"strings"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/ipincamp/go-edsa-api/internal/delivery/http/dto"
@@ -120,15 +121,24 @@ func mapLoginError(err error) (int, string) {
 
 // RefreshToken - Refresh access token using refresh token
 func (h *AuthHandler) RefreshToken(c *fiber.Ctx) error {
-	var req dto.RefreshTokenRequest
-	if err := c.BodyParser(&req); err != nil {
-		return util.SendError(c, fiber.StatusBadRequest, "invalid request body", nil)
-	}
-	if validationErrors := h.validator.Validate(req); validationErrors != nil {
-		return util.SendError(c, fiber.StatusBadRequest, "validation failed", validationErrors)
+	authorizationHeader := c.Get("Authorization")
+	if len(authorizationHeader) == 0 {
+		return util.SendError(c, fiber.StatusUnauthorized, "authorization header is not provided", nil)
 	}
 
-	token, err := h.authService.RefreshToken(req.RefreshToken)
+	fields := strings.Fields(authorizationHeader)
+	if len(fields) < 2 {
+		return util.SendError(c, fiber.StatusUnauthorized, "invalid authorization header format", nil)
+	}
+
+	authorizationType := strings.ToLower(fields[0])
+	if authorizationType != "bearer" {
+		return util.SendError(c, fiber.StatusUnauthorized, "unsupported authorization type", nil)
+	}
+
+	refreshToken := fields[1]
+
+	token, err := h.authService.RefreshToken(refreshToken)
 	if err != nil {
 		status, msg := mapRefreshTokenError(err)
 		return util.SendError(c, status, msg, nil)
