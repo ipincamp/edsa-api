@@ -25,6 +25,14 @@ type UpdateProfileUserRequest struct {
 	NewPasswordConfirmation *string `json:"new_password_confirmation,omitempty" validate:"required_with=NewPassword,omitempty,eqfield=NewPassword"`
 }
 
+// UpdateUserRequest adalah DTO untuk update user oleh admin
+type UpdateUserRequest struct {
+	Name     *string `json:"name" validate:"omitempty,min=3"`
+	Email    *string `json:"email" validate:"omitempty,email"`
+	Role     *string `json:"role" validate:"omitempty,oneof=teacher student guest"`
+	Password *string `json:"password,omitempty" validate:"omitempty,gte=8"`
+}
+
 // UserResponse adalah DTO untuk response user
 type UserResponse struct {
 	ID        string `json:"id,omitempty"`

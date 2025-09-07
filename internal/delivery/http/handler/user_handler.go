@@ -151,7 +151,7 @@ func (h *UserHandler) UpdateUserByID(c *fiber.Ctx) error {
 		return util.SendError(c, fiber.StatusBadRequest, "validation failed", validationErrors)
 	}
 
-	var req dto.UpdateProfileUserRequest
+	var req dto.UpdateUserRequest
 	if err := c.BodyParser(&req); err != nil {
 		return util.SendError(c, fiber.StatusBadRequest, "invalid request body", nil)
 	}
@@ -159,7 +159,7 @@ func (h *UserHandler) UpdateUserByID(c *fiber.Ctx) error {
 		return util.SendError(c, fiber.StatusBadRequest, "validation failed", validationErrors)
 	}
 
-	err := h.userService.UpdateProfile(userIDReq.UserId, req)
+	err := h.userService.UpdateUserByID(userIDReq.UserId, req)
 	if err != nil {
 		status, msg := mapUpdateUserByIDError(err)
 		return util.SendError(c, status, msg, nil)

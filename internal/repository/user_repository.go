@@ -43,7 +43,7 @@ func (r *userRepository) FindByEmail(ctx context.Context, email string) (*domain
 // FindByID mencari user berdasarkan ID
 func (r *userRepository) FindByID(ctx context.Context, id string) (*domain.User, error) {
 	var user domain.User
-	err := r.db.WithContext(ctx).Where("id = ?", id).Take(&user).Error
+	err := r.db.WithContext(ctx).Preload("Role").Where("id = ?", id).Take(&user).Error
 	return &user, err
 }
 

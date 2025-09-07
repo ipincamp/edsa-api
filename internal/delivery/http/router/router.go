@@ -94,24 +94,24 @@ func Setup(app *fiber.App, db *gorm.DB) {
 	v1 := api.Group("/v1")
 
 	auth := v1.Group("/auth")
-	auth.Post("/register", authHandler.Register)
-	auth.Post("/login", authHandler.Login)
-	auth.Post("/refresh", authHandler.RefreshToken)
-	auth.Post("/logout", authRequired, authHandler.Logout)
+	auth.Post("/register", authHandler.Register)           // DONE
+	auth.Post("/login", authHandler.Login)                 // DONE
+	auth.Post("/refresh", authHandler.RefreshToken)        // DONE
+	auth.Post("/logout", authRequired, authHandler.Logout) // DONE
 
 	// Protected user routes
 	users := v1.Group("/users").Use(authRequired)
 
 	// Self profile routes (accessible by all authenticated users)
-	users.Get("/profile", userHandler.GetProfile)
-	users.Put("/profile", userHandler.UpdateProfile)
+	users.Get("/profile", userHandler.GetProfile)      // DONE
+	users.Patch("/profile", userHandler.UpdateProfile) // DONE
 
 	// Admin-only routes
-	users.Get("/", middleware.RequireAdmin(), userHandler.GetAllUsers) // GET /api/v1/users?page=1&limit=10&role=student
+	users.Get("/", middleware.RequireAdmin(), userHandler.GetAllUsers) // DONE
 
 	// Resource ownership or admin access
-	users.Get("/:userId", middleware.RequireOwnershipOrAdmin("userId"), userHandler.GetUserByID)    // GET /api/v1/users/{userId}
-	users.Put("/:userId", middleware.RequireOwnershipOrAdmin("userId"), userHandler.UpdateUserByID) // PUT /api/v1/users/{userId}
+	users.Get("/:userId", middleware.RequireOwnershipOrAdmin("userId"), userHandler.GetUserByID)      // DONE
+	users.Patch("/:userId", middleware.RequireOwnershipOrAdmin("userId"), userHandler.UpdateUserByID) // DONE
 
 	// Example of permission-based access (uncomment when needed)
 	// users.Post("/", middleware.RequirePermission("users.create"), userHandler.CreateUser)
