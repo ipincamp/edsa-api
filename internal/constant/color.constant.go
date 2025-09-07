@@ -1,34 +1,38 @@
 package constant
 
-// Color returns the ANSI escape code string for the given color or style name.
-// Supported names are:
-//   - "reset"  : Reset all attributes
-//   - "bold"   : Bold text
-//   - "red"    : Red foreground
-//   - "green"  : Green foreground
-//   - "yellow" : Yellow foreground
-//   - "blue"   : Blue foreground
-//   - "cyan"   : Cyan foreground
-//   - "gray"   : Gray foreground
-//
-// If the name is not recognized, an empty string is returned.
-func Color(name string) string {
+// ColorName adalah tipe untuk nama warna ANSI
+type ColorName string
+
+const (
+	ColorReset  ColorName = "reset"
+	ColorBold   ColorName = "bold"
+	ColorRed    ColorName = "red"
+	ColorGreen  ColorName = "green"
+	ColorYellow ColorName = "yellow"
+	ColorBlue   ColorName = "blue"
+	ColorCyan   ColorName = "cyan"
+	ColorGray   ColorName = "gray"
+)
+
+// Color mengembalikan ANSI escape code string untuk nama warna/style tertentu.
+// Jika nama tidak dikenali, return string kosong.
+func Color(name ColorName) string {
 	switch name {
-	case "reset":
+	case ColorReset:
 		return "\033[0m"
-	case "bold":
+	case ColorBold:
 		return "\033[1m"
-	case "red":
+	case ColorRed:
 		return "\033[31m"
-	case "green":
+	case ColorGreen:
 		return "\033[32m"
-	case "yellow":
+	case ColorYellow:
 		return "\033[33m"
-	case "blue":
+	case ColorBlue:
 		return "\033[34m"
-	case "cyan":
+	case ColorCyan:
 		return "\033[36m"
-	case "gray":
+	case ColorGray:
 		return "\033[90m"
 	default:
 		return ""

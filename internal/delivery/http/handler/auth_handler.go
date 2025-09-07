@@ -25,7 +25,6 @@ func NewAuthHandler(authService service.AuthService) *AuthHandler {
 
 // Register - User registration
 func (h *AuthHandler) Register(c *fiber.Ctx) error {
-	// validation - body
 	var req dto.RegisterRequest
 	if err := c.BodyParser(&req); err != nil {
 		return util.SendError(c, fiber.StatusBadRequest, "invalid request body", nil)
@@ -34,7 +33,6 @@ func (h *AuthHandler) Register(c *fiber.Ctx) error {
 		return util.SendError(c, fiber.StatusBadRequest, "validation failed", validationErrors)
 	}
 
-	// registration
 	user := &domain.User{
 		Name:     req.Name,
 		Email:    req.Email,
@@ -42,28 +40,10 @@ func (h *AuthHandler) Register(c *fiber.Ctx) error {
 	}
 	registeredUser, err := h.authService.Register(user)
 	if err != nil {
-		if errors.Is(err, service.ErrEmailExists) {
-			return util.SendError(c, fiber.StatusConflict, err.Error(), nil)
-		}
-		if errors.Is(err, service.ErrDefaultRoleNotFound) {
-			return util.SendError(c, fiber.StatusInternalServerError, err.Error(), nil)
-		}
-		if errors.Is(err, service.ErrGenerateAccessToken) {
-			return util.SendError(c, fiber.StatusInternalServerError, err.Error(), nil)
-		}
-		if errors.Is(err, service.ErrGenerateRefreshToken) {
-			return util.SendError(c, fiber.StatusInternalServerError, err.Error(), nil)
-		}
-		if errors.Is(err, service.ErrHashingPassword) {
-			return util.SendError(c, fiber.StatusInternalServerError, err.Error(), nil)
-		}
-		if errors.Is(err, service.ErrUserCreation) {
-			return util.SendError(c, fiber.StatusInternalServerError, err.Error(), nil)
-		}
-		return util.SendError(c, fiber.StatusInternalServerError, err.Error(), nil)
+		status, msg := mapRegisterError(err)
+		return util.SendError(c, status, msg, nil)
 	}
 
-	// response
 	res := &dto.AuthResponse{
 		User: dto.ToUserResponse(*registeredUser.User),
 		Token: dto.Token{
@@ -74,9 +54,28 @@ func (h *AuthHandler) Register(c *fiber.Ctx) error {
 	return util.SendSuccess(c, fiber.StatusCreated, "user registered successfully", res)
 }
 
+// mapRegisterError memetakan error pada proses register ke status dan pesan yang sesuai
+func mapRegisterError(err error) (int, string) {
+	switch {
+	case errors.Is(err, service.ErrEmailExists):
+		return fiber.StatusConflict, err.Error()
+	case errors.Is(err, service.ErrDefaultRoleNotFound):
+		fallthrough
+	case errors.Is(err, service.ErrGenerateAccessToken):
+		fallthrough
+	case errors.Is(err, service.ErrGenerateRefreshToken):
+		fallthrough
+	case errors.Is(err, service.ErrHashingPassword):
+		fallthrough
+	case errors.Is(err, service.ErrUserCreation):
+		return fiber.StatusInternalServerError, err.Error()
+	default:
+		return fiber.StatusInternalServerError, err.Error()
+	}
+}
+
 // Login - User login
 func (h *AuthHandler) Login(c *fiber.Ctx) error {
-	// validation - body
 	var req dto.LoginRequest
 	if err := c.BodyParser(&req); err != nil {
 		return util.SendError(c, fiber.StatusBadRequest, "invalid request body", nil)
@@ -85,28 +84,12 @@ func (h *AuthHandler) Login(c *fiber.Ctx) error {
 		return util.SendError(c, fiber.StatusBadRequest, "validation failed", validationErrors)
 	}
 
-	// login
 	loggedUser, err := h.authService.Login(req.Email, req.Password)
 	if err != nil {
-		if errors.Is(err, service.ErrUserNotFound) {
-			return util.SendError(c, fiber.StatusUnauthorized, "invalid credentials", nil)
-		}
-		if errors.Is(err, service.ErrInvalidCredentials) {
-			return util.SendError(c, fiber.StatusUnauthorized, "invalid credentials", nil)
-		}
-		if errors.Is(err, service.ErrCheckCredentials) {
-			return util.SendError(c, fiber.StatusInternalServerError, err.Error(), nil)
-		}
-		if errors.Is(err, service.ErrGenerateAccessToken) {
-			return util.SendError(c, fiber.StatusInternalServerError, err.Error(), nil)
-		}
-		if errors.Is(err, service.ErrGenerateRefreshToken) {
-			return util.SendError(c, fiber.StatusInternalServerError, err.Error(), nil)
-		}
-		return util.SendError(c, fiber.StatusUnauthorized, err.Error(), nil)
+		status, msg := mapLoginError(err)
+		return util.SendError(c, status, msg, nil)
 	}
 
-	// response
 	res := &dto.AuthResponse{
 		User: dto.ToUserResponse(*loggedUser.User),
 		Token: dto.Token{
@@ -117,9 +100,26 @@ func (h *AuthHandler) Login(c *fiber.Ctx) error {
 	return util.SendSuccess(c, fiber.StatusOK, "login successful", res)
 }
 
+// mapLoginError memetakan error pada proses login ke status dan pesan yang sesuai
+func mapLoginError(err error) (int, string) {
+	switch {
+	case errors.Is(err, service.ErrUserNotFound):
+		fallthrough
+	case errors.Is(err, service.ErrInvalidCredentials):
+		return fiber.StatusUnauthorized, "invalid credentials"
+	case errors.Is(err, service.ErrCheckCredentials):
+		fallthrough
+	case errors.Is(err, service.ErrGenerateAccessToken):
+		fallthrough
+	case errors.Is(err, service.ErrGenerateRefreshToken):
+		return fiber.StatusInternalServerError, err.Error()
+	default:
+		return fiber.StatusUnauthorized, err.Error()
+	}
+}
+
 // RefreshToken - Refresh access token using refresh token
 func (h *AuthHandler) RefreshToken(c *fiber.Ctx) error {
-	// validation - body
 	var req dto.RefreshTokenRequest
 	if err := c.BodyParser(&req); err != nil {
 		return util.SendError(c, fiber.StatusBadRequest, "invalid request body", nil)
@@ -128,27 +128,31 @@ func (h *AuthHandler) RefreshToken(c *fiber.Ctx) error {
 		return util.SendError(c, fiber.StatusBadRequest, "validation failed", validationErrors)
 	}
 
-	// refresh token
 	token, err := h.authService.RefreshToken(req.RefreshToken)
 	if err != nil {
-		if errors.Is(err, service.ErrInvalidToken) {
-			return util.SendError(c, fiber.StatusUnauthorized, err.Error(), nil)
-		}
-		if errors.Is(err, service.ErrGenerateAccessToken) {
-			return util.SendError(c, fiber.StatusInternalServerError, err.Error(), nil)
-		}
-		if errors.Is(err, service.ErrGenerateRefreshToken) {
-			return util.SendError(c, fiber.StatusInternalServerError, err.Error(), nil)
-		}
-		return util.SendError(c, fiber.StatusInternalServerError, err.Error(), nil)
+		status, msg := mapRefreshTokenError(err)
+		return util.SendError(c, status, msg, nil)
 	}
 
-	// response
 	res := &dto.Token{
 		Access:  token.Access,
 		Refresh: token.Refresh,
 	}
 	return util.SendSuccess(c, fiber.StatusOK, "token refreshed successfully", res)
+}
+
+// mapRefreshTokenError memetakan error pada proses refresh token ke status dan pesan yang sesuai
+func mapRefreshTokenError(err error) (int, string) {
+	switch {
+	case errors.Is(err, service.ErrInvalidToken):
+		return fiber.StatusUnauthorized, err.Error()
+	case errors.Is(err, service.ErrGenerateAccessToken):
+		fallthrough
+	case errors.Is(err, service.ErrGenerateRefreshToken):
+		return fiber.StatusInternalServerError, err.Error()
+	default:
+		return fiber.StatusInternalServerError, err.Error()
+	}
 }
 
 // Logout - User logout

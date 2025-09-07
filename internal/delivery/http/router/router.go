@@ -1,7 +1,9 @@
 package router
 
 import (
+	"context"
 	"log"
+	"time"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/ipincamp/go-edsa-api/internal/config"
@@ -9,6 +11,7 @@ import (
 	"github.com/ipincamp/go-edsa-api/internal/delivery/http/middleware"
 	"github.com/ipincamp/go-edsa-api/internal/repository"
 	"github.com/ipincamp/go-edsa-api/internal/service"
+	"github.com/ipincamp/go-edsa-api/internal/util"
 	"github.com/ipincamp/go-edsa-api/pkg/bloom"
 	"github.com/ipincamp/go-edsa-api/pkg/token"
 	"gorm.io/gorm"
@@ -39,7 +42,9 @@ func Setup(app *fiber.App, db *gorm.DB) {
 
 	// Populate Bloom Filter on startup
 	go func() {
-		emails, err := userRepo.FindAllEmails()
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+		emails, err := userRepo.FindAllEmails(ctx)
 		if err != nil {
 			log.Printf("Failed to get emails for bloom filter: %v", err)
 			return
@@ -73,6 +78,17 @@ func Setup(app *fiber.App, db *gorm.DB) {
 	// Middleware
 	authRequired := middleware.AuthMiddleware(tokenMaker)
 
+	// Add custom error handler for Method Not Allowed
+	app.Use(func(c *fiber.Ctx) error {
+		err := c.Next()
+		if err != nil {
+			if e, ok := err.(*fiber.Error); ok && e.Code == fiber.StatusMethodNotAllowed {
+				return util.SendError(c, fiber.StatusMethodNotAllowed, "The requested method is not allowed for this resource")
+			}
+		}
+		return err
+	})
+
 	// Routes
 	api := app.Group("/api")
 	v1 := api.Group("/v1")
@@ -103,5 +119,11 @@ func Setup(app *fiber.App, db *gorm.DB) {
 
 	app.Get("/", func(c *fiber.Ctx) error {
 		return c.SendString("Welcome to the API")
+	})
+	api.Use("*", func(c *fiber.Ctx) error {
+		return util.SendError(c, fiber.StatusNotFound, "API endpoint not found")
+	})
+	app.Use("*", func(c *fiber.Ctx) error {
+		return util.SendError(c, fiber.StatusNotFound, "Endpoint not found")
 	})
 }

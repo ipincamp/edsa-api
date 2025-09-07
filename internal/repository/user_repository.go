@@ -1,67 +1,94 @@
 package repository
 
 import (
+	"context"
+
+	"github.com/ipincamp/go-edsa-api/internal/constant"
 	"github.com/ipincamp/go-edsa-api/internal/domain"
 	"gorm.io/gorm"
 )
 
+// UserRepository adalah kontrak untuk akses data user
 type UserRepository interface {
-	Create(user *domain.User) error
-	FindByEmail(email string) (*domain.User, error)
-	FindByID(id string) (*domain.User, error)
-	FindAllEmails() ([]string, error)
-	List(limit, offset int, roleName string) ([]domain.User, int64, error)
-	Update(user *domain.User) error
+	Create(ctx context.Context, user *domain.User) error
+	FindByEmail(ctx context.Context, email string) (*domain.User, error)
+	FindByID(ctx context.Context, id string) (*domain.User, error)
+	FindAllEmails(ctx context.Context) ([]string, error)
+	List(ctx context.Context, limit, offset int, roleName string) ([]domain.User, int64, error)
+	Update(ctx context.Context, user *domain.User) error
 }
 
+// userRepository adalah implementasi UserRepository menggunakan GORM
 type userRepository struct {
 	db *gorm.DB
 }
 
+// NewUserRepository membuat instance baru userRepository
 func NewUserRepository(db *gorm.DB) UserRepository {
-	return &userRepository{db}
+	return &userRepository{db: db}
 }
 
-func (r *userRepository) Create(user *domain.User) error {
-	return r.db.Create(user).Error
+// Create menambah user baru ke database
+func (r *userRepository) Create(ctx context.Context, user *domain.User) error {
+	return r.db.WithContext(ctx).Create(user).Error
 }
 
-func (r *userRepository) FindByEmail(email string) (*domain.User, error) {
+// FindByEmail mencari user berdasarkan email
+func (r *userRepository) FindByEmail(ctx context.Context, email string) (*domain.User, error) {
 	var user domain.User
-	err := r.db.Preload("Role").Where("email = ?", email).First(&user).Error
+	err := r.db.WithContext(ctx).Preload("Role").Where("email = ?", email).Take(&user).Error
 	return &user, err
 }
 
-func (r *userRepository) FindByID(id string) (*domain.User, error) {
+// FindByID mencari user berdasarkan ID
+func (r *userRepository) FindByID(ctx context.Context, id string) (*domain.User, error) {
 	var user domain.User
-	err := r.db.Where("id = ?", id).First(&user).Error
+	err := r.db.WithContext(ctx).Where("id = ?", id).Take(&user).Error
 	return &user, err
 }
 
-func (r *userRepository) FindAllEmails() ([]string, error) {
+// FindAllEmails mengambil semua email user
+func (r *userRepository) FindAllEmails(ctx context.Context) ([]string, error) {
 	var emails []string
-	err := r.db.Model(&domain.User{}).Pluck("email", &emails).Error
+	err := r.db.WithContext(ctx).Model(&domain.User{}).Pluck("email", &emails).Error
 	return emails, err
 }
 
-func (r *userRepository) List(limit, offset int, roleName string) ([]domain.User, int64, error) {
+// List mengambil daftar user dengan filter role dan paginasi
+func (r *userRepository) List(ctx context.Context, limit, offset int, roleName string) ([]domain.User, int64, error) {
 	var users []domain.User
 	var total int64
 
-	query := r.db.Preload("Role")
+	// Build base query
+	baseQuery := r.db.WithContext(ctx).
+		Joins("JOIN roles ON users.role_id = roles.id").
+		Where("roles.name != ?", constant.RoleAdmin)
 
 	if roleName != "" {
-		query = query.Joins("JOIN roles ON users.role_id = roles.id").Where("roles.name = ?", roleName)
+		baseQuery = baseQuery.Where("roles.name = ?", roleName)
 	}
 
-	if err := query.Model(&domain.User{}).Count(&total).Error; err != nil {
+	// Get total count
+	err := baseQuery.Model(&domain.User{}).Count(&total).Error
+	if err != nil {
 		return nil, 0, err
 	}
 
-	err := query.Limit(limit).Offset(offset).Find(&users).Error
-	return users, total, err
+	// Get users with pagination - only select id, name, created_at
+	err = baseQuery.
+		Select("users.id, users.name, users.created_at").
+		Limit(limit).
+		Offset(offset).
+		Find(&users).Error
+
+	if err != nil {
+		return nil, 0, err
+	}
+
+	return users, total, nil
 }
 
-func (r *userRepository) Update(user *domain.User) error {
-	return r.db.Save(user).Error
+// Update mengubah data user di database
+func (r *userRepository) Update(ctx context.Context, user *domain.User) error {
+	return r.db.WithContext(ctx).Save(user).Error
 }

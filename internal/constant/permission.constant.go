@@ -1,5 +1,6 @@
 package constant
 
+// Permission adalah tipe untuk permission user
 type Permission string
 
 const (
@@ -8,6 +9,7 @@ const (
 	PermissionDelete Permission = "delete"
 )
 
-func (r Permission) String() string {
-	return string(r)
+// String mengembalikan string dari Permission
+func (p Permission) String() string {
+	return string(p)
 }

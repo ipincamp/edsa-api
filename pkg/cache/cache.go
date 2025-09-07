@@ -9,14 +9,20 @@ import (
 	"gorm.io/gorm"
 )
 
-var (
-	rolesByID   = make(map[string]domain.Role)
-	rolesByName = make(map[string]domain.Role)
-	usersByID   = make(map[string]domain.User)
+// rolesByID adalah cache role berdasarkan ID
+var rolesByID = make(map[string]domain.Role)
 
-	cacheMutex = &sync.RWMutex{}
-	once       sync.Once
-)
+// rolesByName adalah cache role berdasarkan nama
+var rolesByName = make(map[string]domain.Role)
+
+// usersByID adalah cache user berdasarkan ID
+var usersByID = make(map[string]domain.User)
+
+// cacheMutex digunakan untuk concurrency cache
+var cacheMutex = &sync.RWMutex{}
+
+// once memastikan cache hanya di-load sekali
+var once sync.Once
 
 func LoadCache(db *gorm.DB) {
 	log.Printf(
@@ -30,26 +36,29 @@ func LoadCache(db *gorm.DB) {
 		cacheMutex.Lock()
 		defer cacheMutex.Unlock()
 
-		var roles []domain.Role
-		if err := db.Find(&roles).Error; err != nil {
-			log.Fatalf("Failed to load roles for cache: %v", err)
+		var users []domain.User
+		if err := db.Preload("Role").Find(&users).Error; err != nil {
+			log.Fatalf("Failed to load users and roles for cache: %v", err)
 		}
-		for _, role := range roles {
+
+		roleSet := make(map[string]domain.Role)
+		for _, user := range users {
+			usersByID[user.ID] = user
+			if user.Role.ID != "" {
+				roleSet[user.Role.ID] = user.Role
+			}
+		}
+
+		// Populate role caches
+		for _, role := range roleSet {
 			rolesByID[role.ID] = role
 			rolesByName[role.Name] = role
 		}
+
 		log.Printf(
 			"│   ├── %s%sCached %d roles.%s",
-			constant.Color("bold"), constant.Color("green"), len(roles), constant.Color("reset"),
+			constant.Color("bold"), constant.Color("green"), len(roleSet), constant.Color("reset"),
 		)
-
-		var users []domain.User
-		if err := db.Preload("Role").Find(&users).Error; err != nil {
-			log.Fatalf("Failed to load users for cache: %v", err)
-		}
-		for _, user := range users {
-			usersByID[user.ID] = user
-		}
 		log.Printf(
 			"│   └── %s%sCached %d users.%s",
 			constant.Color("bold"), constant.Color("green"), len(users), constant.Color("reset"),

@@ -8,10 +8,12 @@ import (
 	"github.com/google/uuid"
 )
 
+// CustomValidator adalah wrapper untuk validator playground
 type CustomValidator struct {
 	Validator *validator.Validate
 }
 
+// ValidationError adalah struktur error validasi
 type ValidationError struct {
 	Field   string      `json:"field,omitempty"`
 	Message string      `json:"message,omitempty"`

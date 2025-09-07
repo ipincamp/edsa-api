@@ -30,17 +30,22 @@ func (h *UserHandler) GetProfile(c *fiber.Ctx) error {
 		return util.SendError(c, fiber.StatusUnauthorized, "unauthorized", nil)
 	}
 
-	// profile
 	profile, err := h.userService.GetProfile(user.ID)
 	if err != nil {
-		if errors.Is(err, service.ErrUserNotFound) {
-			return util.SendError(c, fiber.StatusNotFound, "user not found", nil)
-		}
-		return util.SendError(c, fiber.StatusInternalServerError, "failed to get profile", nil)
+		status, msg := mapUserProfileError(err)
+		return util.SendError(c, status, msg, nil)
 	}
-
-	// response
 	return util.SendSuccess(c, fiber.StatusOK, "profile retrieved successfully", profile)
+}
+
+// mapUserProfileError memetakan error pada proses get profile ke status dan pesan yang sesuai
+func mapUserProfileError(err error) (int, string) {
+	switch {
+	case errors.Is(err, service.ErrUserNotFound):
+		return fiber.StatusNotFound, "user not found"
+	default:
+		return fiber.StatusInternalServerError, "failed to get profile"
+	}
 }
 
 // UpdateProfile - Update current user profile (self)
@@ -50,7 +55,6 @@ func (h *UserHandler) UpdateProfile(c *fiber.Ctx) error {
 		return util.SendError(c, fiber.StatusUnauthorized, "unauthorized", nil)
 	}
 
-	// validation - body
 	var req dto.UpdateProfileUserRequest
 	if err := c.BodyParser(&req); err != nil {
 		return util.SendError(c, fiber.StatusBadRequest, "invalid request body", nil)
@@ -59,25 +63,28 @@ func (h *UserHandler) UpdateProfile(c *fiber.Ctx) error {
 		return util.SendError(c, fiber.StatusBadRequest, "validation failed", validationErrors)
 	}
 
-	// update profile
 	err := h.userService.UpdateProfile(user.ID, req)
 	if err != nil {
-		if errors.Is(err, service.ErrUserNotFound) {
-			return util.SendError(c, fiber.StatusNotFound, "user not found", nil)
-		}
-		if errors.Is(err, service.ErrInvalidOldPassword) {
-			return util.SendError(c, fiber.StatusBadRequest, "old password is incorrect", nil)
-		}
-		return util.SendError(c, fiber.StatusInternalServerError, "failed to update profile", nil)
+		status, msg := mapUpdateProfileError(err)
+		return util.SendError(c, status, msg, nil)
 	}
-
-	// response
 	return util.SendSuccess(c, fiber.StatusOK, "profile updated successfully", nil)
+}
+
+// mapUpdateProfileError memetakan error pada proses update profile ke status dan pesan yang sesuai
+func mapUpdateProfileError(err error) (int, string) {
+	switch {
+	case errors.Is(err, service.ErrUserNotFound):
+		return fiber.StatusNotFound, "user not found"
+	case errors.Is(err, service.ErrInvalidOldPassword):
+		return fiber.StatusBadRequest, "old password is incorrect"
+	default:
+		return fiber.StatusInternalServerError, "failed to update profile"
+	}
 }
 
 // GetAllUsers - Get all users with pagination (admin only)
 func (h *UserHandler) GetAllUsers(c *fiber.Ctx) error {
-	// validation - query
 	var req dto.UserFilterRequest
 	if err := c.QueryParser(&req); err != nil {
 		return util.SendError(c, fiber.StatusBadRequest, "invalid query parameters", nil)
@@ -86,7 +93,6 @@ func (h *UserHandler) GetAllUsers(c *fiber.Ctx) error {
 		return util.SendError(c, fiber.StatusBadRequest, "validation failed", validationErrors)
 	}
 
-	// Set default values
 	if req.Page <= 0 {
 		req.Page = 1
 	}
@@ -94,19 +100,21 @@ func (h *UserHandler) GetAllUsers(c *fiber.Ctx) error {
 		req.Limit = 10
 	}
 
-	// get users
 	users, err := h.userService.GetAllUsers(req.Page, req.Limit, req.Role)
 	if err != nil {
-		return util.SendError(c, fiber.StatusInternalServerError, "failed to get users", nil)
+		status, msg := mapGetAllUsersError(err)
+		return util.SendError(c, status, msg, nil)
 	}
-
-	// response
 	return util.SendSuccess(c, fiber.StatusOK, "users retrieved successfully", users)
+}
+
+// mapGetAllUsersError memetakan error pada proses get all users ke status dan pesan yang sesuai
+func mapGetAllUsersError(err error) (int, string) {
+	return fiber.StatusInternalServerError, "failed to get users"
 }
 
 // GetUserByID - Get user by ID (admin only)
 func (h *UserHandler) GetUserByID(c *fiber.Ctx) error {
-	// validation - params
 	var req dto.UserIDRequest
 	if err := c.ParamsParser(&req); err != nil {
 		return util.SendError(c, fiber.StatusBadRequest, "invalid user ID", nil)
@@ -115,22 +123,26 @@ func (h *UserHandler) GetUserByID(c *fiber.Ctx) error {
 		return util.SendError(c, fiber.StatusBadRequest, "validation failed", validationErrors)
 	}
 
-	// profile
 	profile, err := h.userService.GetProfile(req.UserId)
 	if err != nil {
-		if errors.Is(err, service.ErrUserNotFound) {
-			return util.SendError(c, fiber.StatusNotFound, "user not found", nil)
-		}
-		return util.SendError(c, fiber.StatusInternalServerError, "failed to get user", nil)
+		status, msg := mapGetUserByIDError(err)
+		return util.SendError(c, status, msg, nil)
 	}
-
-	// response
 	return util.SendSuccess(c, fiber.StatusOK, "user retrieved successfully", profile)
+}
+
+// mapGetUserByIDError memetakan error pada proses get user by ID ke status dan pesan yang sesuai
+func mapGetUserByIDError(err error) (int, string) {
+	switch {
+	case errors.Is(err, service.ErrUserNotFound):
+		return fiber.StatusNotFound, "user not found"
+	default:
+		return fiber.StatusInternalServerError, "failed to get user"
+	}
 }
 
 // UpdateUserByID - Update user by ID (admin only)
 func (h *UserHandler) UpdateUserByID(c *fiber.Ctx) error {
-	// validation - params
 	var userIDReq dto.UserIDRequest
 	if err := c.ParamsParser(&userIDReq); err != nil {
 		return util.SendError(c, fiber.StatusBadRequest, "invalid user ID", nil)
@@ -139,7 +151,6 @@ func (h *UserHandler) UpdateUserByID(c *fiber.Ctx) error {
 		return util.SendError(c, fiber.StatusBadRequest, "validation failed", validationErrors)
 	}
 
-	// validation - body
 	var req dto.UpdateProfileUserRequest
 	if err := c.BodyParser(&req); err != nil {
 		return util.SendError(c, fiber.StatusBadRequest, "invalid request body", nil)
@@ -148,18 +159,22 @@ func (h *UserHandler) UpdateUserByID(c *fiber.Ctx) error {
 		return util.SendError(c, fiber.StatusBadRequest, "validation failed", validationErrors)
 	}
 
-	// update profile
 	err := h.userService.UpdateProfile(userIDReq.UserId, req)
 	if err != nil {
-		if errors.Is(err, service.ErrUserNotFound) {
-			return util.SendError(c, fiber.StatusNotFound, "user not found", nil)
-		}
-		if errors.Is(err, service.ErrInvalidOldPassword) {
-			return util.SendError(c, fiber.StatusBadRequest, "old password is incorrect", nil)
-		}
-		return util.SendError(c, fiber.StatusInternalServerError, "failed to update user", nil)
+		status, msg := mapUpdateUserByIDError(err)
+		return util.SendError(c, status, msg, nil)
 	}
-
-	// response
 	return util.SendSuccess(c, fiber.StatusOK, "user updated successfully", nil)
+}
+
+// mapUpdateUserByIDError memetakan error pada proses update user by ID ke status dan pesan yang sesuai
+func mapUpdateUserByIDError(err error) (int, string) {
+	switch {
+	case errors.Is(err, service.ErrUserNotFound):
+		return fiber.StatusNotFound, "user not found"
+	case errors.Is(err, service.ErrInvalidOldPassword):
+		return fiber.StatusBadRequest, "old password is incorrect"
+	default:
+		return fiber.StatusInternalServerError, "failed to update user"
+	}
 }

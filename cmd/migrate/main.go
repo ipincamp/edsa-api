@@ -22,8 +22,8 @@ func main() {
 	}
 
 	m := gormigrate.New(db, gormigrate.DefaultOptions, []*gormigrate.Migration{
-		migrations.CreateRolesTable(),
 		migrations.CreateUsersTable(),
+		migrations.CreateRolesTable(),
 		migrations.AddRoleIdToUsersTable(),
 	})
 

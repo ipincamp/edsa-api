@@ -11,102 +11,101 @@ import (
 )
 
 // RequireRole - Middleware to check if user has specific role(s)
+// RequireRole adalah middleware untuk memeriksa apakah user memiliki salah satu role yang diizinkan
 func RequireRole(roles ...string) fiber.Handler {
 	return func(c *fiber.Ctx) error {
 		user := c.Locals("user").(*domain.User)
 		if user == nil {
-			return util.SendError(c, fiber.StatusUnauthorized, "unauthorized")
+			return sendPermError(c, fiber.StatusUnauthorized, "unauthorized")
 		}
 
-		// Get user's role from cache to ensure we have the latest data
 		userRole, found := cache.GetRoleByID(user.RoleID)
 		if !found {
-			return util.SendError(c, fiber.StatusForbidden, "user role not found")
+			return sendPermError(c, fiber.StatusForbidden, "user role not found")
 		}
 
-		// Check if user's role is in the allowed roles
 		for _, allowedRole := range roles {
 			if strings.EqualFold(userRole.Name, allowedRole) {
 				return c.Next()
 			}
 		}
-
-		return util.SendError(c, fiber.StatusForbidden, "insufficient role permissions")
+		return sendPermError(c, fiber.StatusForbidden, "insufficient role permissions")
 	}
 }
 
 // RequirePermission - Middleware to check if user has specific permission(s)
+// RequirePermission adalah middleware untuk memeriksa apakah user memiliki semua permission yang dibutuhkan
 func RequirePermission(permissions ...string) fiber.Handler {
 	return func(c *fiber.Ctx) error {
 		user := c.Locals("user").(*domain.User)
 		if user == nil {
-			return util.SendError(c, fiber.StatusUnauthorized, "unauthorized")
+			return sendPermError(c, fiber.StatusUnauthorized, "unauthorized")
 		}
 
-		// Get user's role from cache to get permissions
 		userRole, found := cache.GetRoleByID(user.RoleID)
 		if !found {
-			return util.SendError(c, fiber.StatusForbidden, "user role not found")
+			return sendPermError(c, fiber.StatusForbidden, "user role not found")
 		}
 
-		// Parse role permissions from JSON
 		rolePermissions, err := userRole.GetPermissions()
 		if err != nil {
-			return util.SendError(c, fiber.StatusInternalServerError, "failed to parse role permissions")
+			return sendPermError(c, fiber.StatusInternalServerError, "failed to parse role permissions")
 		}
 
-		// Check if user has all required permissions
 		for _, requiredPermission := range permissions {
 			if hasPermission, exists := rolePermissions[requiredPermission]; !exists || !hasPermission {
-				return util.SendError(c, fiber.StatusForbidden, "insufficient permissions")
+				return sendPermError(c, fiber.StatusForbidden, "insufficient permissions")
 			}
 		}
-
 		return c.Next()
 	}
 }
 
 // RequireAdmin - Shorthand middleware for admin role
+// RequireAdmin adalah middleware untuk membatasi akses hanya untuk admin
 func RequireAdmin() fiber.Handler {
 	return RequireRole(constant.RoleAdmin.String())
 }
 
 // RequireTeacher - Shorthand middleware for teacher role
+// RequireTeacher adalah middleware untuk membatasi akses hanya untuk teacher
 func RequireTeacher() fiber.Handler {
 	return RequireRole(constant.RoleTeacher.String())
 }
 
 // RequireTeacherOrAdmin - Shorthand middleware for teacher or admin role
+// RequireTeacherOrAdmin adalah middleware untuk membatasi akses hanya untuk teacher atau admin
 func RequireTeacherOrAdmin() fiber.Handler {
 	return RequireRole(constant.RoleTeacher.String(), constant.RoleAdmin.String())
 }
 
-// RequireOwnershipOrAdmin - Middleware to check if user owns the resource or is admin
-// This checks if the userId parameter matches the authenticated user's ID or if user is admin
+// RequireOwnershipOrAdmin adalah middleware untuk membatasi akses hanya untuk owner resource atau admin
 func RequireOwnershipOrAdmin(paramName string) fiber.Handler {
 	return func(c *fiber.Ctx) error {
 		user := c.Locals("user").(*domain.User)
 		if user == nil {
-			return util.SendError(c, fiber.StatusUnauthorized, "unauthorized")
+			return sendPermError(c, fiber.StatusUnauthorized, "unauthorized")
 		}
 
-		// Get user's role from cache
 		userRole, found := cache.GetRoleByID(user.RoleID)
 		if !found {
-			return util.SendError(c, fiber.StatusForbidden, "user role not found")
+			return sendPermError(c, fiber.StatusForbidden, "user role not found")
 		}
 
-		// If user is admin, allow access
 		if strings.EqualFold(userRole.Name, constant.RoleAdmin.String()) {
 			return c.Next()
 		}
 
-		// Check if user owns the resource
 		resourceUserID := c.Params(paramName)
 		if resourceUserID == user.ID {
 			return c.Next()
 		}
 
-		return util.SendError(c, fiber.StatusForbidden, "access denied: you can only access your own resources")
+		return sendPermError(c, fiber.StatusForbidden, "access denied: you can only access your own resources")
 	}
+}
+
+// sendPermError adalah helper untuk mengirim error pada permission/role middleware
+func sendPermError(c *fiber.Ctx, status int, message string) error {
+	return util.SendError(c, status, message)
 }

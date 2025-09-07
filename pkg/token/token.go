@@ -8,16 +8,19 @@ import (
 	"github.com/o1egl/paseto/v2"
 )
 
-var (
-	ErrInvalidToken = errors.New("token is invalid")
-	ErrExpiredToken = errors.New("token has expired")
-)
+// ErrInvalidToken digunakan saat token tidak valid
+var ErrInvalidToken = errors.New("token is invalid")
 
+// ErrExpiredToken digunakan saat token sudah expired
+var ErrExpiredToken = errors.New("token has expired")
+
+// PasetoMaker adalah struct untuk membuat dan verifikasi token Paseto
 type PasetoMaker struct {
 	paseto       *paseto.V2
 	symmetricKey []byte
 }
 
+// Payload adalah data yang di-encode ke dalam token
 type Payload struct {
 	TokenID   uuid.UUID `json:"tid"`
 	TokenType string    `json:"tty"`
@@ -47,7 +50,7 @@ func NewPayload(userID string, roleID string, tokenType string, duration time.Du
 		TokenID:   tokenID,
 		TokenType: tokenType,
 		UserID:    userID,
-		RoleID:    "ngok",
+		RoleID:    roleID,
 		IssuedAt:  time.Now(),
 		ExpiredAt: time.Now().Add(duration),
 	}

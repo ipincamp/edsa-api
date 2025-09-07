@@ -6,6 +6,7 @@ import (
 	"gorm.io/gorm"
 )
 
+// User adalah entitas untuk data user aplikasi
 type User struct {
 	ID              string `gorm:"type:uuid;primary_key;default:uuid_generate_v4()"`
 	Name            string `gorm:"type:varchar(100);not null"`

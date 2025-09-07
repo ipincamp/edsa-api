@@ -4,7 +4,9 @@
 
 # Your application binary name
 BINARY_NAME=edsa
-MAIN_GO=./main.go
+MAIN_GO=./cmd/api/main.go
+MIGRATE_GO=./cmd/migrate/main.go
+SEED_GO=./cmd/seed/main.go
 TIMEZONE=Asia/Jakarta
 
 # Default command
@@ -50,17 +52,17 @@ migrate-create: ## Create a new migration file with template. Example: make migr
 	fi
 	@timestamp=$$(date +%Y%m%d%H%M%S); \
 	func_name=$$(echo "$(name)" | sed -e 's/_\([a-z]\)/\u\1/g' -e 's/^\([a-z]\)/\u\1/g'); \
-	filepath=internal/migration/migrations/$${timestamp}_$(name).go; \
+	filepath=migrations/$${timestamp}_$(name).go; \
 	printf 'package migrations\n\nimport (\n\t"github.com/go-gormigrate/gormigrate/v2"\n\t"gorm.io/gorm"\n)\n\nfunc %s() *gormigrate.Migration {\n\t// TODO: Define struct here\n\t// Example: type YourStruct struct {}\n\treturn &gormigrate.Migration{\n\t\tID: "%s",\n\t\tMigrate: func(tx *gorm.DB) error {\n\t\t\t// TODO: Implement table or column creation here\n\t\t\t// Example: return tx.AutoMigrate(&YourStruct{})\n\t\t\treturn nil\n\t\t},\n\t\tRollback: func(tx *gorm.DB) error {\n\t\t\t// TODO: Implement table or column deletion here\n\t\t\t// Example: return tx.Migrator().DropTable("your_table")\n\t\t\treturn nil\n\t\t},\n\t}\n}\n' "$$func_name" "$$timestamp" > $$filepath; \
 	echo "Successfully created: $$filepath"
 
 migrate-up: ## Run all pending migrations
 	@echo "Running migrations..."
-	@go run $(MAIN_GO) --migrate
+	@go run $(MIGRATE_GO) up
 
 migrate-down: ## Rollback the last migration
 	@echo "Rolling back last migration..."
-	@go run $(MAIN_GO) --rollback
+	@go run $(MIGRATE_GO) down
 
 ## --------------------------------------
 ## Seeder Commands
@@ -73,12 +75,12 @@ seed-create: ## Create a new seeder file with template. Example: make seed-creat
 		exit 1; \
 	fi
 	@func_name=$$(echo "$(name)" | sed -e 's/_\([a-z]\)/\u\1/g' -e 's/^\([a-z]\)/\u\1/g')Seeder; \
-	filepath=internal/database/seeder/seeders/$(name).seeder.go; \
+	filepath=internal/seeder/seeders/$(name).go; \
 	printf 'package seeders\n\nimport (\n\t"log"\n\n\t"gorm.io/gorm"\n)\n\nfunc %s(db *gorm.DB) {\n\t// TODO: Implement your seeder logic here\n\t// Use db.FirstOrCreate() to avoid duplicates\n\tlog.Println("%s ran successfully")\n}\n' "$$func_name" "$$func_name" > $$filepath; \
 	echo "Successfully created: $$filepath"
 
 db-seed: ## Run all registered seeders
 	@echo "Running database seeders..."
-	@go run $(MAIN_GO) --seed
+	@go run $(SEED_GO)
 
 .PHONY: build clean db-seed debug help migrate-create migrate-down migrate-up run run-dev seed-create

@@ -9,6 +9,10 @@ import (
 	"github.com/ipincamp/go-edsa-api/internal/delivery/http/dto"
 )
 
+// GeneratePagination membuat metadata pagination untuk response API.
+// page: halaman saat ini
+// limit: jumlah data per halaman
+// totalData: total data yang tersedia
 func GeneratePagination(page int, limit int, totalData int64) *dto.Pagination {
 	if page <= 0 {
 		page = 1
@@ -27,6 +31,8 @@ func GeneratePagination(page int, limit int, totalData int64) *dto.Pagination {
 	}
 }
 
+// GetPaginationParams mengambil parameter page dan limit dari query string request.
+// Jika tidak ada, akan menggunakan nilai default.
 func GetPaginationParams(c *fiber.Ctx) (int, int) {
 	page, err := strconv.Atoi(c.Query("page", "1"))
 	if err != nil || page <= 0 {
@@ -41,6 +47,7 @@ func GetPaginationParams(c *fiber.Ctx) (int, int) {
 	return page, limit
 }
 
+// CalculateOffset menghitung offset untuk query database berdasarkan page dan limit.
 func CalculateOffset(page, limit int) int {
 	return (page - 1) * limit
 }

@@ -11,11 +11,22 @@ import (
 	"golang.org/x/crypto/argon2"
 )
 
-var (
-	ErrInvalidHash         = errors.New("the encoded hash is not in the correct format")
-	ErrIncompatibleVersion = errors.New("incompatible version of argon2")
-)
+// ErrInvalidHash digunakan saat format hash salah
+var ErrInvalidHash = errors.New("the encoded hash is not in the correct format")
 
+// ErrIncompatibleVersion digunakan saat versi argon2 tidak cocok
+var ErrIncompatibleVersion = errors.New("incompatible version of argon2")
+
+// DefaultArgon2Params adalah parameter default untuk hash argon2
+var DefaultArgon2Params = Argon2Params{
+	Memory:      64 * 1024,
+	Iterations:  3,
+	Parallelism: 2,
+	SaltLength:  16,
+	KeyLength:   32,
+}
+
+// Argon2Params adalah parameter untuk hash argon2
 type Argon2Params struct {
 	Memory      uint32
 	Iterations  uint32
