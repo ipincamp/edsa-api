@@ -25,6 +25,11 @@ func main() {
 		migrations.CreateUsersTable(),
 		migrations.CreateRolesTable(),
 		migrations.AddRoleIdToUsersTable(),
+		migrations.CreateCoursesTable(),
+		migrations.CreateCourseGroupsTable(),
+		migrations.CreateClassTeachersTable(),
+		migrations.CreateEnrollmentsTable(),
+		migrations.CreateJoinGroupRequestsTable(),
 	})
 
 	if len(os.Args) > 1 {
