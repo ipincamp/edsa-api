@@ -14,8 +14,13 @@ type User struct {
 	EmailVerifiedAt *time.Time
 	Password        string `gorm:"type:varchar(255);not null" json:"-"`
 	RoleID          string `gorm:"type:uuid"`
-	Role            Role
-	CreatedAt       time.Time
-	UpdatedAt       time.Time
-	DeletedAt       gorm.DeletedAt `gorm:"index"`
+
+	Role          Role
+	Enrollments   []Enrollment       `gorm:"foreignKey:StudentID"`
+	TaughtClasses []ClassTeacher     `gorm:"foreignKey:TeacherID"`
+	JoinRequests  []JoinGroupRequest `gorm:"foreignKey:ApplicantUserID"`
+
+	CreatedAt time.Time
+	UpdatedAt time.Time
+	DeletedAt gorm.DeletedAt `gorm:"index"`
 }
