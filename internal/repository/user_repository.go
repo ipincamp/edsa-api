@@ -16,6 +16,8 @@ type UserRepository interface {
 	FindAllEmails(ctx context.Context) ([]string, error)
 	List(ctx context.Context, limit, offset int, roleName string) ([]domain.User, int64, error)
 	Update(ctx context.Context, user *domain.User) error
+	GetStudentsByGroupID(ctx context.Context, groupID string) ([]domain.User, error)
+	GetTeachersByGroupID(ctx context.Context, groupID string) ([]domain.User, error)
 }
 
 // userRepository adalah implementasi UserRepository menggunakan GORM
@@ -91,4 +93,24 @@ func (r *userRepository) List(ctx context.Context, limit, offset int, roleName s
 // Update mengubah data user di database
 func (r *userRepository) Update(ctx context.Context, user *domain.User) error {
 	return r.db.WithContext(ctx).Save(user).Error
+}
+
+// GetStudentsByGroupID mengambil semua siswa yang terdaftar di grup kelas tertentu
+func (r *userRepository) GetStudentsByGroupID(ctx context.Context, groupID string) ([]domain.User, error) {
+	var users []domain.User
+	err := r.db.WithContext(ctx).
+		Joins("JOIN enrollments ON enrollments.student_id = users.id").
+		Where("enrollments.course_group_id = ?", groupID).
+		Find(&users).Error
+	return users, err
+}
+
+// GetTeachersByGroupID mengambil semua guru yang mengajar di grup kelas tertentu
+func (r *userRepository) GetTeachersByGroupID(ctx context.Context, groupID string) ([]domain.User, error) {
+	var users []domain.User
+	err := r.db.WithContext(ctx).
+		Joins("JOIN class_teachers ON class_teachers.teacher_id = users.id").
+		Where("class_teachers.course_group_id = ?", groupID).
+		Find(&users).Error
+	return users, err
 }

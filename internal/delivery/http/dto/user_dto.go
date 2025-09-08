@@ -43,6 +43,13 @@ type UserResponse struct {
 	UpdatedAt string `json:"updated_at,omitempty"`
 }
 
+// UserListResponse adalah DTO sederhana untuk response user
+type UserListResponse struct {
+	ID       string `json:"id"`
+	Name     string `json:"name"`
+	JoinedAt string `json:"joined_at"`
+}
+
 // ToUserResponse mengubah domain.User menjadi UserResponse
 func ToUserResponse(user domain.User) UserResponse {
 	return UserResponse{
@@ -55,11 +62,11 @@ func ToUserResponse(user domain.User) UserResponse {
 	}
 }
 
-// ToUserListResponse mengubah slice domain.User menjadi slice UserResponse
-func ToUserListResponse(users []domain.User) []UserResponse {
-	userResponses := make([]UserResponse, len(users))
+// ToUserListResponse mengubah slice domain.User menjadi slice UserListResponse
+func ToUserListResponse(users []domain.User) []UserListResponse {
+	userResponses := make([]UserListResponse, len(users))
 	for i, user := range users {
-		userResponses[i] = UserResponse{
+		userResponses[i] = UserListResponse{
 			ID:       user.ID,
 			Name:     user.Name,
 			JoinedAt: user.CreatedAt.Format(constant.TimeFormat),

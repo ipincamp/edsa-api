@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/ipincamp/go-edsa-api/internal/constant"
+	"github.com/ipincamp/go-edsa-api/internal/delivery/http/dto"
 	"github.com/ipincamp/go-edsa-api/internal/domain"
 	"github.com/ipincamp/go-edsa-api/internal/repository"
 	"github.com/ipincamp/go-edsa-api/pkg/cache"
@@ -26,7 +27,9 @@ var (
 type CourseService interface {
 	ApplyToJoinGroup(ctx context.Context, userID, groupCode string) error
 	HandleJoinRequest(ctx context.Context, teacherID, requestID string, approved bool) error
-	// Tambahkan method lain sesuai kebutuhan, misal: GetMyClasses, GetStudentsByClass, dll.
+	GetMyClasses(ctx context.Context, teacherID string) ([]dto.CourseGroupResponse, error)
+	GetStudentsByClass(ctx context.Context, groupID string) ([]dto.UserListResponse, error)
+	GetTeachersByClass(ctx context.Context, groupID string) ([]dto.UserListResponse, error)
 }
 
 type courseService struct {
@@ -200,5 +203,98 @@ func (s *courseService) HandleJoinRequest(ctx context.Context, teacherID string,
 		return ctx.Err()
 	case res := <-resultChan:
 		return res.err
+	}
+}
+
+// GetMyClasses mengambil daftar kelas yang diajar oleh seorang guru
+func (s *courseService) GetMyClasses(ctx context.Context, teacherID string) ([]dto.CourseGroupResponse, error) {
+	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
+	defer cancel()
+
+	type result struct {
+		resp []dto.CourseGroupResponse
+		err  error
+	}
+	resultChan := make(chan result, 1)
+
+	go func() {
+		groups, err := s.courseGroupRepo.GetByTeacherID(ctx, teacherID)
+		if err != nil {
+			resultChan <- result{resp: nil, err: err}
+			return
+		}
+
+		// Konversi dari domain.CourseGroup ke dto.CourseGroupResponse
+		response := dto.ToCourseGroupListResponse(groups)
+		resultChan <- result{resp: response, err: nil}
+	}()
+
+	select {
+	case <-ctx.Done():
+		return nil, ctx.Err()
+	case res := <-resultChan:
+		return res.resp, res.err
+	}
+}
+
+// GetStudentsByClass mengambil daftar siswa dalam sebuah kelas
+func (s *courseService) GetStudentsByClass(ctx context.Context, groupID string) ([]dto.UserListResponse, error) {
+	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
+	defer cancel()
+
+	type result struct {
+		resp []dto.UserListResponse
+		err  error
+	}
+	resultChan := make(chan result, 1)
+
+	go func() {
+		students, err := s.userRepo.GetStudentsByGroupID(ctx, groupID)
+		if err != nil {
+			resultChan <- result{resp: nil, err: err}
+			return
+		}
+
+		// Konversi dari domain.User ke dto.UserListResponse
+		response := dto.ToUserListResponse(students)
+		resultChan <- result{resp: response, err: nil}
+	}()
+
+	select {
+	case <-ctx.Done():
+		return nil, ctx.Err()
+	case res := <-resultChan:
+		return res.resp, res.err
+	}
+}
+
+// GetTeachersByClass mengambil daftar guru yang mengajar di sebuah kelas
+func (s *courseService) GetTeachersByClass(ctx context.Context, groupID string) ([]dto.UserListResponse, error) {
+	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
+	defer cancel()
+
+	type result struct {
+		resp []dto.UserListResponse
+		err  error
+	}
+	resultChan := make(chan result, 1)
+
+	go func() {
+		teachers, err := s.userRepo.GetTeachersByGroupID(ctx, groupID)
+		if err != nil {
+			resultChan <- result{resp: nil, err: err}
+			return
+		}
+
+		// Konversi dari domain.User ke dto.UserListResponse
+		response := dto.ToUserListResponse(teachers)
+		resultChan <- result{resp: response, err: nil}
+	}()
+
+	select {
+	case <-ctx.Done():
+		return nil, ctx.Err()
+	case res := <-resultChan:
+		return res.resp, res.err
 	}
 }
