@@ -22,14 +22,18 @@ func main() {
 	}
 
 	m := gormigrate.New(db, gormigrate.DefaultOptions, []*gormigrate.Migration{
-		migrations.CreateUsersTable(),
 		migrations.CreateRolesTable(),
-		migrations.AddRoleIdToUsersTable(),
+		migrations.CreateUsersTable(),
 		migrations.CreateCoursesTable(),
 		migrations.CreateCourseGroupsTable(),
 		migrations.CreateClassTeachersTable(),
 		migrations.CreateEnrollmentsTable(),
 		migrations.CreateJoinGroupRequestsTable(),
+		migrations.CreateBooksTable(),
+		migrations.CreatePagesTable(),
+		migrations.CreateInteractionsTable(),
+		migrations.CreatePostActivitiesTable(),
+		migrations.CreateUserProgressTable(),
 	})
 
 	if len(os.Args) > 1 {

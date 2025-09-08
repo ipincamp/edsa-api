@@ -19,7 +19,7 @@ func CreateJoinGroupRequestsTable() *gormigrate.Migration {
 		ID              string `gorm:"type:uuid;primary_key;default:uuid_generate_v4()"`
 		ApplicantUserID string `gorm:"type:uuid;not null"`
 		TargetGroupID   string `gorm:"type:uuid;not null"`
-		Status          string `gorm:"type:varchar(50);default:'pending'"` // e.g., pending, approved, rejected
+		Status          string `gorm:"type:varchar(50);default:'pending';check:status IN ('pending', 'approved', 'rejected')"`
 		RequestDate     time.Time
 		Applicant       User        `gorm:"foreignKey:ApplicantUserID;references:ID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE;"`
 		TargetGroup     CourseGroup `gorm:"foreignKey:TargetGroupID;references:ID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE;"`

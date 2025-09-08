@@ -14,15 +14,15 @@ func CreateUsersTable() *gormigrate.Migration {
 		Email           string `gorm:"type:varchar(255);uniqueIndex;not null"`
 		EmailVerifiedAt *time.Time
 		Password        string `gorm:"type:varchar(255);not null"`
+		RoleID          string `gorm:"type:uuid;not null"`
 		CreatedAt       time.Time
 		UpdatedAt       time.Time
 		DeletedAt       gorm.DeletedAt `gorm:"index"`
 	}
 
 	return &gormigrate.Migration{
-		ID: "20250830141600",
+		ID: "20250830141615",
 		Migrate: func(tx *gorm.DB) error {
-			tx.Exec(`CREATE EXTENSION IF NOT EXISTS "uuid-ossp";`)
 			return tx.AutoMigrate(&User{})
 		},
 		Rollback: func(tx *gorm.DB) error {

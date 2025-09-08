@@ -18,8 +18,9 @@ func CreateRolesTable() *gormigrate.Migration {
 	}
 
 	return &gormigrate.Migration{
-		ID: "20250830141615",
+		ID: "20250830141600",
 		Migrate: func(tx *gorm.DB) error {
+			tx.Exec(`CREATE EXTENSION IF NOT EXISTS "uuid-ossp";`)
 			return tx.AutoMigrate(&Role{})
 		},
 		Rollback: func(tx *gorm.DB) error {
