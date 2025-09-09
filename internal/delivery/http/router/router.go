@@ -40,6 +40,13 @@ func Setup(app *fiber.App, db *gorm.DB) {
 	// Repositories
 	userRepo := repository.NewUserRepository(db)
 	roleRepo := repository.NewRoleRepository(db)
+	courseGroupRepo := repository.NewCourseGroupRepository(db)
+	joinRequestRepo := repository.NewJoinRequestRepository(db)
+	enrollmentRepo := repository.NewEnrollmentRepository(db)
+	bookRepo := repository.NewBookRepository(db)
+	userProgressRepo := repository.NewUserProgressRepository(db)
+	interactionRepo := repository.NewInteractionRepository(db)
+	pageRepo := repository.NewPageRepository(db)
 
 	// Populate Bloom Filter on startup
 	go func() {
@@ -69,15 +76,33 @@ func Setup(app *fiber.App, db *gorm.DB) {
 		cfg.Paseto.RefreshTokenDuration,
 		bloomFilter,
 	)
-
 	userService := service.NewUserService(db, userRepo)
+	courseService := service.NewCourseService(
+		db,
+		courseGroupRepo,
+		joinRequestRepo,
+		enrollmentRepo,
+		userRepo,
+		roleRepo,
+	)
+	learningService := service.NewLearningService(
+		db,
+		bookRepo,
+		userProgressRepo,
+		interactionRepo,
+		pageRepo,
+	)
 
 	// Handlers
 	authHandler := handler.NewAuthHandler(authService)
 	userHandler := handler.NewUserHandler(userService)
+	courseHandler := handler.NewCourseHandler(courseService)
+	learningHandler := handler.NewLearningHandler(learningService)
 
 	// Middleware
 	authRequired := middleware.AuthMiddleware(tokenMaker)
+	teacherOnly := middleware.RequireRole(constant.RoleTeacher.String())
+	guestOnly := middleware.RequireRole(constant.RoleGuest.String())
 
 	// Add custom error handler for Method Not Allowed
 	app.Use(func(c *fiber.Ctx) error {
@@ -111,6 +136,21 @@ func Setup(app *fiber.App, db *gorm.DB) {
 	users.Patch("/:userId", middleware.RequirePermissionOrOwnership(constant.UsersUpdateOther, "userId"), userHandler.UpdateUserByID) // DONE
 	// users.Delete("/:userId", middleware.RequirePermission(constant.UsersDelete), userHandler.DeleteUser) // Uncomment jika diperlukan
 
+	// Course Management & Learning Routes
+	classes := v1.Group("/classes").Use(authRequired)
+	classes.Post("/join", guestOnly, courseHandler.ApplyToJoinGroup)                 // Guest mendaftar kelas
+	classes.Get("/my", teacherOnly, courseHandler.GetMyClasses)                      // Guru melihat kelasnya
+	classes.Get("/:groupID/students", teacherOnly, courseHandler.GetStudentsByClass) // Guru melihat murid di kelasnya
+
+	joinRequests := v1.Group("/join-requests").Use(authRequired, teacherOnly)
+	joinRequests.Post("/:requestID/handle", courseHandler.HandleJoinRequest) // Guru memproses permintaan
+
+	learning := v1.Group("/learning").Use(authRequired)
+	learning.Get("/books", learningHandler.GetAvailableBooks)
+	learning.Get("/books/:bookID", learningHandler.GetBookDetail)
+	learning.Post("/interactions/submit", learningHandler.SubmitInteraction)
+
+	// Fallback routes
 	app.Get("/", func(c *fiber.Ctx) error {
 		return c.SendString("Welcome to the API")
 	})

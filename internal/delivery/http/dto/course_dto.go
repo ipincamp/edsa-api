@@ -2,6 +2,18 @@ package dto
 
 import "github.com/ipincamp/go-edsa-api/internal/domain"
 
+// ApplyToGroupRequest adalah DTO untuk request body saat guest mendaftar ke kelas.
+type ApplyToGroupRequest struct {
+	GroupCode string `json:"group_code" validate:"required"`
+}
+
+// HandleJoinRequest adalah DTO untuk request body saat guru memproses permintaan bergabung.
+type HandleJoinRequest struct {
+	// Digunakan pointer agar validator bisa membedakan antara nilai 'false' yang eksplisit
+	// dan field yang tidak ada sama sekali. Namun untuk Fiber, `bool` biasa cukup.
+	Approved bool `json:"approved" validate:"boolean"`
+}
+
 // CourseGroupResponse adalah DTO untuk menampilkan data kelas.
 type CourseGroupResponse struct {
 	ID               string `json:"id"`
