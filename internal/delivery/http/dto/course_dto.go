@@ -55,6 +55,12 @@ type CourseIDRequest struct {
 	CourseId string `params:"courseId" validate:"required,uuid4"`
 }
 
+// CourseFilterRequest adalah DTO untuk filter list mata pelajaran.
+type CourseFilterRequest struct {
+	Page  int `query:"page" validate:"omitempty,min=1"`
+	Limit int `query:"limit" validate:"omitempty,min=1,max=100"`
+}
+
 // CourseRequest adalah DTO untuk membuat mata pelajaran.
 type CreateCourseRequest struct {
 	Name        string `json:"name,omitempty" validate:"required"`
@@ -64,6 +70,7 @@ type CreateCourseRequest struct {
 // UpdateCourseRequest adalah DTO untuk memperbarui mata pelajaran.
 type UpdateCourseRequest = CreateCourseRequest
 
+// CourseResponse adalah DTO untuk menampilkan detail mata pelajaran.
 type CourseResponse struct {
 	ID          string `json:"id,omitempty"`
 	Name        string `json:"name,omitempty"`
@@ -72,6 +79,14 @@ type CourseResponse struct {
 	UpdatedAt   string `json:"updated_at,omitempty"`
 }
 
+// CourseListResponse adalah DTO untuk menampilkan daftar mata pelajaran.
+type CourseListResponse struct {
+	ID        string `json:"id"`
+	Name      string `json:"name"`
+	CreatedAt string `json:"created_at"`
+}
+
+// ToCourseResponse mengubah satu objek domain.Course menjadi dto.CourseResponse.
 func ToCourseResponse(course domain.Course) CourseResponse {
 	return CourseResponse{
 		ID:          course.ID,
@@ -82,10 +97,15 @@ func ToCourseResponse(course domain.Course) CourseResponse {
 	}
 }
 
-func ToCourseListResponse(courses []domain.Course) []CourseResponse {
-	var response []CourseResponse
+// ToCourseListResponse mengubah slice dari domain.Course menjadi slice dto.CourseListResponse.
+func ToCourseListResponse(courses []domain.Course) []CourseListResponse {
+	var response []CourseListResponse
 	for _, course := range courses {
-		response = append(response, ToCourseResponse(course))
+		response = append(response, CourseListResponse{
+			ID:        course.ID,
+			Name:      course.Name,
+			CreatedAt: course.CreatedAt.Format(constant.TimeFormat),
+		})
 	}
 	return response
 }

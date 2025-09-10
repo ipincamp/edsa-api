@@ -155,19 +155,28 @@ func (h *CourseHandler) GetCourseByID(c *fiber.Ctx) error {
 	return util.SendSuccess(c, fiber.StatusOK, "course retrieved successfully", course)
 }
 
+// GetAllCourses - Handler to get all courses with pagination
 func (h *CourseHandler) GetAllCourses(c *fiber.Ctx) error {
-	limit, offset := util.GetPaginationParams(c)
-	courses, total, err := h.courseService.GetAllCourses(c.Context(), limit, offset)
+	var req dto.CourseFilterRequest
+	if err := c.QueryParser(&req); err != nil {
+		return util.SendError(c, fiber.StatusBadRequest, "invalid query parameters", nil)
+	}
+	if validationErrors := h.validator.Validate(req); validationErrors != nil {
+		return util.SendError(c, fiber.StatusBadRequest, "validation failed", validationErrors)
+	}
+
+	if req.Page <= 0 {
+		req.Page = 1
+	}
+	if req.Limit <= 0 {
+		req.Limit = 10
+	}
+
+	courses, err := h.courseService.GetAllCourses(c.Context(), req.Page, req.Limit)
 	if err != nil {
 		return util.SendError(c, fiber.StatusInternalServerError, "failed to get courses")
 	}
-
-	return util.SendSuccess(
-		c,
-		fiber.StatusOK,
-		"courses retrieved successfully",
-		util.ToPaginatedResponse(courses, total, limit, offset),
-	)
+	return util.SendSuccess(c, fiber.StatusOK, "courses retrieved successfully", courses)
 }
 
 func (h *CourseHandler) UpdateCourse(c *fiber.Ctx) error {

@@ -10,7 +10,7 @@ import (
 type CourseRepository interface {
 	Create(ctx context.Context, course *domain.Course) error
 	FindByID(ctx context.Context, id string) (domain.Course, error)
-	FindAll(ctx context.Context, limit, offset int) ([]domain.Course, int64, error)
+	List(ctx context.Context, limit, offset int) ([]domain.Course, int64, error)
 	Update(ctx context.Context, course *domain.Course) error
 	Delete(ctx context.Context, id string) error
 }
@@ -33,17 +33,17 @@ func (r *courseRepository) FindByID(ctx context.Context, id string) (domain.Cour
 	return course, err
 }
 
-func (r *courseRepository) FindAll(ctx context.Context, limit, offset int) ([]domain.Course, int64, error) {
+func (r *courseRepository) List(ctx context.Context, limit, offset int) ([]domain.Course, int64, error) {
 	var courses []domain.Course
 	var total int64
 
-	err := r.db.WithContext(ctx).Model(&domain.Course{}).Count(&total).Error
-	if err != nil {
+	query := r.db.WithContext(ctx).Model(&domain.Course{})
+
+	if err := query.Count(&total).Error; err != nil {
 		return nil, 0, err
 	}
 
-	err = r.db.WithContext(ctx).Limit(limit).Offset(offset).Find(&courses).Error
-	if err != nil {
+	if err := query.Limit(limit).Offset(offset).Find(&courses).Error; err != nil {
 		return nil, 0, err
 	}
 

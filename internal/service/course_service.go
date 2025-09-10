@@ -9,6 +9,7 @@ import (
 	"github.com/ipincamp/go-edsa-api/internal/delivery/http/dto"
 	"github.com/ipincamp/go-edsa-api/internal/domain"
 	"github.com/ipincamp/go-edsa-api/internal/repository"
+	"github.com/ipincamp/go-edsa-api/internal/util"
 	"github.com/ipincamp/go-edsa-api/pkg/cache"
 	"github.com/jackc/pgx/v5/pgconn"
 	"gorm.io/gorm"
@@ -36,7 +37,7 @@ type CourseService interface {
 	// Admin
 	CreateCourse(ctx context.Context, req dto.CreateCourseRequest) (dto.CourseResponse, error)
 	GetCourseByID(ctx context.Context, id string) (dto.CourseResponse, error)
-	GetAllCourses(ctx context.Context, limit, offset int) ([]dto.CourseResponse, int64, error)
+	GetAllCourses(ctx context.Context, page int, limit int) (*dto.PaginatedResponse, error)
 	UpdateCourse(ctx context.Context, id string, req dto.UpdateCourseRequest) (dto.CourseResponse, error)
 	DeleteCourse(ctx context.Context, id string) error
 }
@@ -380,12 +381,38 @@ func (s *courseService) GetCourseByID(ctx context.Context, id string) (dto.Cours
 	}
 }
 
-func (s *courseService) GetAllCourses(ctx context.Context, limit, offset int) ([]dto.CourseResponse, int64, error) {
-	courses, total, err := s.courseRepo.FindAll(ctx, limit, offset)
-	if err != nil {
-		return nil, 0, err
+func (s *courseService) GetAllCourses(ctx context.Context, page int, limit int) (*dto.PaginatedResponse, error) {
+	offset := util.CalculateOffset(page, limit)
+	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
+	defer cancel()
+
+	type result struct {
+		resp  *dto.PaginatedResponse
+		total int64
+		err   error
 	}
-	return dto.ToCourseListResponse(courses), total, nil
+	resultChan := make(chan result, 1)
+
+	go func() {
+		courses, total, err := s.courseRepo.List(ctx, limit, offset)
+		if err != nil {
+			resultChan <- result{resp: nil, total: 0, err: err}
+			return
+		}
+		courseData := dto.ToCourseListResponse(courses)
+		metaData := util.GeneratePagination(page, limit, total)
+		resultChan <- result{resp: &dto.PaginatedResponse{
+			Data: courseData,
+			Meta: metaData,
+		}, err: nil}
+	}()
+
+	select {
+	case <-ctx.Done():
+		return nil, ctx.Err()
+	case res := <-resultChan:
+		return res.resp, res.err
+	}
 }
 
 func (s *courseService) UpdateCourse(ctx context.Context, id string, req dto.UpdateCourseRequest) (dto.CourseResponse, error) {
