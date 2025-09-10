@@ -40,6 +40,7 @@ func Setup(app *fiber.App, db *gorm.DB) {
 	// Repositories
 	userRepo := repository.NewUserRepository(db)
 	roleRepo := repository.NewRoleRepository(db)
+	courseRepo := repository.NewCourseRepository(db)
 	courseGroupRepo := repository.NewCourseGroupRepository(db)
 	joinRequestRepo := repository.NewJoinRequestRepository(db)
 	enrollmentRepo := repository.NewEnrollmentRepository(db)
@@ -79,6 +80,7 @@ func Setup(app *fiber.App, db *gorm.DB) {
 	userService := service.NewUserService(db, userRepo)
 	courseService := service.NewCourseService(
 		db,
+		courseRepo,
 		courseGroupRepo,
 		joinRequestRepo,
 		enrollmentRepo,
@@ -117,6 +119,9 @@ func Setup(app *fiber.App, db *gorm.DB) {
 
 	// Routes
 	api := app.Group("/api")
+	api.Get("/", func(c *fiber.Ctx) error {
+		return c.SendString("Welcome to the API")
+	})
 	v1 := api.Group("/v1")
 
 	auth := v1.Group("/auth")
@@ -150,10 +155,22 @@ func Setup(app *fiber.App, db *gorm.DB) {
 	learning.Get("/books/:bookID", learningHandler.GetBookDetail)
 	learning.Post("/interactions/submit", learningHandler.SubmitInteraction)
 
+	// Admin routes
+	admin := v1.Group("/admin", authRequired, middleware.RequireRole(constant.RoleAdmin.String()))
+	admin.Get("/users", userHandler.GetAllUsers)
+
+	// Course management for admin
+	admin.Post("/courses", courseHandler.CreateCourse)
+	admin.Get("/courses", courseHandler.GetAllCourses)
+	admin.Get("/courses/:id", courseHandler.GetCourseByID)
+	admin.Put("/courses/:id", courseHandler.UpdateCourse)
+	admin.Delete("/courses/:id", courseHandler.DeleteCourse)
+
+	// Teacher routes
+	teacher := v1.Group("/teacher", authRequired, middleware.RequireRole(constant.RoleTeacher.String()))
+	teacher.Post("/handle-request/:requestID", courseHandler.HandleJoinRequest)
+
 	// Fallback routes
-	app.Get("/", func(c *fiber.Ctx) error {
-		return c.SendString("Welcome to the API")
-	})
 	api.Use("*", func(c *fiber.Ctx) error {
 		return util.SendError(c, fiber.StatusNotFound, "API endpoint not found")
 	})

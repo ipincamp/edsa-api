@@ -9,6 +9,7 @@ import (
 	"github.com/ipincamp/go-edsa-api/internal/service"
 	"github.com/ipincamp/go-edsa-api/internal/util"
 	"github.com/ipincamp/go-edsa-api/pkg/validator"
+	"gorm.io/gorm"
 )
 
 type CourseHandler struct {
@@ -96,4 +97,93 @@ func (h *CourseHandler) GetStudentsByClass(c *fiber.Ctx) error {
 	}
 
 	return util.SendSuccess(c, fiber.StatusOK, "students retrieved successfully", students)
+}
+
+// GetTeachersByClass - Handler to get teachers in a class
+func (h *CourseHandler) GetTeachersByClass(c *fiber.Ctx) error {
+	groupID := c.Params("groupID")
+
+	teachers, err := h.courseService.GetTeachersByClass(c.Context(), groupID)
+	if err != nil {
+		return util.SendError(c, fiber.StatusInternalServerError, "failed to retrieve teachers")
+	}
+
+	return util.SendSuccess(c, fiber.StatusOK, "teachers retrieved successfully", teachers)
+}
+
+// Admin
+func (h *CourseHandler) CreateCourse(c *fiber.Ctx) error {
+	var req dto.CourseRequest
+	if err := c.BodyParser(&req); err != nil {
+		return util.SendError(c, fiber.StatusBadRequest, "invalid request body")
+	}
+	if errs := h.validator.Validate(req); errs != nil {
+		return util.SendError(c, fiber.StatusBadRequest, "validation failed", errs)
+	}
+
+	course, err := h.courseService.CreateCourse(c.Context(), req)
+	if err != nil {
+		return util.SendError(c, fiber.StatusInternalServerError, "failed to create course")
+	}
+
+	return util.SendSuccess(c, fiber.StatusCreated, "course created successfully", course)
+}
+
+func (h *CourseHandler) GetCourseByID(c *fiber.Ctx) error {
+	courseID := c.Params("id")
+	course, err := h.courseService.GetCourseByID(c.Context(), courseID)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return util.SendError(c, fiber.StatusNotFound, "course not found")
+		}
+		return util.SendError(c, fiber.StatusInternalServerError, "failed to get course")
+	}
+
+	return util.SendSuccess(c, fiber.StatusOK, "course retrieved successfully", course)
+}
+
+func (h *CourseHandler) GetAllCourses(c *fiber.Ctx) error {
+	limit, offset := util.GetPaginationParams(c)
+	courses, total, err := h.courseService.GetAllCourses(c.Context(), limit, offset)
+	if err != nil {
+		return util.SendError(c, fiber.StatusInternalServerError, "failed to get courses")
+	}
+
+	return util.SendSuccess(
+		c,
+		fiber.StatusOK,
+		"courses retrieved successfully",
+		util.ToPaginatedResponse(courses, total, limit, offset),
+	)
+}
+
+func (h *CourseHandler) UpdateCourse(c *fiber.Ctx) error {
+	courseID := c.Params("id")
+	var req dto.UpdateCourseRequest
+	if err := c.BodyParser(&req); err != nil {
+		return util.SendError(c, fiber.StatusBadRequest, "invalid request body")
+	}
+
+	course, err := h.courseService.UpdateCourse(c.Context(), courseID, req)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return util.SendError(c, fiber.StatusNotFound, "course not found")
+		}
+		return util.SendError(c, fiber.StatusInternalServerError, "failed to update course")
+	}
+
+	return util.SendSuccess(c, fiber.StatusOK, "course updated successfully", course)
+}
+
+func (h *CourseHandler) DeleteCourse(c *fiber.Ctx) error {
+	courseID := c.Params("id")
+	err := h.courseService.DeleteCourse(c.Context(), courseID)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return util.SendError(c, fiber.StatusNotFound, "course not found")
+		}
+		return util.SendError(c, fiber.StatusInternalServerError, "failed to delete course")
+	}
+
+	return util.SendSuccess(c, fiber.StatusOK, "course deleted successfully", nil)
 }

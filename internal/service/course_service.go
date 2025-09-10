@@ -30,10 +30,18 @@ type CourseService interface {
 	GetMyClasses(ctx context.Context, teacherID string) ([]dto.CourseGroupResponse, error)
 	GetStudentsByClass(ctx context.Context, groupID string) ([]dto.UserListResponse, error)
 	GetTeachersByClass(ctx context.Context, groupID string) ([]dto.UserListResponse, error)
+
+	// Admin
+	CreateCourse(ctx context.Context, req dto.CourseRequest) (dto.CourseResponse, error)
+	GetCourseByID(ctx context.Context, id string) (dto.CourseResponse, error)
+	GetAllCourses(ctx context.Context, limit, offset int) ([]dto.CourseResponse, int64, error)
+	UpdateCourse(ctx context.Context, id string, req dto.UpdateCourseRequest) (dto.CourseResponse, error)
+	DeleteCourse(ctx context.Context, id string) error
 }
 
 type courseService struct {
 	db              *gorm.DB
+	courseRepo      repository.CourseRepository
 	courseGroupRepo repository.CourseGroupRepository
 	joinRequestRepo repository.JoinRequestRepository
 	enrollmentRepo  repository.EnrollmentRepository
@@ -44,6 +52,7 @@ type courseService struct {
 // NewCourseService membuat instance baru CourseService
 func NewCourseService(
 	db *gorm.DB,
+	courseRepo repository.CourseRepository,
 	courseGroupRepo repository.CourseGroupRepository,
 	joinRequestRepo repository.JoinRequestRepository,
 	enrollmentRepo repository.EnrollmentRepository,
@@ -52,6 +61,7 @@ func NewCourseService(
 ) CourseService {
 	return &courseService{
 		db:              db,
+		courseRepo:      courseRepo,
 		courseGroupRepo: courseGroupRepo,
 		joinRequestRepo: joinRequestRepo,
 		enrollmentRepo:  enrollmentRepo,
@@ -297,4 +307,59 @@ func (s *courseService) GetTeachersByClass(ctx context.Context, groupID string) 
 	case res := <-resultChan:
 		return res.resp, res.err
 	}
+}
+
+func (s *courseService) CreateCourse(ctx context.Context, req dto.CourseRequest) (dto.CourseResponse, error) {
+	newCourse := domain.Course{
+		Name:        req.Name,
+		Description: req.Description,
+	}
+
+	err := s.courseRepo.Create(ctx, &newCourse)
+	if err != nil {
+		return dto.CourseResponse{}, err
+	}
+
+	return dto.ToCourseResponse(newCourse), nil
+}
+
+func (s *courseService) GetCourseByID(ctx context.Context, id string) (dto.CourseResponse, error) {
+	course, err := s.courseRepo.FindByID(ctx, id)
+	if err != nil {
+		return dto.CourseResponse{}, err
+	}
+	return dto.ToCourseResponse(course), nil
+}
+
+func (s *courseService) GetAllCourses(ctx context.Context, limit, offset int) ([]dto.CourseResponse, int64, error) {
+	courses, total, err := s.courseRepo.FindAll(ctx, limit, offset)
+	if err != nil {
+		return nil, 0, err
+	}
+	return dto.ToCourseListResponse(courses), total, nil
+}
+
+func (s *courseService) UpdateCourse(ctx context.Context, id string, req dto.UpdateCourseRequest) (dto.CourseResponse, error) {
+	course, err := s.courseRepo.FindByID(ctx, id)
+	if err != nil {
+		return dto.CourseResponse{}, err
+	}
+
+	if req.Name != "" {
+		course.Name = req.Name
+	}
+	if req.Description != "" {
+		course.Description = req.Description
+	}
+
+	err = s.courseRepo.Update(ctx, &course)
+	if err != nil {
+		return dto.CourseResponse{}, err
+	}
+
+	return dto.ToCourseResponse(course), nil
+}
+
+func (s *courseService) DeleteCourse(ctx context.Context, id string) error {
+	return s.courseRepo.Delete(ctx, id)
 }

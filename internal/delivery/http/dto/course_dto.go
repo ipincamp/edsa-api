@@ -46,3 +46,39 @@ func ToCourseGroupListResponse(groups []domain.CourseGroup) []CourseGroupRespons
 	}
 	return response
 }
+
+type CourseRequest struct {
+	Name        string `json:"name" validate:"required"`
+	Description string `json:"description" validate:"required"`
+}
+
+type UpdateCourseRequest struct {
+	Name        string `json:"name"`
+	Description string `json:"description"`
+}
+
+type CourseResponse struct {
+	ID          string `json:"id"`
+	Name        string `json:"name"`
+	Description string `json:"description"`
+	CreatedAt   string `json:"created_at"`
+	UpdatedAt   string `json:"updated_at"`
+}
+
+func ToCourseResponse(course domain.Course) CourseResponse {
+	return CourseResponse{
+		ID:          course.ID,
+		Name:        course.Name,
+		Description: course.Description,
+		CreatedAt:   course.CreatedAt.String(),
+		UpdatedAt:   course.UpdatedAt.String(),
+	}
+}
+
+func ToCourseListResponse(courses []domain.Course) []CourseResponse {
+	var response []CourseResponse
+	for _, course := range courses {
+		response = append(response, ToCourseResponse(course))
+	}
+	return response
+}

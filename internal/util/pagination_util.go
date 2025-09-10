@@ -51,3 +51,11 @@ func GetPaginationParams(c *fiber.Ctx) (int, int) {
 func CalculateOffset(page, limit int) int {
 	return (page - 1) * limit
 }
+
+func ToPaginatedResponse(data interface{}, totalData int64, page, limit int) *dto.PaginatedResponse {
+	pagination := GeneratePagination(page, limit, totalData)
+	return &dto.PaginatedResponse{
+		Data: data,
+		Meta: pagination,
+	}
+}
