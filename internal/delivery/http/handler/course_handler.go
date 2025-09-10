@@ -134,9 +134,17 @@ func (h *CourseHandler) CreateCourse(c *fiber.Ctx) error {
 	return util.SendSuccess(c, fiber.StatusCreated, "course created successfully", course)
 }
 
+// GetCourseByID - Handler to get a course by its ID
 func (h *CourseHandler) GetCourseByID(c *fiber.Ctx) error {
-	courseID := c.Params("id")
-	course, err := h.courseService.GetCourseByID(c.Context(), courseID)
+	var courseIDReq dto.CourseIDRequest
+	if err := c.ParamsParser(&courseIDReq); err != nil {
+		return util.SendError(c, fiber.StatusBadRequest, "invalid course ID", nil)
+	}
+	if validationErrors := h.validator.Validate(courseIDReq); validationErrors != nil {
+		return util.SendError(c, fiber.StatusBadRequest, "validation failed", validationErrors)
+	}
+
+	course, err := h.courseService.GetCourseByID(c.Context(), courseIDReq.CourseId)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return util.SendError(c, fiber.StatusNotFound, "course not found")

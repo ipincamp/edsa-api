@@ -354,11 +354,30 @@ func (s *courseService) CreateCourse(ctx context.Context, req dto.CreateCourseRe
 }
 
 func (s *courseService) GetCourseByID(ctx context.Context, id string) (dto.CourseResponse, error) {
-	course, err := s.courseRepo.FindByID(ctx, id)
-	if err != nil {
-		return dto.CourseResponse{}, err
+	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
+	defer cancel()
+
+	type result struct {
+		resp dto.CourseResponse
+		err  error
 	}
-	return dto.ToCourseResponse(course), nil
+	resultChan := make(chan result, 1)
+
+	go func() {
+		course, err := s.courseRepo.FindByID(ctx, id)
+		if err != nil {
+			resultChan <- result{resp: dto.CourseResponse{}, err: err}
+			return
+		}
+		resultChan <- result{resp: dto.ToCourseResponse(course), err: nil}
+	}()
+
+	select {
+	case <-ctx.Done():
+		return dto.CourseResponse{}, ctx.Err()
+	case res := <-resultChan:
+		return res.resp, res.err
+	}
 }
 
 func (s *courseService) GetAllCourses(ctx context.Context, limit, offset int) ([]dto.CourseResponse, int64, error) {

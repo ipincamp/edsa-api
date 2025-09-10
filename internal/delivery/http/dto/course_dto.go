@@ -50,15 +50,19 @@ func ToCourseGroupListResponse(groups []domain.CourseGroup) []CourseGroupRespons
 	return response
 }
 
+// CourseIDRequest adalah DTO untuk request yang memerlukan ID mata pelajaran di path parameter.
+type CourseIDRequest struct {
+	CourseId string `params:"courseId" validate:"required,uuid4"`
+}
+
+// CourseRequest adalah DTO untuk membuat mata pelajaran.
 type CreateCourseRequest struct {
 	Name        string `json:"name,omitempty" validate:"required"`
 	Description string `json:"description,omitempty"`
 }
 
-type UpdateCourseRequest struct {
-	Name        string `json:"name"`
-	Description string `json:"description"`
-}
+// UpdateCourseRequest adalah DTO untuk memperbarui mata pelajaran.
+type UpdateCourseRequest = CreateCourseRequest
 
 type CourseResponse struct {
 	ID          string `json:"id,omitempty"`
