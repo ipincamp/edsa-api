@@ -16,14 +16,15 @@ import (
 )
 
 var (
-	ErrGroupNotFound       = errors.New("course group not found")
-	ErrRequestNotFound     = errors.New("join request not found")
-	ErrAlreadyProcessed    = errors.New("request has already been processed")
-	ErrNotAuthorized       = errors.New("not authorized to perform this action")
-	ErrRoleStudentNotFound = errors.New("role 'student' not found")
-	ErrAlreadyEnrolled     = errors.New("user is already enrolled in a class")
-	ErrRequestExists       = errors.New("join request already exists for this class")
-	ErrCourseNameExists    = errors.New("course with this name already exists")
+	ErrGroupNotFound        = errors.New("course group not found")
+	ErrRequestNotFound      = errors.New("join request not found")
+	ErrAlreadyProcessed     = errors.New("request has already been processed")
+	ErrNotAuthorized        = errors.New("not authorized to perform this action")
+	ErrRoleStudentNotFound  = errors.New("role 'student' not found")
+	ErrAlreadyEnrolled      = errors.New("user is already enrolled in a class")
+	ErrRequestExists        = errors.New("join request already exists for this class")
+	ErrCourseNameExists     = errors.New("course with this name already exists")
+	ErrCourseAlreadyDeleted = errors.New("course has already been deleted")
 )
 
 // CourseService adalah kontrak untuk service yang mengelola kelas dan siswa
@@ -462,5 +463,33 @@ func (s *courseService) UpdateCourse(ctx context.Context, id string, req dto.Upd
 }
 
 func (s *courseService) DeleteCourse(ctx context.Context, id string) error {
-	return s.courseRepo.Delete(ctx, id)
+	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
+	defer cancel()
+
+	type result struct {
+		err error
+	}
+	resultChan := make(chan result, 1)
+
+	go func() {
+		course, err := s.courseRepo.FindByID(ctx, id)
+		if err != nil {
+			resultChan <- result{err: err}
+			return
+		}
+		if course.DeletedAt.Valid {
+			// Sudah pernah dihapus (soft-delete)
+			resultChan <- result{err: ErrCourseAlreadyDeleted}
+			return
+		}
+		err = s.courseRepo.Delete(ctx, id)
+		resultChan <- result{err: err}
+	}()
+
+	select {
+	case <-ctx.Done():
+		return ctx.Err()
+	case res := <-resultChan:
+		return res.err
+	}
 }

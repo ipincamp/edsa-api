@@ -160,11 +160,11 @@ func Setup(app *fiber.App, db *gorm.DB) {
 	admin.Get("/users", userHandler.GetAllUsers)
 
 	// Course management for admin
-	admin.Post("/courses", courseHandler.CreateCourse)            // DONE
-	admin.Get("/courses", courseHandler.GetAllCourses)            // DONE
-	admin.Get("/courses/:courseId", courseHandler.GetCourseByID)  // DONE
-	admin.Patch("/courses/:courseId", courseHandler.UpdateCourse) // DONE
-	admin.Delete("/courses/:courseId", courseHandler.DeleteCourse)
+	admin.Post("/courses", courseHandler.CreateCourse)             // DONE
+	admin.Get("/courses", courseHandler.GetAllCourses)             // DONE
+	admin.Get("/courses/:courseId", courseHandler.GetCourseByID)   // DONE
+	admin.Patch("/courses/:courseId", courseHandler.UpdateCourse)  // DONE
+	admin.Delete("/courses/:courseId", courseHandler.DeleteCourse) // DONE
 
 	// Teacher routes
 	teacher := v1.Group("/teacher", authRequired, middleware.RequireRole(constant.RoleTeacher.String()))
@@ -173,6 +173,9 @@ func Setup(app *fiber.App, db *gorm.DB) {
 	// Fallback routes
 	api.Use("*", func(c *fiber.Ctx) error {
 		return util.SendError(c, fiber.StatusNotFound, "API endpoint not found")
+	})
+	app.Get("/", func(c *fiber.Ctx) error {
+		return c.SendString("Good Afternoon")
 	})
 	app.Use("*", func(c *fiber.Ctx) error {
 		return util.SendError(c, fiber.StatusNotFound, "Endpoint not found")

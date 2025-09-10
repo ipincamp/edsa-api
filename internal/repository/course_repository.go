@@ -29,7 +29,7 @@ func (r *courseRepository) Create(ctx context.Context, course *domain.Course) er
 
 func (r *courseRepository) FindByID(ctx context.Context, id string) (domain.Course, error) {
 	var course domain.Course
-	err := r.db.WithContext(ctx).First(&course, "id = ?", id).Error
+	err := r.db.WithContext(ctx).Unscoped().First(&course, "id = ?", id).Error
 	return course, err
 }
 
@@ -55,5 +55,5 @@ func (r *courseRepository) Update(ctx context.Context, course *domain.Course) er
 }
 
 func (r *courseRepository) Delete(ctx context.Context, id string) error {
-	return r.db.WithContext(ctx).Delete(&domain.Course{}, "id = ?", id).Error
+	return r.db.WithContext(ctx).Where("id = ?", id).Delete(&domain.Course{}).Error
 }
