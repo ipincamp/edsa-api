@@ -160,7 +160,7 @@ func Setup(app *fiber.App, db *gorm.DB) {
 	admin.Get("/users", userHandler.GetAllUsers)
 
 	// Course management for admin
-	admin.Post("/courses", courseHandler.CreateCourse)
+	admin.Post("/courses", courseHandler.CreateCourse) // DONE
 	admin.Get("/courses", courseHandler.GetAllCourses)
 	admin.Get("/courses/:id", courseHandler.GetCourseByID)
 	admin.Put("/courses/:id", courseHandler.UpdateCourse)

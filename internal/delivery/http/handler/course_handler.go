@@ -112,8 +112,10 @@ func (h *CourseHandler) GetTeachersByClass(c *fiber.Ctx) error {
 }
 
 // Admin
+
+// CreateCourse - Handler to create a new course
 func (h *CourseHandler) CreateCourse(c *fiber.Ctx) error {
-	var req dto.CourseRequest
+	var req dto.CreateCourseRequest
 	if err := c.BodyParser(&req); err != nil {
 		return util.SendError(c, fiber.StatusBadRequest, "invalid request body")
 	}
@@ -123,6 +125,9 @@ func (h *CourseHandler) CreateCourse(c *fiber.Ctx) error {
 
 	course, err := h.courseService.CreateCourse(c.Context(), req)
 	if err != nil {
+		if errors.Is(err, service.ErrCourseNameExists) {
+			return util.SendError(c, fiber.StatusConflict, err.Error())
+		}
 		return util.SendError(c, fiber.StatusInternalServerError, "failed to create course")
 	}
 

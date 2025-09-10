@@ -10,6 +10,7 @@ import (
 	"github.com/ipincamp/go-edsa-api/internal/domain"
 	"github.com/ipincamp/go-edsa-api/internal/repository"
 	"github.com/ipincamp/go-edsa-api/pkg/cache"
+	"github.com/jackc/pgx/v5/pgconn"
 	"gorm.io/gorm"
 )
 
@@ -21,6 +22,7 @@ var (
 	ErrRoleStudentNotFound = errors.New("role 'student' not found")
 	ErrAlreadyEnrolled     = errors.New("user is already enrolled in a class")
 	ErrRequestExists       = errors.New("join request already exists for this class")
+	ErrCourseNameExists    = errors.New("course with this name already exists")
 )
 
 // CourseService adalah kontrak untuk service yang mengelola kelas dan siswa
@@ -32,7 +34,7 @@ type CourseService interface {
 	GetTeachersByClass(ctx context.Context, groupID string) ([]dto.UserListResponse, error)
 
 	// Admin
-	CreateCourse(ctx context.Context, req dto.CourseRequest) (dto.CourseResponse, error)
+	CreateCourse(ctx context.Context, req dto.CreateCourseRequest) (dto.CourseResponse, error)
 	GetCourseByID(ctx context.Context, id string) (dto.CourseResponse, error)
 	GetAllCourses(ctx context.Context, limit, offset int) ([]dto.CourseResponse, int64, error)
 	UpdateCourse(ctx context.Context, id string, req dto.UpdateCourseRequest) (dto.CourseResponse, error)
@@ -309,18 +311,46 @@ func (s *courseService) GetTeachersByClass(ctx context.Context, groupID string) 
 	}
 }
 
-func (s *courseService) CreateCourse(ctx context.Context, req dto.CourseRequest) (dto.CourseResponse, error) {
-	newCourse := domain.Course{
-		Name:        req.Name,
-		Description: req.Description,
-	}
+func (s *courseService) CreateCourse(ctx context.Context, req dto.CreateCourseRequest) (dto.CourseResponse, error) {
+	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
+	defer cancel()
 
-	err := s.courseRepo.Create(ctx, &newCourse)
-	if err != nil {
-		return dto.CourseResponse{}, err
+	type result struct {
+		resp dto.CourseResponse
+		err  error
 	}
+	resultChan := make(chan result, 1)
 
-	return dto.ToCourseResponse(newCourse), nil
+	go func() {
+		newCourse := domain.Course{
+			Name: req.Name,
+		}
+		if req.Description != "" {
+			newCourse.Description = req.Description
+		} else {
+			newCourse.Description = "-"
+		}
+
+		err := s.courseRepo.Create(ctx, &newCourse)
+		if err != nil {
+			// Check for unique constraint violation error
+			if pgErr, ok := err.(*pgconn.PgError); ok && pgErr.Code == "23505" {
+				resultChan <- result{resp: dto.CourseResponse{}, err: ErrCourseNameExists}
+				return
+			}
+			resultChan <- result{resp: dto.CourseResponse{}, err: err}
+			return
+		}
+
+		resultChan <- result{resp: dto.ToCourseResponse(newCourse), err: nil}
+	}()
+
+	select {
+	case <-ctx.Done():
+		return dto.CourseResponse{}, ctx.Err()
+	case res := <-resultChan:
+		return res.resp, res.err
+	}
 }
 
 func (s *courseService) GetCourseByID(ctx context.Context, id string) (dto.CourseResponse, error) {

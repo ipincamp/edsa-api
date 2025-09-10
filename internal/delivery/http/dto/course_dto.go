@@ -1,6 +1,9 @@
 package dto
 
-import "github.com/ipincamp/go-edsa-api/internal/domain"
+import (
+	"github.com/ipincamp/go-edsa-api/internal/constant"
+	"github.com/ipincamp/go-edsa-api/internal/domain"
+)
 
 // ApplyToGroupRequest adalah DTO untuk request body saat guest mendaftar ke kelas.
 type ApplyToGroupRequest struct {
@@ -47,9 +50,9 @@ func ToCourseGroupListResponse(groups []domain.CourseGroup) []CourseGroupRespons
 	return response
 }
 
-type CourseRequest struct {
-	Name        string `json:"name" validate:"required"`
-	Description string `json:"description" validate:"required"`
+type CreateCourseRequest struct {
+	Name        string `json:"name,omitempty" validate:"required"`
+	Description string `json:"description,omitempty"`
 }
 
 type UpdateCourseRequest struct {
@@ -58,11 +61,11 @@ type UpdateCourseRequest struct {
 }
 
 type CourseResponse struct {
-	ID          string `json:"id"`
-	Name        string `json:"name"`
-	Description string `json:"description"`
-	CreatedAt   string `json:"created_at"`
-	UpdatedAt   string `json:"updated_at"`
+	ID          string `json:"id,omitempty"`
+	Name        string `json:"name,omitempty"`
+	Description string `json:"description,omitempty"`
+	CreatedAt   string `json:"created_at,omitempty"`
+	UpdatedAt   string `json:"updated_at,omitempty"`
 }
 
 func ToCourseResponse(course domain.Course) CourseResponse {
@@ -70,8 +73,8 @@ func ToCourseResponse(course domain.Course) CourseResponse {
 		ID:          course.ID,
 		Name:        course.Name,
 		Description: course.Description,
-		CreatedAt:   course.CreatedAt.String(),
-		UpdatedAt:   course.UpdatedAt.String(),
+		CreatedAt:   course.CreatedAt.Format(constant.TimeFormat),
+		UpdatedAt:   course.UpdatedAt.Format(constant.TimeFormat),
 	}
 }
 
