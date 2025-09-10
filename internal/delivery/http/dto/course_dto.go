@@ -63,8 +63,8 @@ type CourseFilterRequest struct {
 
 // CourseRequest adalah DTO untuk membuat mata pelajaran.
 type CreateCourseRequest struct {
-	Name        string `json:"name,omitempty" validate:"required"`
-	Description string `json:"description,omitempty"`
+	Name        string `json:"name,omitempty" validate:"required,min=3,max=40"`
+	Description string `json:"description,omitempty" validate:"omitempty,max=300"`
 }
 
 // UpdateCourseRequest adalah DTO untuk memperbarui mata pelajaran.

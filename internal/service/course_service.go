@@ -416,24 +416,49 @@ func (s *courseService) GetAllCourses(ctx context.Context, page int, limit int) 
 }
 
 func (s *courseService) UpdateCourse(ctx context.Context, id string, req dto.UpdateCourseRequest) (dto.CourseResponse, error) {
-	course, err := s.courseRepo.FindByID(ctx, id)
-	if err != nil {
-		return dto.CourseResponse{}, err
-	}
+	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
+	defer cancel()
 
-	if req.Name != "" {
-		course.Name = req.Name
+	type result struct {
+		resp dto.CourseResponse
+		err  error
 	}
-	if req.Description != "" {
-		course.Description = req.Description
-	}
+	resultChan := make(chan result, 1)
 
-	err = s.courseRepo.Update(ctx, &course)
-	if err != nil {
-		return dto.CourseResponse{}, err
-	}
+	go func() {
+		course, err := s.courseRepo.FindByID(ctx, id)
+		if err != nil {
+			resultChan <- result{resp: dto.CourseResponse{}, err: err}
+			return
+		}
 
-	return dto.ToCourseResponse(course), nil
+		updated := false
+		if req.Name != "" && req.Name != course.Name {
+			course.Name = req.Name
+			updated = true
+		}
+		if req.Description != "" && req.Description != course.Description {
+			course.Description = req.Description
+			updated = true
+		}
+
+		if updated {
+			err = s.courseRepo.Update(ctx, &course)
+			if err != nil {
+				resultChan <- result{resp: dto.CourseResponse{}, err: err}
+				return
+			}
+		}
+
+		resultChan <- result{resp: dto.ToCourseResponse(course), err: nil}
+	}()
+
+	select {
+	case <-ctx.Done():
+		return dto.CourseResponse{}, ctx.Err()
+	case res := <-resultChan:
+		return res.resp, res.err
+	}
 }
 
 func (s *courseService) DeleteCourse(ctx context.Context, id string) error {

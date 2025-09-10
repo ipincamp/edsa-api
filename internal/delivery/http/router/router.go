@@ -160,11 +160,11 @@ func Setup(app *fiber.App, db *gorm.DB) {
 	admin.Get("/users", userHandler.GetAllUsers)
 
 	// Course management for admin
-	admin.Post("/courses", courseHandler.CreateCourse) // DONE
-	admin.Get("/courses", courseHandler.GetAllCourses)
-	admin.Get("/courses/:courseId", courseHandler.GetCourseByID) // DONE
-	admin.Put("/courses/:id", courseHandler.UpdateCourse)
-	admin.Delete("/courses/:id", courseHandler.DeleteCourse)
+	admin.Post("/courses", courseHandler.CreateCourse)            // DONE
+	admin.Get("/courses", courseHandler.GetAllCourses)            // DONE
+	admin.Get("/courses/:courseId", courseHandler.GetCourseByID)  // DONE
+	admin.Patch("/courses/:courseId", courseHandler.UpdateCourse) // DONE
+	admin.Delete("/courses/:courseId", courseHandler.DeleteCourse)
 
 	// Teacher routes
 	teacher := v1.Group("/teacher", authRequired, middleware.RequireRole(constant.RoleTeacher.String()))

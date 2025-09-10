@@ -179,14 +179,25 @@ func (h *CourseHandler) GetAllCourses(c *fiber.Ctx) error {
 	return util.SendSuccess(c, fiber.StatusOK, "courses retrieved successfully", courses)
 }
 
+// UpdateCourse - Handler to update a course by its ID
 func (h *CourseHandler) UpdateCourse(c *fiber.Ctx) error {
-	courseID := c.Params("id")
+	var courseIDReq dto.CourseIDRequest
+	if err := c.ParamsParser(&courseIDReq); err != nil {
+		return util.SendError(c, fiber.StatusBadRequest, "invalid course ID", nil)
+	}
+	if validationErrors := h.validator.Validate(courseIDReq); validationErrors != nil {
+		return util.SendError(c, fiber.StatusBadRequest, "validation failed", validationErrors)
+	}
+
 	var req dto.UpdateCourseRequest
 	if err := c.BodyParser(&req); err != nil {
 		return util.SendError(c, fiber.StatusBadRequest, "invalid request body")
 	}
+	if errs := h.validator.Validate(req); errs != nil {
+		return util.SendError(c, fiber.StatusBadRequest, "validation failed", errs)
+	}
 
-	course, err := h.courseService.UpdateCourse(c.Context(), courseID, req)
+	course, err := h.courseService.UpdateCourse(c.Context(), courseIDReq.CourseId, req)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return util.SendError(c, fiber.StatusNotFound, "course not found")
