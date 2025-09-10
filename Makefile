@@ -20,7 +20,7 @@ help: ## Show available commands
 
 clean: ## Clean up build artifacts
 	@echo "Cleaning up..."
-	@rm -rf ./bin/*
+	@rm -rf ./bin/* ./tmp
 
 build: ## Compile Go code into binary
 	@echo "Building binary..."
@@ -31,14 +31,18 @@ run: build ## Run the application in production mode
 	@echo "Running in production mode..."
 	@ENV=production TZ=$(TIMEZONE) ./bin/$(BINARY_NAME)
 
-run-dev:  ## Run the application in development mode
-	@echo "Running in development mode..."
-	@ENV=development TZ=$(TIMEZONE) go run $(MAIN_GO)
+dev: air-install ## Run the application in development mode with auto-reload
+	@echo "Running in development mode with auto-reload..."
+	@air
 
 debug: ## Run the application with Delve debugger
 	@echo "Starting debugger (Delve)..."
 	@go install github.com/go-delve/delve/cmd/dlv@latest
 	@dlv debug $(MAIN_GO)
+
+air-install: ## Install air for live reloading
+	@echo "Installing Air..."
+	@go install github.com/air-verse/air@latest
 
 ## --------------------------------------
 ## Migration Commands
@@ -83,4 +87,4 @@ db-seed: ## Run all registered seeders
 	@echo "Running database seeders..."
 	@go run $(SEED_GO)
 
-.PHONY: build clean db-seed debug help migrate-create migrate-down migrate-up run run-dev seed-create
+.PHONY: build clean db-seed debug help migrate-create migrate-down migrate-up run seed-create
