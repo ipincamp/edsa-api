@@ -4,6 +4,8 @@
 
 # Your application binary name
 BINARY_NAME=edsa
+GOBIN=$(GOPATH)/bin
+GOPATH=$(shell go env GOPATH)
 MAIN_GO=./cmd/api/main.go
 MIGRATE_GO=./cmd/migrate/main.go
 SEED_GO=./cmd/seed/main.go
@@ -33,12 +35,12 @@ run: build ## Run the application in production mode
 
 dev: air-install ## Run the application in development mode with auto-reload
 	@echo "Running in development mode with auto-reload..."
-	@air
+	@$(GOBIN)/air
 
 debug: ## Run the application with Delve debugger
 	@echo "Starting debugger (Delve)..."
 	@go install github.com/go-delve/delve/cmd/dlv@latest
-	@dlv debug $(MAIN_GO)
+	@$(GOBIN)/dlv debug $(MAIN_GO)
 
 air-install: ## Install air for live reloading
 	@echo "Installing Air..."
