@@ -33,7 +33,7 @@ services:
     ports:
       - ${DB_PORT:-3306}:3306
     volumes:
-      - ./db_edsa:/var/lib/mysql
+      - db_edsa:/var/lib/mysql
     networks:
       - edsa
     healthcheck:
