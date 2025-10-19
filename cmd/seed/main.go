@@ -4,24 +4,15 @@ import (
 	"log"
 
 	"github.com/ipincamp/go-edsa-api/internal/config"
-	"github.com/ipincamp/go-edsa-api/internal/seeder"
-	"github.com/ipincamp/go-edsa-api/pkg/database"
+	"github.com/ipincamp/go-edsa-api/internal/database/seeders"
+	"github.com/ipincamp/go-edsa-api/internal/pkg/database"
 )
 
 func main() {
-	cfg, err := config.LoadConfig()
-	if err != nil {
-		log.Fatalf("failed to load config: %v", err)
-	}
+	config.LoadConfig()
+	db := database.NewPostgresConnection(config.GetDatabaseDSN())
 
-	if cfg.Server.Env == "production" {
-		log.Fatalf("Seeding is not allowed in production environment!")
-	}
-
-	db, err := database.Connect(cfg.Database)
-	if err != nil {
-		log.Fatalf("failed to connect to database: %v", err)
-	}
-
-	seeder.Seed(db, &cfg)
+	log.Println("Running seeders...")
+	seeders.RunAllSeeders(db)
+	log.Println("Seeding completed.")
 }

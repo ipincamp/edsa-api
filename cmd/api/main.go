@@ -1,37 +1,66 @@
 package main
 
 import (
+	"fmt"
 	"log"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/ipincamp/go-edsa-api/internal/config"
-	"github.com/ipincamp/go-edsa-api/internal/delivery/http/router"
-	"github.com/ipincamp/go-edsa-api/pkg/cache"
-	"github.com/ipincamp/go-edsa-api/pkg/database"
+	"github.com/ipincamp/go-edsa-api/internal/delivery/http"
+	"github.com/ipincamp/go-edsa-api/internal/pkg/database"
+	"github.com/ipincamp/go-edsa-api/internal/pkg/validator"
+	repo "github.com/ipincamp/go-edsa-api/internal/repository/gorm"
+	"github.com/ipincamp/go-edsa-api/internal/service/argon2id"
+	"github.com/ipincamp/go-edsa-api/internal/service/paseto"
+	"github.com/ipincamp/go-edsa-api/internal/usecase/user"
 )
 
 func main() {
-	// Load config
-	cfg, err := config.LoadConfig()
+	// 1. Load Config
+	config.LoadConfig()
+	cfg := config.AppConfig
+
+	// 2. Init Database (PostgreSQL + GORM)
+	db := database.NewPostgresConnection(config.GetDatabaseDSN())
+
+	// 3. Init Validator
+	validate := validator.NewValidator()
+
+	// 4. Init Services
+	passwordService := argon2id.NewPasswordService()
+	tokenService, err := paseto.NewPasetoService(cfg.Security.PasetoSymmetricKey)
 	if err != nil {
-		log.Fatalf("failed to load config: %v", err)
+		log.Fatalf("Failed to init Paseto service: %v", err)
 	}
 
-	// Connect to database
-	db, err := database.Connect(cfg.Database)
-	if err != nil {
-		log.Fatalf("failed to connect to database: %v", err)
-	}
+	// 5. Init Repositories
+	userRepository := repo.NewUserRepository(db)
 
-	// Load cache
-	cache.LoadCache(db)
+	// 6. Init Usecases
+	userService := user.NewUserService(userRepository, passwordService, tokenService)
 
-	// Create fiber app
-	app := fiber.New()
+	// 7. Init Handlers
+	userHandler := http.NewUserHandler(userService, validate)
 
-	// Setup router
-	router.Setup(app, db)
+	// 8. Init Fiber App
+	app := fiber.New(fiber.Config{
+		// Error handling kustom
+		ErrorHandler: func(c *fiber.Ctx, err error) error {
+			code := fiber.StatusInternalServerError
+			if e, ok := err.(*fiber.Error); ok {
+				code = e.Code
+			}
+			return c.Status(code).JSON(fiber.Map{
+				"status":  "error",
+				"message": err.Error(),
+			})
+		},
+	})
 
-	// Start server
-	log.Fatal(app.Listen(cfg.Server.Host + ":" + cfg.Server.Port))
+	// 9. Setup Routes
+	http.SetupRoutes(app, userHandler, tokenService)
+
+	// 10. Start Server
+	log.Printf("Starting server on port %d...", cfg.App.Port)
+	log.Fatal(app.Listen(fmt.Sprintf(":%d", cfg.App.Port)))
 }

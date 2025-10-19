@@ -6,59 +6,35 @@ import (
 
 	"github.com/go-gormigrate/gormigrate/v2"
 	"github.com/ipincamp/go-edsa-api/internal/config"
-	"github.com/ipincamp/go-edsa-api/migrations"
-	"github.com/ipincamp/go-edsa-api/pkg/database"
+	"github.com/ipincamp/go-edsa-api/internal/database/migrations"
+	"github.com/ipincamp/go-edsa-api/internal/pkg/database"
 )
 
 func main() {
-	cfg, err := config.LoadConfig()
-	if err != nil {
-		log.Fatalf("failed to load config: %v", err)
+	config.LoadConfig()
+	db := database.NewPostgresConnection(config.GetDatabaseDSN())
+
+	m := gormigrate.New(db, gormigrate.DefaultOptions, migrations.GetAllMigrations())
+
+	if len(os.Args) < 2 {
+		log.Fatal("Missing command. Usage: go run cmd/migrate/main.go [up|down]")
 	}
 
-	db, err := database.Connect(cfg.Database)
-	if err != nil {
-		log.Fatalf("failed to connect to database: %v", err)
-	}
-
-	m := gormigrate.New(db, gormigrate.DefaultOptions, []*gormigrate.Migration{
-		migrations.CreateRolesTable(),
-		migrations.CreateUsersTable(),
-		migrations.CreateCoursesTable(),
-		migrations.CreateCourseGroupsTable(),
-		migrations.CreateClassTeachersTable(),
-		migrations.CreateEnrollmentsTable(),
-		migrations.CreateJoinGroupRequestsTable(),
-		migrations.CreateBooksTable(),
-		migrations.CreatePagesTable(),
-		migrations.CreateInteractionsTable(),
-		migrations.CreatePostActivitiesTable(),
-		migrations.CreateUserProgressTable(),
-	})
-
-	if len(os.Args) > 1 {
-		switch os.Args[1] {
-		case "up":
-			if err = m.Migrate(); err != nil {
-				log.Fatalf("Could not migrate: %v", err)
-			}
-			log.Printf("Migration run successfully")
-			return
-		case "down":
-			if err = m.RollbackLast(); err != nil {
-				log.Fatalf("Could not rollback: %v", err)
-			}
-			log.Printf("Rollback run successfully")
-			return
-		default:
-			log.Printf("Usage: go run cmd/migrate/main.go [up|down]")
-			return
+	command := os.Args[1]
+	switch command {
+	case "up":
+		log.Println("Running migrations...")
+		if err := m.Migrate(); err != nil {
+			log.Fatalf("Could not migrate: %v", err)
 		}
+		log.Println("Migrations ran successfully")
+	case "down":
+		log.Println("Rolling back last migration...")
+		if err := m.RollbackLast(); err != nil {
+			log.Fatalf("Could not rollback: %v", err)
+		}
+		log.Println("Rollback successful")
+	default:
+		log.Fatalf("Unknown command: %s. Use 'up' or 'down'.", command)
 	}
-
-	// Default action is to migrate up
-	if err = m.Migrate(); err != nil {
-		log.Fatalf("Could not migrate: %v", err)
-	}
-	log.Printf("Migration run successfully")
 }
