@@ -1,0 +1,12 @@
+package migrations
+
+import "github.com/go-gormigrate/gormigrate/v2"
+
+// Kumpulkan semua migrasi di sini
+func GetAllMigrations() []*gormigrate.Migration {
+	return []*gormigrate.Migration{
+		CreateRolesTable(),
+		CreateUsersTable(),
+		// AnotherMigration(),
+	}
+}
