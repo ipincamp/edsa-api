@@ -58,9 +58,9 @@ type BloomFilter struct {
 
 // Storage is a struct to hold storage configuration
 type Storage struct {
-	StoragePath      string `env:"STORAGE_PATH" envDefault:"./public"`      // Direktori root di disk
-	StorageUploadDir string `env:"STORAGE_UPLOAD_DIR" envDefault:"uploads"` // Sub-direktori untuk upload
-	StoragePublicURL string `env:"STORAGE_PUBLIC_URL" envDefault:"/public"` // URL prefix
+	StoragePath      string
+	StorageUploadDir string
+	StoragePublicURL string
 }
 
 var AppConfig *Config
@@ -98,6 +98,11 @@ func LoadConfig() {
 		BloomFilter: BloomFilter{
 			Path:                        getEnv("BLOOM_FILTER_PATH", "./bloom_filter.bin"),
 			RegenerationIntervalInHours: getEnvAsInt("BLOOM_REGENERATION_INTERVAL_IN_HOURS", 24),
+		},
+		Storage: Storage{
+			StoragePath:      getEnv("STORAGE_PATH", "./public"),
+			StorageUploadDir: getEnv("STORAGE_UPLOAD_DIR", "uploads"),
+			StoragePublicURL: getEnv("STORAGE_PUBLIC_URL", "/public"),
 		},
 	}
 	if AppConfig.Security.PasetoSymmetricKey == "" {
