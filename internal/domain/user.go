@@ -7,25 +7,29 @@ import (
 	"gorm.io/gorm"
 )
 
-// User adalah entitas domain inti.
+// User adalah entitas domain inti untuk pengguna
 type User struct {
 	ID        uuid.UUID
 	Name      string
 	Email     string
 	Password  string
 	RoleID    uint
+	Role      Role
 	CreatedAt time.Time
 	UpdatedAt time.Time
 	DeletedAt gorm.DeletedAt
 }
 
 // --- Data Transfer Objects (DTOs) ---
+
+// RegisterRequest adalah DTO untuk pendaftaran pengguna baru.
 type RegisterRequest struct {
 	Name     string `json:"name" validate:"required,min=3,max=100"`
 	Email    string `json:"email" validate:"required,email"`
 	Password string `json:"password" validate:"required,min=8"`
 }
 
+// LoginRequest adalah DTO untuk autentikasi pengguna.
 type LoginRequest struct {
 	Email    string `json:"email" validate:"required,email"`
 	Password string `json:"password" validate:"required"`

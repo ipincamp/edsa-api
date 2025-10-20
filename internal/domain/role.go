@@ -14,7 +14,7 @@ const (
 	RoleNamePublic  = "public"
 )
 
-// Role adalah entitas domain untuk role pengguna
+// Role adalah entitas domain inti untuk role pengguna
 type Role struct {
 	ID        uint
 	Name      string
