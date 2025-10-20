@@ -39,8 +39,14 @@ type UserResponse struct {
 	RoleID uint      `json:"role_id"`
 }
 
+// TokenResponse adalah DTO untuk token autentikasi.
+type TokenResponse struct {
+	AccessToken  string `json:"access_token"`
+	RefreshToken string `json:"refresh_token"`
+}
+
 // AuthResponse adalah DTO untuk respons login/register.
 type AuthResponse struct {
-	User  UserResponse `json:"user"`
-	Token string       `json:"token"`
+	User  UserResponse  `json:"user"`
+	Token TokenResponse `json:"token"`
 }

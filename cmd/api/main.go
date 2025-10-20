@@ -37,7 +37,7 @@ func main() {
 	userRepository := repo.NewUserRepository(db)
 
 	// 6. Init Usecases
-	userService := user.NewUserService(userRepository, passwordService, tokenService)
+	userService := user.NewUserService(userRepository, passwordService, tokenService, cfg)
 
 	// 7. Init Handlers
 	userHandler := http.NewUserHandler(userService, validate)

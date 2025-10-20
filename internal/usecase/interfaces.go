@@ -2,6 +2,7 @@ package usecase
 
 import (
 	"context"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/ipincamp/go-edsa-api/internal/domain"
@@ -29,6 +30,6 @@ type PasswordService interface {
 
 // TokenService mendefinisikan kontrak untuk pembuatan & validasi token
 type TokenService interface {
-	CreateToken(user *domain.User) (string, error)
+	CreateToken(user *domain.User, duration time.Duration) (string, error)
 	ValidateToken(tokenString string) (uuid.UUID, error)
 }

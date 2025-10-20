@@ -43,7 +43,7 @@ func NewPasetoService(symmetricKeyBase64 string) (usecase.TokenService, error) {
 	}, nil
 }
 
-func (s *pasetoService) CreateToken(user *domain.User) (string, error) {
+func (s *pasetoService) CreateToken(user *domain.User, duration time.Duration) (string, error) {
 	payload := PasetoPayload{
 		UserID: user.ID,
 		Email:  user.Email,
@@ -51,7 +51,7 @@ func (s *pasetoService) CreateToken(user *domain.User) (string, error) {
 
 	// Token berlaku selama 24 jam
 	now := time.Now()
-	exp := now.Add(24 * time.Hour)
+	exp := now.Add(duration)
 
 	jsonToken := paseto.JSONToken{
 		IssuedAt:   now,
