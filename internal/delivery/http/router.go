@@ -39,6 +39,8 @@ func SetupRoutes(
 	auth := api.Group("/auth")
 	auth.Post("/register", userHandler.Register)
 	auth.Post("/login", userHandler.Login)
+	auth.Post("/refresh", userHandler.RefreshToken)
+	auth.Post("/logout", middleware.AuthMiddleware(tokenSvc), userHandler.Logout)
 
 	// Rute User (dilindungi)
 	protected := api.Group("/users")

@@ -11,6 +11,7 @@ import (
 // Konstanta untuk Aksi Log
 const (
 	ActionLogin        = "LOGIN"
+	ActionLogout       = "LOGOUT"
 	ActionStartBook    = "START_BOOK"
 	ActionCompleteBook = "COMPLETE_BOOK"
 	ActionCompleteGame = "COMPLETE_GAME"

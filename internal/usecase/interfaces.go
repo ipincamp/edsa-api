@@ -117,6 +117,8 @@ type UserService interface {
 	Register(ctx context.Context, req *domain.RegisterRequest) (*domain.AuthResponse, error)
 	Login(ctx context.Context, req *domain.LoginRequest) (*domain.AuthResponse, error)
 	GetUserByID(ctx context.Context, id uuid.UUID) (*domain.UserResponse, error)
+	RefreshToken(ctx context.Context, req *domain.RefreshTokenRequest) (*domain.TokenResponse, error)
+	Logout(ctx context.Context, userID uuid.UUID) error
 }
 
 // PasswordService mendefinisikan kontrak untuk hashing password

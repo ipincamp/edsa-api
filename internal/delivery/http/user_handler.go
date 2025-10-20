@@ -62,6 +62,41 @@ func (h *UserHandler) Login(c *fiber.Ctx) error {
 	return utils.SendSuccess(c, fiber.StatusOK, authResponse)
 }
 
+func (h *UserHandler) RefreshToken(c *fiber.Ctx) error {
+	var req domain.RefreshTokenRequest
+
+	// Parse & Validasi
+	if err := c.BodyParser(&req); err != nil {
+		return utils.SendError(c, fiber.StatusBadRequest, "Invalid request body")
+	}
+	if errs := h.validate.ValidateStruct(req); len(errs) > 0 {
+		return utils.SendValidationErrors(c, errs)
+	}
+
+	// Panggil Usecase
+	tokenResponse, err := h.userService.RefreshToken(c.Context(), &req)
+	if err != nil {
+		return utils.SendError(c, fiber.StatusUnauthorized, err.Error())
+	}
+
+	return utils.SendSuccess(c, fiber.StatusOK, tokenResponse)
+}
+
+func (h *UserHandler) Logout(c *fiber.Ctx) error {
+	// Ambil user ID dari middleware
+	userID, ok := c.Locals("userID").(uuid.UUID)
+	if !ok || userID == uuid.Nil {
+		return utils.SendError(c, fiber.StatusUnauthorized, "Invalid token")
+	}
+
+	// Panggil Usecase
+	if err := h.userService.Logout(c.Context(), userID); err != nil {
+		return utils.SendError(c, fiber.StatusInternalServerError, err.Error())
+	}
+
+	return utils.SendSuccess(c, fiber.StatusOK, fiber.Map{"message": "Logged out successfully"})
+}
+
 func (h *UserHandler) GetMe(c *fiber.Ctx) error {
 	// Ambil user ID dari middleware
 	userID, ok := c.Locals("userID").(uuid.UUID)

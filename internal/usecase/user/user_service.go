@@ -156,6 +156,53 @@ func (s *userService) Login(ctx context.Context, req *domain.LoginRequest) (*dom
 	}, nil
 }
 
+func (s *userService) RefreshToken(ctx context.Context, req *domain.RefreshTokenRequest) (*domain.TokenResponse, error) {
+	// 1. Validasi refresh token
+	userID, err := s.tokenSvc.ValidateToken(req.RefreshToken)
+	if err != nil {
+		return nil, errors.New("invalid or expired refresh token")
+	}
+
+	// 2. Dapatkan data user
+	user, err := s.userRepo.FindByID(ctx, userID)
+	if err != nil || user == nil {
+		return nil, errors.New("user not found for this token")
+	}
+
+	// 3. Buat Access Token baru
+	accessTTL := time.Duration(s.cfg.Security.AccessTokenTTLMin) * time.Minute
+	accessToken, err := s.tokenSvc.CreateToken(user, accessTTL)
+	if err != nil {
+		return nil, errors.New("failed to create new access token")
+	}
+
+	// 4. Buat Refresh Token baru (Best practice: rotasi refresh token)
+	refreshTTL := time.Duration(s.cfg.Security.RefreshTokenTTLMin) * time.Minute
+	refreshToken, err := s.tokenSvc.CreateToken(user, refreshTTL)
+	if err != nil {
+		return nil, errors.New("failed to create new refresh token")
+	}
+
+	// 5. Kembalikan token baru
+	return &domain.TokenResponse{
+		AccessToken:  accessToken,
+		RefreshToken: refreshToken,
+	}, nil
+}
+
+func (s *userService) Logout(ctx context.Context, userID uuid.UUID) error {
+	// Karena Paseto stateless, "logout" di sisi server berarti mencatat aktivitas.
+	// Klien bertanggung jawab untuk menghapus token.
+	// Jika ada blocklist (cth: Redis), token bisa ditambahkan di sini.
+
+	// Log aktivitas logout
+	s.logger.Log(ctx, domain.ActivityLog{
+		UserID: userID,
+		Action: domain.ActionLogout,
+	})
+	return nil
+}
+
 func (s *userService) GetUserByID(ctx context.Context, id uuid.UUID) (*domain.UserResponse, error) {
 	// 1. Cari user berdasarkan ID
 	user, err := s.userRepo.FindByID(ctx, id)
