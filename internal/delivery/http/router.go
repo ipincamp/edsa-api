@@ -3,6 +3,7 @@ package http
 import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/logger"
+	"github.com/ipincamp/go-edsa-api/internal/config"
 	"github.com/ipincamp/go-edsa-api/internal/delivery/http/middleware"
 	"github.com/ipincamp/go-edsa-api/internal/usecase"
 )
@@ -13,10 +14,16 @@ func SetupRoutes(
 	adminHandler *AdminHandler,
 	appHandler *AppHandler,
 	dashboardHandler *DashboardHandler,
+	mediaHandler *MediaHandler,
 	tokenSvc usecase.TokenService,
 	userRepo usecase.UserRepository,
+	cfg *config.Config,
 ) {
 	app.Use(logger.New())
+
+	// Static files untuk media (gambar, video, dsb.)
+	// Cth: /public/uploads/file.png akan disajikan dari ./public/uploads/file.png
+	app.Static(cfg.Storage.StoragePublicURL, cfg.Storage.StoragePath)
 
 	// Health check
 	app.Get("/health", func(c *fiber.Ctx) error {
@@ -125,6 +132,13 @@ func SetupRoutes(
 	// Rute Laporan Aktivitas
 	dashboard.Get("/students/:studentId/activity", dashboardHandler.GetStudentActivity)
 	// TODO: Rute dashboard lainnya
+
+	// --- Rute Media ---
+
+	// Rute Media
+	media := api.Group("/media")
+	media.Use(middleware.AuthMiddleware(tokenSvc))
+	media.Post("/upload", mediaHandler.UploadFile)
 
 	// TODO: Rute manajemen penugasan (Assign/Unassign)
 	// TODO: Rute untuk Speaking

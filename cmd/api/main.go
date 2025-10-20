@@ -12,10 +12,12 @@ import (
 	repo "github.com/ipincamp/go-edsa-api/internal/repository/gorm"
 	"github.com/ipincamp/go-edsa-api/internal/service/argon2id"
 	"github.com/ipincamp/go-edsa-api/internal/service/paseto"
+	"github.com/ipincamp/go-edsa-api/internal/service/storage"
 	"github.com/ipincamp/go-edsa-api/internal/usecase/admin"
 	"github.com/ipincamp/go-edsa-api/internal/usecase/app"
 	"github.com/ipincamp/go-edsa-api/internal/usecase/dashboard"
 	"github.com/ipincamp/go-edsa-api/internal/usecase/logger"
+	"github.com/ipincamp/go-edsa-api/internal/usecase/media"
 	"github.com/ipincamp/go-edsa-api/internal/usecase/user"
 )
 
@@ -36,6 +38,7 @@ func main() {
 	if err != nil {
 		log.Fatalf("Failed to init Paseto service: %v", err)
 	}
+	fileStorageService := storage.NewLocalStorageService(cfg)
 
 	// 5. Init Repositories
 	userRepository := repo.NewUserRepository(db)
@@ -55,6 +58,8 @@ func main() {
 	userGameScoreRepository := repo.NewUserGameScoreRepository(db)
 	// Log Aktivitas
 	activityLogRepository := repo.NewActivityLogRepository(db)
+	// Repo Media
+	mediaAssetRepository := repo.NewMediaAssetRepository(db)
 
 	// 6. Init Usecases
 	loggerService := logger.NewActivityLoggerService(activityLogRepository)
@@ -85,12 +90,17 @@ func main() {
 		activityLogRepository,
 		userRepository,
 	)
+	mediaService := media.NewMediaService(
+		fileStorageService,
+		mediaAssetRepository,
+	)
 
 	// 7. Init Handlers
 	userHandler := http.NewUserHandler(userService, validate)
 	adminHandler := http.NewAdminHandler(adminService, validate)
 	appHandler := http.NewAppHandler(appService, validate)
 	dashboardHandler := http.NewDashboardHandler(dashboardService, validate)
+	mediaHandler := http.NewMediaHandler(mediaService, validate)
 
 	// 8. Init Fiber App
 	app := fiber.New(fiber.Config{
@@ -114,8 +124,10 @@ func main() {
 		adminHandler,
 		appHandler,
 		dashboardHandler,
+		mediaHandler,
 		tokenService,
 		userRepository,
+		cfg,
 	)
 
 	// 10. Start Server
