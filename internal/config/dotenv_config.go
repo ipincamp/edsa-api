@@ -15,6 +15,7 @@ type Config struct {
 	Security    Security
 	Seeder      Seeder
 	BloomFilter BloomFilter
+	Storage     Storage
 }
 
 // Server is a struct to hold server configuration
@@ -53,6 +54,13 @@ type Seeder struct {
 type BloomFilter struct {
 	Path                        string
 	RegenerationIntervalInHours int
+}
+
+// Storage is a struct to hold storage configuration
+type Storage struct {
+	StoragePath      string `env:"STORAGE_PATH" envDefault:"./public"`      // Direktori root di disk
+	StorageUploadDir string `env:"STORAGE_UPLOAD_DIR" envDefault:"uploads"` // Sub-direktori untuk upload
+	StoragePublicURL string `env:"STORAGE_PUBLIC_URL" envDefault:"/public"` // URL prefix
 }
 
 var AppConfig *Config
