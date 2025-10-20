@@ -12,7 +12,10 @@ type MediaHandler struct {
 	validate     *validator.GoPlaygroundValidator
 }
 
-func NewMediaHandler(ms usecase.MediaService, v *validator.GoPlaygroundValidator) *MediaHandler {
+func NewMediaHandler(
+	ms usecase.MediaService,
+	v *validator.GoPlaygroundValidator,
+) *MediaHandler {
 	return &MediaHandler{
 		mediaService: ms,
 		validate:     v,

@@ -220,7 +220,7 @@ func (ActivityLogGORM) TableName() string {
 
 // MediaAssetGORM adalah representasi tabel 'media_assets' di database
 type MediaAssetGORM struct {
-	ID        uuid.UUID `gorm:"type:uuid;default:gen_random_uuid();primarykey"`
+	ID        uuid.UUID `gorm:"type:uuid;primarykey"`
 	FileName  string    `gorm:"type:varchar(255);not null"`
 	FilePath  string    `gorm:"type:varchar(255);not null"`
 	PublicURL string    `gorm:"type:varchar(255);not null"`

@@ -10,7 +10,7 @@ import (
 
 func CreateMediaAssetsTable() *gormigrate.Migration {
 	type MediaAsset struct {
-		ID        uuid.UUID `gorm:"type:uuid;default:gen_random_uuid();primarykey"`
+		ID        uuid.UUID `gorm:"type:uuid;primarykey"`
 		FileName  string    `gorm:"type:varchar(255);not null"` // Nama file asli
 		FilePath  string    `gorm:"type:varchar(255);not null"` // Path relatif di disk
 		PublicURL string    `gorm:"type:varchar(255);not null"` // URL lengkap

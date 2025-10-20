@@ -3,7 +3,10 @@ package media
 import (
 	"context"
 	"mime/multipart"
+	"path"
 
+	"github.com/google/uuid"
+	"github.com/ipincamp/go-edsa-api/internal/config"
 	"github.com/ipincamp/go-edsa-api/internal/domain"
 	"github.com/ipincamp/go-edsa-api/internal/usecase"
 )
@@ -11,15 +14,18 @@ import (
 type mediaService struct {
 	storageSvc usecase.FileStorageService
 	mediaRepo  usecase.MediaAssetRepository
+	cfg        *config.Config
 }
 
 func NewMediaService(
 	storageSvc usecase.FileStorageService,
 	mediaRepo usecase.MediaAssetRepository,
+	cfg *config.Config,
 ) usecase.MediaService {
 	return &mediaService{
 		storageSvc: storageSvc,
 		mediaRepo:  mediaRepo,
+		cfg:        cfg,
 	}
 }
 
@@ -40,29 +46,38 @@ func toMediaAssetResponse(a *domain.MediaAsset) *domain.MediaAssetResponse {
 // --- Methods ---
 
 func (s *mediaService) UploadFile(ctx context.Context, file *multipart.FileHeader, ownerID, ownerType string) (*domain.MediaAssetResponse, error) {
-	// 1. Simpan file fisik menggunakan storage service
-	publicURL, filePath, err := s.storageSvc.Upload(file)
+	// 1. Buat UUID di sini
+	assetID := uuid.New()
+
+	// 2. Simpan file fisik, dapatkan path relatif (cth: "uploads/uuid.png")
+	filePath, err := s.storageSvc.Upload(file, assetID)
 	if err != nil {
 		return nil, err
 	}
 
-	// 2. Buat entitas domain
+	// 3. Buat URL statis lengkap
+	// Cth: /public + uploads/uuid.png -> /public/uploads/uuid.png
+	baseURL := s.cfg.Storage.StoragePublicBaseURL
+	publicURL := baseURL + path.Join(s.cfg.Storage.StoragePublicURL, filePath)
+
+	// 4. Buat entitas domain
 	asset := &domain.MediaAsset{
+		ID:        assetID,
 		FileName:  file.Filename,
-		FilePath:  filePath,
-		PublicURL: publicURL,
+		FilePath:  filePath,  // "uploads/uuid.png"
+		PublicURL: publicURL, // "http://localhost:8080/public/uploads/uuid.png"
 		MimeType:  file.Header.Get("Content-Type"),
 		FileSize:  file.Size,
 		OwnerID:   ownerID,
 		OwnerType: ownerType,
 	}
 
-	// 3. Simpan metadata ke database
+	// 5. Simpan metadata ke database
 	if err := s.mediaRepo.Create(ctx, asset); err != nil {
 		// TODO: Implementasikan rollback (hapus file fisik jika gagal simpan DB)
 		return nil, err
 	}
 
-	// 4. Kembalikan respons DTO
+	// 6. Kembalikan respons DTO
 	return toMediaAssetResponse(asset), nil
 }

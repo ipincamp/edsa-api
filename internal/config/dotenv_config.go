@@ -58,9 +58,10 @@ type BloomFilter struct {
 
 // Storage is a struct to hold storage configuration
 type Storage struct {
-	StoragePath      string
-	StorageUploadDir string
-	StoragePublicURL string
+	StoragePath          string
+	StorageUploadDir     string
+	StoragePublicURL     string
+	StoragePublicBaseURL string
 }
 
 var AppConfig *Config
@@ -100,9 +101,10 @@ func LoadConfig() {
 			RegenerationIntervalInHours: getEnvAsInt("BLOOM_REGENERATION_INTERVAL_IN_HOURS", 24),
 		},
 		Storage: Storage{
-			StoragePath:      getEnv("STORAGE_PATH", "./public"),
-			StorageUploadDir: getEnv("STORAGE_UPLOAD_DIR", "uploads"),
-			StoragePublicURL: getEnv("STORAGE_PUBLIC_URL", "/public"),
+			StoragePath:          getEnv("STORAGE_PATH", "./public"),
+			StorageUploadDir:     getEnv("STORAGE_UPLOAD_DIR", "uploads"),
+			StoragePublicURL:     getEnv("STORAGE_PUBLIC_URL", "/public"),
+			StoragePublicBaseURL: getEnv("STORAGE_PUBLIC_BASE_URL", "http://localhost:8000"),
 		},
 	}
 	if AppConfig.Security.PasetoSymmetricKey == "" {

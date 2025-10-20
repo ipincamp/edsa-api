@@ -108,7 +108,6 @@ type ActivityLogRepository interface {
 // MediaAssetRepository mendefinisikan kontrak untuk data aset media
 type MediaAssetRepository interface {
 	Create(ctx context.Context, asset *domain.MediaAsset) error
-	// TODO: Tambahkan Find, Delete jika diperlukan
 }
 
 // --- Services ---
@@ -202,7 +201,7 @@ type DashboardService interface {
 
 // FileStorageService mendefinisikan kontrak untuk mengunggah file
 type FileStorageService interface {
-	Upload(file *multipart.FileHeader) (publicURL, filePath string, err error)
+	Upload(file *multipart.FileHeader, fileID uuid.UUID) (filePath string, err error)
 }
 
 // MediaService mendefinisikan logika bisnis untuk manajemen media

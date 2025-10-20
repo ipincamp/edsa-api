@@ -22,7 +22,7 @@ func SetupRoutes(
 	app.Use(logger.New())
 
 	// Static files untuk media (gambar, video, dsb.)
-	// Cth: /public/uploads/file.png akan disajikan dari ./public/uploads/file.png
+	// Cth: GET /public/uploads/file.png akan disajikan dari ./public/uploads/file.png
 	app.Static(cfg.Storage.StoragePublicURL, cfg.Storage.StoragePath)
 
 	// Health check
@@ -138,6 +138,8 @@ func SetupRoutes(
 	// Rute Media
 	media := api.Group("/media")
 	media.Use(middleware.AuthMiddleware(tokenSvc))
+
+	// Rute Upload File
 	media.Post("/upload", mediaHandler.UploadFile)
 
 	// TODO: Rute manajemen penugasan (Assign/Unassign)

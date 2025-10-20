@@ -93,6 +93,7 @@ func main() {
 	mediaService := media.NewMediaService(
 		fileStorageService,
 		mediaAssetRepository,
+		cfg,
 	)
 
 	// 7. Init Handlers

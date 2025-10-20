@@ -21,10 +21,10 @@ func NewLocalStorageService(cfg *config.Config) usecase.FileStorageService {
 }
 
 // Upload menyimpan file ke disk lokal
-func (s *localStorageService) Upload(file *multipart.FileHeader) (string, string, error) {
+func (s *localStorageService) Upload(file *multipart.FileHeader, fileID uuid.UUID) (string, error) {
 	// 1. Buat nama file unik
 	ext := filepath.Ext(file.Filename)
-	uniqueFilename := uuid.New().String() + ext
+	uniqueFilename := fileID.String() + ext
 
 	// 2. Tentukan path tujuan
 	// Cth: ./public/uploads
@@ -34,33 +34,31 @@ func (s *localStorageService) Upload(file *multipart.FileHeader) (string, string
 
 	// 3. Buat direktori jika belum ada
 	if err := os.MkdirAll(uploadDir, os.ModePerm); err != nil {
-		return "", "", fmt.Errorf("failed to create upload directory: %w", err)
+		return "", fmt.Errorf("failed to create upload directory: %w", err)
 	}
 
 	// 4. Buka file sumber
 	src, err := file.Open()
 	if err != nil {
-		return "", "", fmt.Errorf("failed to open uploaded file: %w", err)
+		return "", fmt.Errorf("failed to open uploaded file: %w", err)
 	}
 	defer src.Close()
 
 	// 5. Buat file tujuan
 	dst, err := os.Create(destPath)
 	if err != nil {
-		return "", "", fmt.Errorf("failed to create destination file: %w", err)
+		return "", fmt.Errorf("failed to create destination file: %w", err)
 	}
 	defer dst.Close()
 
 	// 6. Salin file
 	if _, err = io.Copy(dst, src); err != nil {
-		return "", "", fmt.Errorf("failed to copy file to destination: %w", err)
+		return "", fmt.Errorf("failed to copy file to destination: %w", err)
 	}
 
 	// 7. Tentukan path relatif untuk DB dan URL publik
 	// Cth: uploads/xxxxxxxx-xxxx.png
 	relativePath := filepath.ToSlash(filepath.Join(s.cfg.Storage.StorageUploadDir, uniqueFilename))
-	// Cth: /public/uploads/xxxxxxxx-xxxx.png
-	publicURL := fmt.Sprintf("%s/%s", s.cfg.Storage.StoragePublicURL, relativePath)
 
-	return publicURL, relativePath, nil
+	return relativePath, nil
 }
