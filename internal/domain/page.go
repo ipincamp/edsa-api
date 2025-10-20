@@ -1,23 +1,47 @@
 package domain
 
 import (
-	"encoding/json"
 	"time"
+
+	"gorm.io/gorm"
 )
 
-// Page adalah entitas untuk halaman dalam sebuah buku
+// Page adalah entitas domain inti untuk halaman buku
 type Page struct {
-	ID             string          `gorm:"type:uuid;primary_key;default:uuid_generate_v4()"`
-	BookID         string          `gorm:"type:uuid;not null;index"`
-	PageNumber     int             `gorm:"not null"`
-	ContentType    string          `gorm:"type:varchar(255);not null"`
-	ContentData    json.RawMessage `gorm:"type:jsonb"` // Fleksibel untuk menyimpan teks, URL gambar, dll.
-	HasInteraction bool            `gorm:"not null;default:false"`
+	ID              uint
+	BookID          uint
+	PageNumber      int
+	NarrativeText   string
+	InstructionText string
+	CreatedAt       time.Time
+	UpdatedAt       time.Time
+	DeletedAt       gorm.DeletedAt
 
-	// Relasi
-	Book         Book          `gorm:"foreignKey:BookID"`
-	Interactions []Interaction `gorm:"foreignKey:PageID"`
+	Book Book // Relasi
+}
 
-	CreatedAt time.Time
-	UpdatedAt time.Time
+// --- Data Transfer Objects (DTOs) ---
+
+// PageResponse adalah DTO untuk respons
+type PageResponse struct {
+	ID              uint         `json:"id"`
+	BookID          uint         `json:"book_id"`
+	PageNumber      int          `json:"page_number"`
+	NarrativeText   string       `json:"narrative_text"`
+	InstructionText string       `json:"instruction_text"`
+	Book            BookResponse `json:"book,omitempty"`
+}
+
+// CreatePageRequest adalah DTO untuk membuat halaman baru
+type CreatePageRequest struct {
+	PageNumber      int    `json:"page_number" validate:"required,number,min=1"`
+	NarrativeText   string `json:"narrative_text"`
+	InstructionText string `json:"instruction_text"`
+}
+
+// UpdatePageRequest adalah DTO untuk memperbarui halaman
+type UpdatePageRequest struct {
+	PageNumber      int    `json:"page_number" validate:"required,number,min=1"`
+	NarrativeText   string `json:"narrative_text"`
+	InstructionText string `json:"instruction_text"`
 }
