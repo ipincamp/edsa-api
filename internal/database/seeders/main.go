@@ -12,6 +12,7 @@ func RunAllSeeders(db *gorm.DB) {
 	// 1. Jalankan seeder penting yang harus ada di semua environment
 	RoleSeeder(db)
 	UserAdminSeeder(db)
+	BookSeeder(db)
 	GameSeeder(db)
 
 	// 2. Cek environment dari config
