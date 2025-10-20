@@ -30,8 +30,7 @@ func (r *userRepositoryGORM) Create(ctx context.Context, user *domain.User) erro
 
 func (r *userRepositoryGORM) FindByEmail(ctx context.Context, email string) (*domain.User, error) {
 	var gormUser UserGORM
-	// Tambahkan .Preload("Role") jika Anda ingin data role ikut ter-load
-	result := r.db.WithContext(ctx).Where("email = ?", email).First(&gormUser)
+	result := r.db.WithContext(ctx).Preload("Role").Where("email = ?", email).First(&gormUser)
 	if result.Error != nil {
 		if errors.Is(result.Error, gorm.ErrRecordNotFound) {
 			return nil, nil
@@ -43,8 +42,7 @@ func (r *userRepositoryGORM) FindByEmail(ctx context.Context, email string) (*do
 
 func (r *userRepositoryGORM) FindByID(ctx context.Context, id uuid.UUID) (*domain.User, error) {
 	var gormUser UserGORM
-	// Tambahkan .Preload("Role") jika Anda ingin data role ikut ter-load
-	result := r.db.WithContext(ctx).First(&gormUser, id)
+	result := r.db.WithContext(ctx).Preload("Role").First(&gormUser, id)
 	if result.Error != nil {
 		if errors.Is(result.Error, gorm.ErrRecordNotFound) {
 			return nil, nil
