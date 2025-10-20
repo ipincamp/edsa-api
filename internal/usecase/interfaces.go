@@ -129,8 +129,8 @@ type PasswordService interface {
 
 // TokenService mendefinisikan kontrak untuk pembuatan & validasi token
 type TokenService interface {
-	CreateToken(user *domain.User, duration time.Duration) (string, error)
-	ValidateToken(tokenString string) (uuid.UUID, error)
+	CreateToken(user *domain.User, sessionID uuid.UUID, duration time.Duration) (string, error)
+	ValidateToken(tokenString string) (userID uuid.UUID, sessionID uuid.UUID, err error)
 }
 
 // AdminService mendefinisikan logika bisnis untuk fitur admin

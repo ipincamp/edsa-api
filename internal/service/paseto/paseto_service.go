@@ -19,8 +19,9 @@ type pasetoService struct {
 
 // Kustom Paseto payload
 type PasetoPayload struct {
-	UserID string `json:"user_id"`
-	Email  string `json:"email"`
+	UserID    string `json:"user_id"`
+	Email     string `json:"email"`
+	SessionID string `json:"session_id"`
 }
 
 func NewPasetoService(symmetricKeyBase64 string) (usecase.TokenService, error) {
@@ -43,10 +44,11 @@ func NewPasetoService(symmetricKeyBase64 string) (usecase.TokenService, error) {
 	}, nil
 }
 
-func (s *pasetoService) CreateToken(user *domain.User, duration time.Duration) (string, error) {
+func (s *pasetoService) CreateToken(user *domain.User, sessionID uuid.UUID, duration time.Duration) (string, error) {
 	payload := PasetoPayload{
-		UserID: user.ID.String(),
-		Email:  user.Email,
+		UserID:    user.ID.String(),
+		Email:     user.Email,
+		SessionID: sessionID.String(),
 	}
 
 	// Token berlaku selama 24 jam
@@ -64,30 +66,36 @@ func (s *pasetoService) CreateToken(user *domain.User, duration time.Duration) (
 	return s.paseto.Encrypt(s.symmetricKey, jsonToken, nil)
 }
 
-func (s *pasetoService) ValidateToken(tokenString string) (uuid.UUID, error) {
+func (s *pasetoService) ValidateToken(tokenString string) (uuid.UUID, uuid.UUID, error) {
 	var jsonToken paseto.JSONToken
 	var payload PasetoPayload
 
 	// Decrypt (Symmetric)
 	err := s.paseto.Decrypt(tokenString, s.symmetricKey, &jsonToken, nil)
 	if err != nil {
-		return uuid.Nil, errors.New("invalid token")
+		return uuid.Nil, uuid.Nil, errors.New("invalid token")
 	}
 
 	// Validasi expiration
 	if err := jsonToken.Validate(); err != nil {
-		return uuid.Nil, fmt.Errorf("token has expired: %w", err)
+		return uuid.Nil, uuid.Nil, fmt.Errorf("token has expired: %w", err)
 	}
 
 	// Ekstrak payload kustom
 	if err := jsonToken.Get("data", &payload); err != nil {
-		return uuid.Nil, fmt.Errorf("failed to get payload from token: %w", err)
+		return uuid.Nil, uuid.Nil, fmt.Errorf("failed to get payload from token: %w", err)
 	}
 
 	userID, err := uuid.Parse(payload.UserID)
 	if err != nil {
-		return uuid.Nil, errors.New("invalid user ID format in token payload")
+		return uuid.Nil, uuid.Nil, errors.New("invalid user ID format in token payload")
 	}
 
-	return userID, nil
+	sessionID, err := uuid.Parse(payload.SessionID)
+	if err != nil {
+		// Jika token lama (sebelum update ini) tidak memiliki sessionID, buatkan yang baru
+		sessionID = uuid.New()
+	}
+
+	return userID, sessionID, nil
 }

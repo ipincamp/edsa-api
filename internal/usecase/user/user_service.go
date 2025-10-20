@@ -81,19 +81,19 @@ func (s *userService) Register(ctx context.Context, req *domain.RegisterRequest)
 
 	// 7. Buat Access Token
 	accessTTL := time.Duration(s.cfg.Security.AccessTokenTTLMin) * time.Minute
-	accessToken, err := s.tokenSvc.CreateToken(user, accessTTL)
+	accessToken, err := s.tokenSvc.CreateToken(user, sessionID, accessTTL)
 	if err != nil {
 		return nil, errors.New("failed to create access token")
 	}
 
 	// 8. Buat Refresh Token
 	refreshTTL := time.Duration(s.cfg.Security.RefreshTokenTTLMin) * time.Minute
-	refreshToken, err := s.tokenSvc.CreateToken(user, refreshTTL)
+	refreshToken, err := s.tokenSvc.CreateToken(user, sessionID, refreshTTL)
 	if err != nil {
 		return nil, errors.New("failed to create refresh token")
 	}
 
-	// 9. Log aktivitas registrasi (BARU)
+	// 9. Log aktivitas registrasi
 	s.logger.Log(ctx, domain.ActivityLog{
 		UserID:    user.ID,
 		Action:    domain.ActionRegister,
@@ -111,7 +111,6 @@ func (s *userService) Register(ctx context.Context, req *domain.RegisterRequest)
 		Token: domain.TokenResponse{
 			AccessToken:  accessToken,
 			RefreshToken: refreshToken,
-			SessionID:    sessionID.String(),
 		},
 	}, nil
 }
@@ -144,14 +143,14 @@ func (s *userService) Login(ctx context.Context, req *domain.LoginRequest) (*dom
 
 	// 5. Buat Access Token
 	accessTTL := time.Duration(s.cfg.Security.AccessTokenTTLMin) * time.Minute
-	accessToken, err := s.tokenSvc.CreateToken(user, accessTTL)
+	accessToken, err := s.tokenSvc.CreateToken(user, sessionID, accessTTL)
 	if err != nil {
 		return nil, errors.New("failed to create access token")
 	}
 
 	// 6. Buat Refresh Token
 	refreshTTL := time.Duration(s.cfg.Security.RefreshTokenTTLMin) * time.Minute
-	refreshToken, err := s.tokenSvc.CreateToken(user, refreshTTL)
+	refreshToken, err := s.tokenSvc.CreateToken(user, sessionID, refreshTTL)
 	if err != nil {
 		return nil, errors.New("failed to create refresh token")
 	}
@@ -167,14 +166,13 @@ func (s *userService) Login(ctx context.Context, req *domain.LoginRequest) (*dom
 		Token: domain.TokenResponse{
 			AccessToken:  accessToken,
 			RefreshToken: refreshToken,
-			SessionID:    sessionID.String(),
 		},
 	}, nil
 }
 
 func (s *userService) RefreshToken(ctx context.Context, req *domain.RefreshTokenRequest) (*domain.TokenResponse, error) {
 	// 1. Validasi refresh token
-	userID, err := s.tokenSvc.ValidateToken(req.RefreshToken)
+	userID, sessionID, err := s.tokenSvc.ValidateToken(req.RefreshToken)
 	if err != nil {
 		return nil, errors.New("invalid or expired refresh token")
 	}
@@ -185,19 +183,16 @@ func (s *userService) RefreshToken(ctx context.Context, req *domain.RefreshToken
 		return nil, errors.New("user not found for this token")
 	}
 
-	// 3. Buat Session ID baru
-	sessionID := uuid.New()
-
-	// 4. Buat Access Token baru
+	// 3. Buat Access Token baru (menggunakan sessionID dari refresh token lama)
 	accessTTL := time.Duration(s.cfg.Security.AccessTokenTTLMin) * time.Minute
-	accessToken, err := s.tokenSvc.CreateToken(user, accessTTL)
+	accessToken, err := s.tokenSvc.CreateToken(user, sessionID, accessTTL)
 	if err != nil {
 		return nil, errors.New("failed to create new access token")
 	}
 
-	// 5. Buat Refresh Token baru
+	// 4. Buat Refresh Token baru (rotasi token, tapi pakai sessionID lama)
 	refreshTTL := time.Duration(s.cfg.Security.RefreshTokenTTLMin) * time.Minute
-	refreshToken, err := s.tokenSvc.CreateToken(user, refreshTTL)
+	refreshToken, err := s.tokenSvc.CreateToken(user, sessionID, refreshTTL)
 	if err != nil {
 		return nil, errors.New("failed to create new refresh token")
 	}
@@ -206,7 +201,6 @@ func (s *userService) RefreshToken(ctx context.Context, req *domain.RefreshToken
 	return &domain.TokenResponse{
 		AccessToken:  accessToken,
 		RefreshToken: refreshToken,
-		SessionID:    sessionID.String(),
 	}, nil
 }
 
