@@ -13,6 +13,7 @@ import (
 
 type userService struct {
 	userRepo usecase.UserRepository
+	roleRepo usecase.RoleRepository
 	passSvc  usecase.PasswordService
 	tokenSvc usecase.TokenService
 	cfg      *config.Config
@@ -20,12 +21,14 @@ type userService struct {
 
 func NewUserService(
 	userRepo usecase.UserRepository,
+	roleRepo usecase.RoleRepository,
 	passSvc usecase.PasswordService,
 	tokenSvc usecase.TokenService,
 	cfg *config.Config,
 ) usecase.UserService {
 	return &userService{
 		userRepo: userRepo,
+		roleRepo: roleRepo,
 		passSvc:  passSvc,
 		tokenSvc: tokenSvc,
 		cfg:      cfg,
@@ -48,37 +51,43 @@ func (s *userService) Register(ctx context.Context, req *domain.RegisterRequest)
 		return nil, errors.New("failed to hash password")
 	}
 
-	// 3. Buat domain user baru
+	// 3. Dapatkan role default (public)
+	defaultRole, err := s.roleRepo.FindByName(ctx, domain.RoleNamePublic)
+	if err != nil {
+		return nil, errors.New("database error while fetching role")
+	}
+	if defaultRole == nil {
+		return nil, errors.New("default role not found in database")
+	}
+
+	// 4. Buat domain user baru
 	user := &domain.User{
 		Name:     req.Name,
 		Email:    req.Email,
 		Password: hashedPassword,
-		// TODO: Ini harusnya mengambil ID "user" dari database secara dinamis
-		//       (misal: 2), bukan di-hardcode.
-		//       Ini memerlukan RoleRepository.
-		RoleID: 2,
+		RoleID:   defaultRole.ID,
 	}
 
-	// 4. Simpan ke database
+	// 5. Simpan ke database
 	if err := s.userRepo.Create(ctx, user); err != nil {
 		return nil, errors.New("failed to create user")
 	}
 
-	// 5. Buat Access Token
+	// 6. Buat Access Token
 	accessTTL := time.Duration(s.cfg.Security.AccessTokenTTLMin) * time.Minute
 	accessToken, err := s.tokenSvc.CreateToken(user, accessTTL)
 	if err != nil {
 		return nil, errors.New("failed to create access token")
 	}
 
-	// 6. Buat Refresh Token
+	// 7. Buat Refresh Token
 	refreshTTL := time.Duration(s.cfg.Security.RefreshTokenTTLMin) * time.Minute
 	refreshToken, err := s.tokenSvc.CreateToken(user, refreshTTL)
 	if err != nil {
 		return nil, errors.New("failed to create refresh token")
 	}
 
-	// 7. Kembalikan respons
+	// 8. Kembalikan respons
 	return &domain.AuthResponse{
 		User: domain.UserResponse{
 			ID:     user.ID,

@@ -19,7 +19,7 @@ func NewUserRepository(db *gorm.DB) usecase.UserRepository {
 }
 
 func (r *userRepositoryGORM) Create(ctx context.Context, user *domain.User) error {
-	gormUser := FromDomain(user)
+	gormUser := UserFromDomain(user)
 	result := r.db.WithContext(ctx).Create(gormUser)
 	if result.Error != nil {
 		return result.Error

@@ -17,7 +17,7 @@ func (u *UserGORM) ToDomain() *domain.User {
 }
 
 // Map Domain entity ke GORM model
-func FromDomain(u *domain.User) *UserGORM {
+func UserFromDomain(u *domain.User) *UserGORM {
 	return &UserGORM{
 		ID:        u.ID,
 		Name:      u.Name,
@@ -27,5 +27,27 @@ func FromDomain(u *domain.User) *UserGORM {
 		CreatedAt: u.CreatedAt,
 		UpdatedAt: u.UpdatedAt,
 		DeletedAt: u.DeletedAt,
+	}
+}
+
+// Map GORM model ke Domain entity
+func (r *RoleGORM) ToDomain() *domain.Role {
+	return &domain.Role{
+		ID:        r.ID,
+		Name:      r.Name,
+		CreatedAt: r.CreatedAt,
+		UpdatedAt: r.UpdatedAt,
+		DeletedAt: r.DeletedAt,
+	}
+}
+
+// Map Domain entity ke GORM model
+func RoleFromDomain(r *domain.Role) *RoleGORM {
+	return &RoleGORM{
+		ID:        r.ID,
+		Name:      r.Name,
+		CreatedAt: r.CreatedAt,
+		UpdatedAt: r.UpdatedAt,
+		DeletedAt: r.DeletedAt,
 	}
 }

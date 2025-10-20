@@ -33,3 +33,8 @@ type TokenService interface {
 	CreateToken(user *domain.User, duration time.Duration) (string, error)
 	ValidateToken(tokenString string) (uuid.UUID, error)
 }
+
+// RoleRepository mendefinisikan kontrak untuk akses data peran pengguna
+type RoleRepository interface {
+	FindByName(ctx context.Context, name string) (*domain.Role, error)
+}
