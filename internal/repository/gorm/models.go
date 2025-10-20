@@ -39,8 +39,9 @@ func (UserGORM) TableName() string {
 
 // SubjectGORM adalah representasi tabel 'subjects' di database
 type SubjectGORM struct {
-	ID        uint   `gorm:"primarykey"`
-	Name      string `gorm:"type:varchar(255);not null"`
+	ID        uint        `gorm:"primarykey"`
+	Name      string      `gorm:"type:varchar(255);not null"`
+	Classes   []ClassGORM `gorm:"foreignKey:SubjectID"` // Relasi one-to-many
 	CreatedAt time.Time
 	UpdatedAt time.Time
 	DeletedAt gorm.DeletedAt `gorm:"index"`
@@ -48,4 +49,19 @@ type SubjectGORM struct {
 
 func (SubjectGORM) TableName() string {
 	return "subjects"
+}
+
+// ClassGORM adalah representasi tabel 'classes' di database
+type ClassGORM struct {
+	ID        uint        `gorm:"primarykey"`
+	Name      string      `gorm:"type:varchar(255);not null"`
+	SubjectID uint        `gorm:"not null"`
+	Subject   SubjectGORM `gorm:"foreignKey:SubjectID"`
+	CreatedAt time.Time
+	UpdatedAt time.Time
+	DeletedAt gorm.DeletedAt `gorm:"index"`
+}
+
+func (ClassGORM) TableName() string {
+	return "classes"
 }
