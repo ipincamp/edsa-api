@@ -146,3 +146,23 @@ type InteractionGORM struct {
 func (InteractionGORM) TableName() string {
 	return "interactions"
 }
+
+// UserBookProgressGORM adalah representasi tabel 'user_book_progress' di database
+type UserBookProgressGORM struct {
+	ID                   uint      `gorm:"primarykey"`
+	UserID               uuid.UUID `gorm:"not null;uniqueIndex:idx_user_book"`
+	User                 UserGORM  `gorm:"foreignKey:UserID"`
+	BookID               uint      `gorm:"not null;uniqueIndex:idx_user_book"`
+	Book                 BookGORM  `gorm:"foreignKey:BookID"`
+	Status               string    `gorm:"type:varchar(50);default:'locked'"`
+	HighestScore         int       `gorm:"default:0"`
+	LastPageID           uint      `gorm:"default:0"`
+	CurrentSessionPoints int       `gorm:"default:0"`
+	CreatedAt            time.Time
+	UpdatedAt            time.Time
+	DeletedAt            gorm.DeletedAt `gorm:"index"`
+}
+
+func (UserBookProgressGORM) TableName() string {
+	return "user_book_progress"
+}

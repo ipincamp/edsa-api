@@ -14,6 +14,7 @@ func GetAllMigrations() []*gormigrate.Migration {
 		CreateBooksTable(),
 		CreatePagesTable(),
 		CreateInteractionsTable(),
+		CreateUserBookProgressTable(),
 		// AnotherMigration(),
 	}
 }
