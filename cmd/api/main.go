@@ -13,6 +13,7 @@ import (
 	"github.com/ipincamp/go-edsa-api/internal/service/argon2id"
 	"github.com/ipincamp/go-edsa-api/internal/service/paseto"
 	"github.com/ipincamp/go-edsa-api/internal/usecase/admin"
+	"github.com/ipincamp/go-edsa-api/internal/usecase/app"
 	"github.com/ipincamp/go-edsa-api/internal/usecase/user"
 )
 
@@ -37,14 +38,16 @@ func main() {
 	// 5. Init Repositories
 	userRepository := repo.NewUserRepository(db)
 	roleRepository := repo.NewRoleRepository(db)
-	// Repositori Manajemen User
+	// Admin
 	subjectRepository := repo.NewSubjectRepository(db)
 	classRepository := repo.NewClassRepository(db)
 	groupRepository := repo.NewGroupRepository(db)
-	// Repositori Konten
+	// Konten
 	bookRepository := repo.NewBookRepository(db)
 	pageRepository := repo.NewPageRepository(db)
 	interactionRepository := repo.NewInteractionRepository(db)
+	// Progres
+	progressRepository := repo.NewUserBookProgressRepository(db)
 
 	// 6. Init Usecases
 	userService := user.NewUserService(
@@ -62,10 +65,15 @@ func main() {
 		pageRepository,
 		interactionRepository,
 	)
+	appService := app.NewAppService(
+		bookRepository,
+		progressRepository,
+	)
 
 	// 7. Init Handlers
 	userHandler := http.NewUserHandler(userService, validate)
 	adminHandler := http.NewAdminHandler(adminService, validate)
+	appHandler := http.NewAppHandler(appService, validate)
 
 	// 8. Init Fiber App
 	app := fiber.New(fiber.Config{
@@ -87,6 +95,7 @@ func main() {
 		app,
 		userHandler,
 		adminHandler,
+		appHandler,
 		tokenService,
 		userRepository,
 	)

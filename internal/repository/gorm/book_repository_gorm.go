@@ -60,3 +60,15 @@ func (r *bookRepositoryGORM) Update(ctx context.Context, book *domain.Book) erro
 func (r *bookRepositoryGORM) Delete(ctx context.Context, id uint) error {
 	return r.db.WithContext(ctx).Delete(&BookGORM{}, id).Error
 }
+
+func (r *bookRepositoryGORM) FindByOrder(ctx context.Context, order int) (*domain.Book, error) {
+	var gormBook BookGORM
+	result := r.db.WithContext(ctx).Where("book_order = ?", order).First(&gormBook)
+	if result.Error != nil {
+		if errors.Is(result.Error, gorm.ErrRecordNotFound) {
+			return nil, nil
+		}
+		return nil, result.Error
+	}
+	return gormBook.ToDomain(), nil
+}

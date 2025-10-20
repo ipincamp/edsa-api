@@ -11,6 +11,7 @@ func SetupRoutes(
 	app *fiber.App,
 	userHandler *UserHandler,
 	adminHandler *AdminHandler,
+	appHandler *AppHandler,
 	tokenSvc usecase.TokenService,
 	userRepo usecase.UserRepository,
 ) {
@@ -92,6 +93,18 @@ func SetupRoutes(
 	interactions.Get("/:interactionId", adminHandler.GetInteractionByID) // Implied
 	interactions.Put("/:interactionId", adminHandler.UpdateInteraction)
 	interactions.Delete("/:interactionId", adminHandler.DeleteInteraction)
+
+	// Rute Aplikasi (Siswa & Guru)
+	appRoutes := api.Group("/app")
+	appRoutes.Use(middleware.AuthMiddleware(tokenSvc))
+
+	// Rute Modul "Read" & "Game"
+	appRoutes.Get("/books", appHandler.GetBooksWithProgress) // Ini adalah GET /app/books
+	appRoutes.Get("/books/:bookId/restore", appHandler.GetProgressToRestore)
+	appRoutes.Post("/progress/update", appHandler.UpdatePageProgress)
+	appRoutes.Post("/progress/complete", appHandler.CompleteBookProgress)
+
+	// TODO: Rute untuk Game
 
 	// TODO: Rute manajemen penugasan (Assign/Unassign)
 }

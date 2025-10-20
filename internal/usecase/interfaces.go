@@ -56,6 +56,7 @@ type BookRepository interface {
 	FindByID(ctx context.Context, id uint) (*domain.Book, error)
 	Update(ctx context.Context, book *domain.Book) error
 	Delete(ctx context.Context, id uint) error
+	FindByOrder(ctx context.Context, order int) (*domain.Book, error)
 }
 
 // PageRepository mendefinisikan kontrak untuk data halaman
@@ -74,6 +75,14 @@ type InteractionRepository interface {
 	FindByID(ctx context.Context, id uint) (*domain.Interaction, error)
 	Update(ctx context.Context, interaction *domain.Interaction) error
 	Delete(ctx context.Context, id uint) error
+}
+
+// UserBookProgressRepository mendefinisikan kontrak untuk data progres baca pengguna
+type UserBookProgressRepository interface {
+	FindOrCreate(ctx context.Context, progress *domain.UserBookProgress) error
+	FindByUserAndBook(ctx context.Context, userID uuid.UUID, bookID uint) (*domain.UserBookProgress, error)
+	FindAllByUserID(ctx context.Context, userID uuid.UUID) ([]domain.UserBookProgress, error)
+	Update(ctx context.Context, progress *domain.UserBookProgress) error
 }
 
 // --- Services ---
@@ -140,4 +149,12 @@ type AdminService interface {
 	GetInteractionByID(ctx context.Context, id uint) (*domain.InteractionResponse, error)
 	UpdateInteraction(ctx context.Context, id uint, req *domain.UpdateInteractionRequest) (*domain.InteractionResponse, error)
 	DeleteInteraction(ctx context.Context, id uint) error
+}
+
+// Mendefinisikan logika bisnis untuk Modul "Read" & "Game"
+type AppService interface {
+	GetBooksWithProgress(ctx context.Context, userID uuid.UUID) ([]domain.BookResponse, error)
+	GetProgressToRestore(ctx context.Context, userID uuid.UUID, bookID uint) (*domain.RestoreProgressResponse, error)
+	UpdatePageProgress(ctx context.Context, userID uuid.UUID, req *domain.UpdateProgressRequest) error
+	CompleteBookProgress(ctx context.Context, userID uuid.UUID, req *domain.CompleteProgressRequest) error
 }

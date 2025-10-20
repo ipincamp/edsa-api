@@ -243,3 +243,37 @@ func InteractionFromDomain(i *domain.Interaction) *InteractionGORM {
 		DeletedAt: i.DeletedAt,
 	}
 }
+
+// --- UserBookProgress Mappers ---
+
+// Map GORM model ke Domain entity
+func (p *UserBookProgressGORM) ToDomain() *domain.UserBookProgress {
+	return &domain.UserBookProgress{
+		ID:                   p.ID,
+		UserID:               p.UserID,
+		BookID:               p.BookID,
+		Status:               p.Status,
+		HighestScore:         p.HighestScore,
+		LastPageID:           p.LastPageID,
+		CurrentSessionPoints: p.CurrentSessionPoints,
+		CreatedAt:            p.CreatedAt,
+		UpdatedAt:            p.UpdatedAt,
+		DeletedAt:            p.DeletedAt,
+	}
+}
+
+// Map Domain entity ke GORM model
+func UserBookProgressFromDomain(p *domain.UserBookProgress) *UserBookProgressGORM {
+	return &UserBookProgressGORM{
+		ID:                   p.ID,
+		UserID:               p.UserID,
+		BookID:               p.BookID,
+		Status:               p.Status,
+		HighestScore:         p.HighestScore,
+		LastPageID:           p.LastPageID,
+		CurrentSessionPoints: p.CurrentSessionPoints,
+		CreatedAt:            p.CreatedAt,
+		UpdatedAt:            p.UpdatedAt,
+		DeletedAt:            p.DeletedAt,
+	}
+}

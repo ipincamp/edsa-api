@@ -29,6 +29,8 @@ type BookResponse struct {
 	CoverImageURL string `json:"cover_image_url"`
 	Theme         string `json:"theme"`
 	BookOrder     int    `json:"book_order"`
+	Status        string `json:"status,omitempty"`
+	HighestScore  int    `json:"highest_score,omitempty"`
 }
 
 // CreateBookRequest adalah DTO untuk membuat buku baru
