@@ -9,6 +9,7 @@ func GetAllMigrations() []*gormigrate.Migration {
 		CreateUsersTable(),
 		CreateSubjectsTable(),
 		CreateClassesTable(),
+		CreateGroupsTable(),
 		// AnotherMigration(),
 	}
 }

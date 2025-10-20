@@ -57,6 +57,7 @@ type ClassGORM struct {
 	Name      string      `gorm:"type:varchar(255);not null"`
 	SubjectID uint        `gorm:"not null"`
 	Subject   SubjectGORM `gorm:"foreignKey:SubjectID"`
+	Groups    []GroupGORM `gorm:"foreignKey:ClassID"` // Relasi one-to-many
 	CreatedAt time.Time
 	UpdatedAt time.Time
 	DeletedAt gorm.DeletedAt `gorm:"index"`
@@ -64,4 +65,20 @@ type ClassGORM struct {
 
 func (ClassGORM) TableName() string {
 	return "classes"
+}
+
+// GroupGORM adalah representasi tabel 'groups' di database
+type GroupGORM struct {
+	ID        uint       `gorm:"primarykey"`
+	Name      string     `gorm:"type:varchar(255);not null"`
+	ClassID   uint       `gorm:"not null"`
+	Class     ClassGORM  `gorm:"foreignKey:ClassID"`
+	Users     []UserGORM `gorm:"many2many:user_groups;"` // Relasi many-to-many
+	CreatedAt time.Time
+	UpdatedAt time.Time
+	DeletedAt gorm.DeletedAt `gorm:"index"`
+}
+
+func (GroupGORM) TableName() string {
+	return "groups"
 }
