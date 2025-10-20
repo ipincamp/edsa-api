@@ -1,6 +1,7 @@
 package gorm
 
 import (
+	"encoding/json"
 	"time"
 
 	"github.com/google/uuid"
@@ -92,4 +93,56 @@ type UserGroupGORM struct {
 
 func (UserGroupGORM) TableName() string {
 	return "user_groups"
+}
+
+// BookGORM adalah representasi tabel 'books' di database
+type BookGORM struct {
+	ID            uint       `gorm:"primarykey"`
+	Title         string     `gorm:"type:varchar(255);not null"`
+	Description   string     `gorm:"type:text"`
+	CoverImageURL string     `gorm:"type:varchar(255)"`
+	Theme         string     `gorm:"type:varchar(100)"`
+	BookOrder     int        `gorm:"default:0"`
+	Pages         []PageGORM `gorm:"foreignKey:BookID"` // Relasi one-to-many
+	CreatedAt     time.Time
+	UpdatedAt     time.Time
+	DeletedAt     gorm.DeletedAt `gorm:"index"`
+}
+
+func (BookGORM) TableName() string {
+	return "books"
+}
+
+// PageGORM adalah representasi tabel 'pages' di database
+type PageGORM struct {
+	ID              uint              `gorm:"primarykey"`
+	BookID          uint              `gorm:"not null;index"`
+	Book            BookGORM          `gorm:"foreignKey:BookID"`
+	PageNumber      int               `gorm:"not null;index"`
+	NarrativeText   string            `gorm:"type:text"`
+	InstructionText string            `gorm:"type:text"`
+	Interactions    []InteractionGORM `gorm:"foreignKey:PageID"` // Relasi one-to-many
+	CreatedAt       time.Time
+	UpdatedAt       time.Time
+	DeletedAt       gorm.DeletedAt `gorm:"index"`
+}
+
+func (PageGORM) TableName() string {
+	return "pages"
+}
+
+// InteractionGORM adalah representasi tabel 'interactions' di database
+type InteractionGORM struct {
+	ID        uint            `gorm:"primarykey"`
+	PageID    uint            `gorm:"not null;index"`
+	Page      PageGORM        `gorm:"foreignKey:PageID"`
+	Type      string          `gorm:"type:varchar(50);not null"`
+	Config    json.RawMessage `gorm:"type:jsonb"`
+	CreatedAt time.Time
+	UpdatedAt time.Time
+	DeletedAt gorm.DeletedAt `gorm:"index"`
+}
+
+func (InteractionGORM) TableName() string {
+	return "interactions"
 }
