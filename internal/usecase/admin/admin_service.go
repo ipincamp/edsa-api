@@ -373,6 +373,7 @@ func (s *adminService) GetBookByID(ctx context.Context, id uint) (*domain.BookRe
 }
 
 func (s *adminService) UpdateBook(ctx context.Context, id uint, req *domain.UpdateBookRequest) (*domain.BookResponse, error) {
+	// 1. Ambil data buku yang ada
 	book, err := s.bookRepo.FindByID(ctx, id)
 	if err != nil {
 		return nil, err
@@ -381,29 +382,45 @@ func (s *adminService) UpdateBook(ctx context.Context, id uint, req *domain.Upda
 		return nil, errors.New("book not found")
 	}
 
-	book.Title = req.Title
-	book.Description = req.Description
-	book.CoverImageURL = req.CoverImageURL
-	book.Theme = req.Theme
+	// 2. Cek field mana yang di-update
+	// 'book' adalah object domain yang kita fetch, kita update di memory
+	if req.Title != nil {
+		book.Title = *req.Title
+	}
+	if req.Description != nil {
+		book.Description = *req.Description
+	}
+	if req.CoverImageURL != nil {
+		book.CoverImageURL = *req.CoverImageURL
+	}
+	if req.Theme != nil {
+		book.Theme = *req.Theme
+	}
 
-	newOrder := req.BookOrder
+	// 3. Cek apakah urutan berubah
+	newOrder := book.BookOrder // Default ke urutan lama
+	orderChanged := false
+	if req.BookOrder != nil && *req.BookOrder != book.BookOrder {
+		newOrder = *req.BookOrder
+		orderChanged = true
+	}
 
-	if book.BookOrder == newOrder {
-		// --- Order tidak berubah ---
-		// Gunakan update biasa (hanya field Title, Desc, dll)
-		if err := s.bookRepo.Update(ctx, book); err != nil {
+	// 4. Panggil repository yang sesuai
+	if orderChanged {
+		// Panggil logic 'shift' (dari jawaban saya sebelumnya)
+		// 'book' sudah berisi Title/Desc/Theme yang baru
+		if err := s.bookRepo.UpdateBookWithOrderShift(ctx, book, newOrder); err != nil {
 			return nil, err
 		}
 	} else {
-		// --- Order berubah ---
-		// Panggil logika shifting yang baru.
-		// 'book' sudah berisi Title, Desc, dll yang baru.
-		if err := s.bookRepo.UpdateBookWithOrderShift(ctx, book, newOrder); err != nil {
+		// Panggil update biasa (hanya Title/Desc/Theme, tanpa 'shift')
+		if err := s.bookRepo.Update(ctx, book); err != nil {
 			return nil, err
 		}
 	}
 
-	book.BookOrder = newOrder
+	// 5. Kembalikan data yang sudah di-merge
+	book.BookOrder = newOrder // Pastikan ordernya update
 	return toBookResponse(book), nil
 }
 

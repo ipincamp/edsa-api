@@ -44,9 +44,9 @@ type CreateBookRequest struct {
 
 // UpdateBookRequest adalah DTO untuk memperbarui buku
 type UpdateBookRequest struct {
-	Title         string `json:"title" validate:"required,min=3,max=255"`
-	Description   string `json:"description"`
-	CoverImageURL string `json:"cover_image_url" validate:"omitempty,url"`
-	Theme         string `json:"theme" validate:"omitempty,max=100"`
-	BookOrder     int    `json:"book_order" validate:"number,min=0"`
+	Title         *string `json:"title,omitempty" validate:"omitempty,min=3,max=255"`
+	Description   *string `json:"description,omitempty"`
+	CoverImageURL *string `json:"cover_image_url,omitempty" validate:"omitempty,url"`
+	Theme         *string `json:"theme,omitempty" validate:"omitempty,max=100"`
+	BookOrder     *int    `json:"book_order,omitempty" validate:"omitempty,number,min=0"`
 }

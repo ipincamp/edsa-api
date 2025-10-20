@@ -82,10 +82,10 @@ func SetupRoutes(
 
 	// Rute Books
 	books := admin.Group("/books")
-	books.Post("/", adminHandler.CreateBook)        // PASSED
-	books.Get("/", adminHandler.GetAllBooks)        // PASSED
-	books.Get("/:bookId", adminHandler.GetBookByID) // PASSED
-	books.Put("/:bookId", adminHandler.UpdateBook)
+	books.Post("/", adminHandler.CreateBook)         // PASSED
+	books.Get("/", adminHandler.GetAllBooks)         // PASSED
+	books.Get("/:bookId", adminHandler.GetBookByID)  // PASSED
+	books.Patch("/:bookId", adminHandler.UpdateBook) // PASSED
 	books.Delete("/:bookId", adminHandler.DeleteBook)
 
 	// Rute Pages (nested under books)
