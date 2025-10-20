@@ -72,3 +72,40 @@ func (r *bookRepositoryGORM) FindByOrder(ctx context.Context, order int) (*domai
 	}
 	return gormBook.ToDomain(), nil
 }
+
+func (r *bookRepositoryGORM) UpdateBookWithOrderShift(ctx context.Context, book *domain.Book, newOrder int) error {
+	return r.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		oldOrder := book.BookOrder
+
+		// 1. Geser buku-buku lain untuk memberi ruang
+		if newOrder < oldOrder {
+			// Pindah ke atas (misal 5 -> 2)
+			// Buku urutan 2, 3, 4 harus jadi 3, 4, 5 (+1)
+			if err := tx.Model(&BookGORM{}).
+				Where("book_order >= ? AND book_order < ?", newOrder, oldOrder).
+				Update("book_order", gorm.Expr("book_order + 1")).Error; err != nil {
+				return err
+			}
+		} else {
+			// Pindah ke bawah (misal 2 -> 5)
+			// Buku urutan 3, 4, 5 harus jadi 2, 3, 4 (-1)
+			if err := tx.Model(&BookGORM{}).
+				Where("book_order > ? AND book_order <= ?", oldOrder, newOrder).
+				Update("book_order", gorm.Expr("book_order - 1")).Error; err != nil {
+				return err
+			}
+		}
+
+		// 2. Update buku ini (termasuk Title, Desc, dll)
+		gormBook := BookFromDomain(book)
+		// Set urutan baru
+		gormBook.BookOrder = newOrder
+
+		// Gunakan Save untuk update semua field (termasuk Title, dll)
+		if err := tx.Save(gormBook).Error; err != nil {
+			return err
+		}
+
+		return nil // Commit transaksi
+	})
+}

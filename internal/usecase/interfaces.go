@@ -58,6 +58,7 @@ type BookRepository interface {
 	Update(ctx context.Context, book *domain.Book) error
 	Delete(ctx context.Context, id uint) error
 	FindByOrder(ctx context.Context, order int) (*domain.Book, error)
+	UpdateBookWithOrderShift(ctx context.Context, book *domain.Book, newOrder int) error
 }
 
 // PageRepository mendefinisikan kontrak untuk data halaman

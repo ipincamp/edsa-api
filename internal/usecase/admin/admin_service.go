@@ -385,11 +385,25 @@ func (s *adminService) UpdateBook(ctx context.Context, id uint, req *domain.Upda
 	book.Description = req.Description
 	book.CoverImageURL = req.CoverImageURL
 	book.Theme = req.Theme
-	book.BookOrder = req.BookOrder
 
-	if err := s.bookRepo.Update(ctx, book); err != nil {
-		return nil, err
+	newOrder := req.BookOrder
+
+	if book.BookOrder == newOrder {
+		// --- Order tidak berubah ---
+		// Gunakan update biasa (hanya field Title, Desc, dll)
+		if err := s.bookRepo.Update(ctx, book); err != nil {
+			return nil, err
+		}
+	} else {
+		// --- Order berubah ---
+		// Panggil logika shifting yang baru.
+		// 'book' sudah berisi Title, Desc, dll yang baru.
+		if err := s.bookRepo.UpdateBookWithOrderShift(ctx, book, newOrder); err != nil {
+			return nil, err
+		}
 	}
+
+	book.BookOrder = newOrder
 	return toBookResponse(book), nil
 }
 
