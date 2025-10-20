@@ -22,12 +22,13 @@ func (RoleGORM) TableName() string {
 
 // UserGORM adalah representasi tabel 'users' di database
 type UserGORM struct {
-	ID        uuid.UUID `gorm:"type:uuid;default:gen_random_uuid();primarykey"`
-	Name      string    `gorm:"type:varchar(255)"`
-	Email     string    `gorm:"type:varchar(255);uniqueIndex;not null"`
-	Password  string    `gorm:"type:varchar(255);not null"`
-	RoleID    uint      `gorm:"not null"`
-	Role      RoleGORM  `gorm:"foreignKey:RoleID"`
+	ID        uuid.UUID   `gorm:"type:uuid;default:gen_random_uuid();primarykey"`
+	Name      string      `gorm:"type:varchar(255)"`
+	Email     string      `gorm:"type:varchar(255);uniqueIndex;not null"`
+	Password  string      `gorm:"type:varchar(255);not null"`
+	RoleID    uint        `gorm:"not null"`
+	Role      RoleGORM    `gorm:"foreignKey:RoleID"`
+	Groups    []GroupGORM `gorm:"many2many:user_groups;"` // Relasi many-to-many
 	CreatedAt time.Time
 	UpdatedAt time.Time
 	DeletedAt gorm.DeletedAt `gorm:"index"`
@@ -81,4 +82,14 @@ type GroupGORM struct {
 
 func (GroupGORM) TableName() string {
 	return "groups"
+}
+
+// UserGroupGORM adalah representasi tabel 'user_groups' di database
+type UserGroupGORM struct {
+	UserID  uuid.UUID `gorm:"primaryKey"`
+	GroupID uint      `gorm:"primaryKey"`
+}
+
+func (UserGroupGORM) TableName() string {
+	return "user_groups"
 }
