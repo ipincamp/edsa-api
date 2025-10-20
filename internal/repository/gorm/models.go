@@ -166,3 +166,35 @@ type UserBookProgressGORM struct {
 func (UserBookProgressGORM) TableName() string {
 	return "user_book_progress"
 }
+
+// GameGORM adalah representasi tabel 'games' di database
+type GameGORM struct {
+	ID               uint   `gorm:"primarykey"`
+	Name             string `gorm:"type:varchar(255);not null"`
+	Type             string `gorm:"type:varchar(100)"`
+	RelatedBookTheme string `gorm:"type:varchar(100)"`
+	CreatedAt        time.Time
+	UpdatedAt        time.Time
+	DeletedAt        gorm.DeletedAt `gorm:"index"`
+}
+
+func (GameGORM) TableName() string {
+	return "games"
+}
+
+// UserGameScoreGORM adalah representasi tabel 'user_game_scores' di database
+type UserGameScoreGORM struct {
+	ID           uint      `gorm:"primarykey"`
+	UserID       uuid.UUID `gorm:"not null;uniqueIndex:idx_user_game"`
+	User         UserGORM  `gorm:"foreignKey:UserID"`
+	GameID       uint      `gorm:"not null;uniqueIndex:idx_user_game"`
+	Game         GameGORM  `gorm:"foreignKey:GameID"`
+	HighestScore int       `gorm:"default:0"`
+	CreatedAt    time.Time
+	UpdatedAt    time.Time
+	DeletedAt    gorm.DeletedAt `gorm:"index"`
+}
+
+func (UserGameScoreGORM) TableName() string {
+	return "user_game_scores"
+}
