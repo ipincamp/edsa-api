@@ -63,5 +63,35 @@ func SetupRoutes(
 	groups.Put("/:id", adminHandler.UpdateGroup)
 	groups.Delete("/:id", adminHandler.DeleteGroup)
 
+	// --- Rute Manajemen Konten ---
+
+	// Rute Books
+	books := admin.Group("/books")
+	books.Post("/", adminHandler.CreateBook)
+	books.Get("/", adminHandler.GetAllBooks)
+	books.Get("/:bookId", adminHandler.GetBookByID)
+	books.Put("/:bookId", adminHandler.UpdateBook)
+	books.Delete("/:bookId", adminHandler.DeleteBook)
+
+	// Rute Pages (nested under books)
+	books.Post("/:bookId/pages", adminHandler.CreatePage)
+	books.Get("/:bookId/pages", adminHandler.GetAllPagesForBook)
+
+	// Rute Pages (standalone for single resource mgmt)
+	pages := admin.Group("/pages")
+	pages.Get("/:pageId", adminHandler.GetPageByID)
+	pages.Put("/:pageId", adminHandler.UpdatePage)
+	pages.Delete("/:pageId", adminHandler.DeletePage)
+
+	// Rute Interactions (nested under pages)
+	pages.Post("/:pageId/interactions", adminHandler.CreateInteraction)
+	pages.Get("/:pageId/interactions", adminHandler.GetAllInteractionsForPage)
+
+	// Rute Interactions (standalone for single resource mgmt)
+	interactions := admin.Group("/interactions")
+	interactions.Get("/:interactionId", adminHandler.GetInteractionByID) // Implied
+	interactions.Put("/:interactionId", adminHandler.UpdateInteraction)
+	interactions.Delete("/:interactionId", adminHandler.DeleteInteraction)
+
 	// TODO: Rute manajemen penugasan (Assign/Unassign)
 }

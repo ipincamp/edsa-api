@@ -37,9 +37,14 @@ func main() {
 	// 5. Init Repositories
 	userRepository := repo.NewUserRepository(db)
 	roleRepository := repo.NewRoleRepository(db)
+	// Repositori Manajemen User
 	subjectRepository := repo.NewSubjectRepository(db)
 	classRepository := repo.NewClassRepository(db)
 	groupRepository := repo.NewGroupRepository(db)
+	// Repositori Konten
+	bookRepository := repo.NewBookRepository(db)
+	pageRepository := repo.NewPageRepository(db)
+	interactionRepository := repo.NewInteractionRepository(db)
 
 	// 6. Init Usecases
 	userService := user.NewUserService(
@@ -53,6 +58,9 @@ func main() {
 		subjectRepository,
 		classRepository,
 		groupRepository,
+		bookRepository,
+		pageRepository,
+		interactionRepository,
 	)
 
 	// 7. Init Handlers
