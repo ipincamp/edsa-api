@@ -12,6 +12,7 @@ import (
 	repo "github.com/ipincamp/go-edsa-api/internal/repository/gorm"
 	"github.com/ipincamp/go-edsa-api/internal/service/argon2id"
 	"github.com/ipincamp/go-edsa-api/internal/service/paseto"
+	"github.com/ipincamp/go-edsa-api/internal/usecase/admin"
 	"github.com/ipincamp/go-edsa-api/internal/usecase/user"
 )
 
@@ -36,6 +37,9 @@ func main() {
 	// 5. Init Repositories
 	userRepository := repo.NewUserRepository(db)
 	roleRepository := repo.NewRoleRepository(db)
+	subjectRepository := repo.NewSubjectRepository(db)
+	classRepository := repo.NewClassRepository(db)
+	groupRepository := repo.NewGroupRepository(db)
 
 	// 6. Init Usecases
 	userService := user.NewUserService(
@@ -45,9 +49,15 @@ func main() {
 		tokenService,
 		cfg,
 	)
+	adminService := admin.NewAdminService(
+		subjectRepository,
+		classRepository,
+		groupRepository,
+	)
 
 	// 7. Init Handlers
 	userHandler := http.NewUserHandler(userService, validate)
+	adminHandler := http.NewAdminHandler(adminService, validate)
 
 	// 8. Init Fiber App
 	app := fiber.New(fiber.Config{
@@ -65,7 +75,13 @@ func main() {
 	})
 
 	// 9. Setup Routes
-	http.SetupRoutes(app, userHandler, tokenService)
+	http.SetupRoutes(
+		app,
+		userHandler,
+		adminHandler,
+		tokenService,
+		userRepository,
+	)
 
 	// 10. Start Server
 	log.Printf("Starting server on port %d...", cfg.App.Port)

@@ -10,7 +10,9 @@ import (
 func SetupRoutes(
 	app *fiber.App,
 	userHandler *UserHandler,
+	adminHandler *AdminHandler,
 	tokenSvc usecase.TokenService,
+	userRepo usecase.UserRepository,
 ) {
 	app.Use(logger.New())
 
@@ -31,4 +33,35 @@ func SetupRoutes(
 	protected := api.Group("/users")
 	protected.Use(middleware.AuthMiddleware(tokenSvc))
 	protected.Get("/me", userHandler.GetMe)
+
+	// --- Rute Administrasi ---
+	admin := api.Group("/admin")
+	admin.Use(middleware.AuthMiddleware(tokenSvc))
+	admin.Use(middleware.AdminMiddleware(userRepo))
+
+	// Rute Subjects
+	subjects := admin.Group("/subjects")
+	subjects.Post("/", adminHandler.CreateSubject)
+	subjects.Get("/", adminHandler.GetAllSubjects)
+	subjects.Get("/:id", adminHandler.GetSubjectByID)
+	subjects.Put("/:id", adminHandler.UpdateSubject)
+	subjects.Delete("/:id", adminHandler.DeleteSubject)
+
+	// Rute Classes
+	classes := admin.Group("/classes")
+	classes.Post("/", adminHandler.CreateClass)
+	classes.Get("/", adminHandler.GetAllClasses)
+	classes.Get("/:id", adminHandler.GetClassByID)
+	classes.Put("/:id", adminHandler.UpdateClass)
+	classes.Delete("/:id", adminHandler.DeleteClass)
+
+	// Rute Groups
+	groups := admin.Group("/groups")
+	groups.Post("/", adminHandler.CreateGroup)
+	groups.Get("/", adminHandler.GetAllGroups)
+	groups.Get("/:id", adminHandler.GetGroupByID)
+	groups.Put("/:id", adminHandler.UpdateGroup)
+	groups.Delete("/:id", adminHandler.DeleteGroup)
+
+	// TODO: Rute manajemen penugasan (Assign/Unassign)
 }
