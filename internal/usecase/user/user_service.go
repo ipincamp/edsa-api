@@ -17,6 +17,7 @@ type userService struct {
 	passSvc  usecase.PasswordService
 	tokenSvc usecase.TokenService
 	cfg      *config.Config
+	logger   usecase.ActivityLoggerService
 }
 
 func NewUserService(
@@ -25,6 +26,7 @@ func NewUserService(
 	passSvc usecase.PasswordService,
 	tokenSvc usecase.TokenService,
 	cfg *config.Config,
+	logger usecase.ActivityLoggerService,
 ) usecase.UserService {
 	return &userService{
 		userRepo: userRepo,
@@ -32,6 +34,7 @@ func NewUserService(
 		passSvc:  passSvc,
 		tokenSvc: tokenSvc,
 		cfg:      cfg,
+		logger:   logger,
 	}
 }
 
@@ -117,6 +120,12 @@ func (s *userService) Login(ctx context.Context, req *domain.LoginRequest) (*dom
 	if err != nil || !match {
 		return nil, errors.New("invalid email or password")
 	}
+
+	// Log aktivitas login
+	s.logger.Log(ctx, domain.ActivityLog{
+		UserID: user.ID,
+		Action: domain.ActionLogin,
+	})
 
 	// 3. Buat Access Token
 	accessTTL := time.Duration(s.cfg.Security.AccessTokenTTLMin) * time.Minute

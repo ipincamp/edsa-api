@@ -2,6 +2,7 @@ package app
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"log"
 	"time"
@@ -16,6 +17,7 @@ type appService struct {
 	progressRepo      usecase.UserBookProgressRepository
 	gameRepo          usecase.GameRepository
 	userGameScoreRepo usecase.UserGameScoreRepository
+	logger            usecase.ActivityLoggerService
 }
 
 func NewAppService(
@@ -23,12 +25,14 @@ func NewAppService(
 	progressRepo usecase.UserBookProgressRepository,
 	gameRepo usecase.GameRepository,
 	userGameScoreRepo usecase.UserGameScoreRepository,
+	logger usecase.ActivityLoggerService,
 ) usecase.AppService {
 	return &appService{
 		bookRepo:          bookRepo,
 		progressRepo:      progressRepo,
 		gameRepo:          gameRepo,
 		userGameScoreRepo: userGameScoreRepo,
+		logger:            logger,
 	}
 }
 
@@ -88,6 +92,15 @@ func (s *appService) GetProgressToRestore(ctx context.Context, userID uuid.UUID,
 	if err != nil {
 		return nil, err
 	}
+
+	// Logging aktivitas memulai/melanjutkan buku
+	details, _ := json.Marshal(map[string]interface{}{"book_id": bookID})
+	s.logger.Log(ctx, domain.ActivityLog{
+		UserID:  userID,
+		Action:  domain.ActionStartBook,
+		Details: details,
+	})
+
 	if progress == nil {
 		// Jika belum ada progres, kembalikan nilai default
 		return &domain.RestoreProgressResponse{
@@ -145,6 +158,18 @@ func (s *appService) CompleteBookProgress(ctx context.Context, userID uuid.UUID,
 	if err := s.progressRepo.Update(ctx, progress); err != nil {
 		return err
 	}
+
+	// Log aktivitas menyelesaikan buku
+	details, _ := json.Marshal(map[string]interface{}{
+		"book_id": req.BookID,
+		"score":   req.FinalScore,
+	})
+	s.logger.Log(ctx, domain.ActivityLog{
+		UserID:     userID,
+		Action:     domain.ActionCompleteBook,
+		DurationMs: &req.DurationMs,
+		Details:    details,
+	})
 
 	// 2. Buka buku berikutnya
 	currentBook, err := s.bookRepo.FindByID(ctx, req.BookID)
@@ -227,6 +252,7 @@ func (s *appService) GetAllGames(ctx context.Context, userID uuid.UUID) ([]domai
 	return gameResponses, nil
 }
 
+// TODO: Logging
 func (s *appService) SubmitGameScore(ctx context.Context, userID uuid.UUID, gameID uint, req *domain.SubmitGameScoreRequest) error {
 	// 1. Cek apakah gameID valid
 	game, err := s.gameRepo.FindByID(ctx, gameID)

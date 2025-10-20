@@ -14,6 +14,8 @@ import (
 	"github.com/ipincamp/go-edsa-api/internal/service/paseto"
 	"github.com/ipincamp/go-edsa-api/internal/usecase/admin"
 	"github.com/ipincamp/go-edsa-api/internal/usecase/app"
+	"github.com/ipincamp/go-edsa-api/internal/usecase/dashboard"
+	"github.com/ipincamp/go-edsa-api/internal/usecase/logger"
 	"github.com/ipincamp/go-edsa-api/internal/usecase/user"
 )
 
@@ -51,14 +53,18 @@ func main() {
 	// Game
 	gameRepository := repo.NewGameRepository(db)
 	userGameScoreRepository := repo.NewUserGameScoreRepository(db)
+	// Log Aktivitas
+	activityLogRepository := repo.NewActivityLogRepository(db)
 
 	// 6. Init Usecases
+	loggerService := logger.NewActivityLoggerService(activityLogRepository)
 	userService := user.NewUserService(
 		userRepository,
 		roleRepository,
 		passwordService,
 		tokenService,
 		cfg,
+		loggerService,
 	)
 	adminService := admin.NewAdminService(
 		subjectRepository,
@@ -73,12 +79,18 @@ func main() {
 		progressRepository,
 		gameRepository,
 		userGameScoreRepository,
+		loggerService,
+	)
+	dashboardService := dashboard.NewDashboardService(
+		activityLogRepository,
+		userRepository,
 	)
 
 	// 7. Init Handlers
 	userHandler := http.NewUserHandler(userService, validate)
 	adminHandler := http.NewAdminHandler(adminService, validate)
 	appHandler := http.NewAppHandler(appService, validate)
+	dashboardHandler := http.NewDashboardHandler(dashboardService, validate)
 
 	// 8. Init Fiber App
 	app := fiber.New(fiber.Config{
@@ -101,6 +113,7 @@ func main() {
 		userHandler,
 		adminHandler,
 		appHandler,
+		dashboardHandler,
 		tokenService,
 		userRepository,
 	)

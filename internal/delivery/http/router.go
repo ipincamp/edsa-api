@@ -12,6 +12,7 @@ func SetupRoutes(
 	userHandler *UserHandler,
 	adminHandler *AdminHandler,
 	appHandler *AppHandler,
+	dashboardHandler *DashboardHandler,
 	tokenSvc usecase.TokenService,
 	userRepo usecase.UserRepository,
 ) {
@@ -113,6 +114,17 @@ func SetupRoutes(
 	// Rute Modul "Game"
 	appRoutes.Get("/games", appHandler.GetAllGames)
 	appRoutes.Post("/games/:gameId/score", appHandler.SubmitGameScore)
+
+	// --- Rute Dashboard (Guru) ---
+
+	// Rute Dashboard Guru
+	dashboard := api.Group("/dashboard")
+	dashboard.Use(middleware.AuthMiddleware(tokenSvc))
+	dashboard.Use(middleware.TeacherMiddleware(userRepo))
+
+	// Rute Laporan Aktivitas
+	dashboard.Get("/students/:studentId/activity", dashboardHandler.GetStudentActivity)
+	// TODO: Rute dashboard lainnya
 
 	// TODO: Rute manajemen penugasan (Assign/Unassign)
 	// TODO: Rute untuk Speaking
