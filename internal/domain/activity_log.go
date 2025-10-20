@@ -12,6 +12,7 @@ import (
 const (
 	ActionLogin        = "LOGIN"
 	ActionLogout       = "LOGOUT"
+	ActionRegister     = "REGISTER"
 	ActionStartBook    = "START_BOOK"
 	ActionCompleteBook = "COMPLETE_BOOK"
 	ActionCompleteGame = "COMPLETE_GAME"

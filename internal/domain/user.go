@@ -52,6 +52,7 @@ type UserResponse struct {
 type TokenResponse struct {
 	AccessToken  string `json:"access_token"`
 	RefreshToken string `json:"refresh_token"`
+	SessionID    string `json:"session_id"`
 }
 
 // AuthResponse adalah DTO untuk respons login/register.

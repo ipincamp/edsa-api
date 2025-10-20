@@ -118,7 +118,7 @@ type UserService interface {
 	Login(ctx context.Context, req *domain.LoginRequest) (*domain.AuthResponse, error)
 	GetUserByID(ctx context.Context, id uuid.UUID) (*domain.UserResponse, error)
 	RefreshToken(ctx context.Context, req *domain.RefreshTokenRequest) (*domain.TokenResponse, error)
-	Logout(ctx context.Context, userID uuid.UUID) error
+	Logout(ctx context.Context, userID uuid.UUID, sessionID uuid.UUID) error
 }
 
 // PasswordService mendefinisikan kontrak untuk hashing password
@@ -182,12 +182,12 @@ type AdminService interface {
 type AppService interface {
 	// Read Module
 	GetBooksWithProgress(ctx context.Context, userID uuid.UUID) ([]domain.BookResponse, error)
-	GetProgressToRestore(ctx context.Context, userID uuid.UUID, bookID uint) (*domain.RestoreProgressResponse, error)
-	UpdatePageProgress(ctx context.Context, userID uuid.UUID, req *domain.UpdateProgressRequest) error
-	CompleteBookProgress(ctx context.Context, userID uuid.UUID, req *domain.CompleteProgressRequest) error
+	GetProgressToRestore(ctx context.Context, userID uuid.UUID, sessionID uuid.UUID, bookID uint) (*domain.RestoreProgressResponse, error)
+	UpdatePageProgress(ctx context.Context, userID uuid.UUID, sessionID uuid.UUID, req *domain.UpdateProgressRequest) error
+	CompleteBookProgress(ctx context.Context, userID uuid.UUID, sessionID uuid.UUID, req *domain.CompleteProgressRequest) error
 	// Game Module
 	GetAllGames(ctx context.Context, userID uuid.UUID) ([]domain.GameResponse, error)
-	SubmitGameScore(ctx context.Context, userID uuid.UUID, gameID uint, req *domain.SubmitGameScoreRequest) error
+	SubmitGameScore(ctx context.Context, userID uuid.UUID, sessionID uuid.UUID, gameID uint, req *domain.SubmitGameScoreRequest) error
 }
 
 // ActivityLoggerService mendefinisikan logika bisnis untuk pencatatan aktivitas pengguna

@@ -76,19 +76,29 @@ func (s *userService) Register(ctx context.Context, req *domain.RegisterRequest)
 		return nil, errors.New("failed to create user")
 	}
 
-	// 6. Buat Access Token
+	// 6. Buat Session ID baru
+	sessionID := uuid.New()
+
+	// 7. Buat Access Token
 	accessTTL := time.Duration(s.cfg.Security.AccessTokenTTLMin) * time.Minute
 	accessToken, err := s.tokenSvc.CreateToken(user, accessTTL)
 	if err != nil {
 		return nil, errors.New("failed to create access token")
 	}
 
-	// 7. Buat Refresh Token
+	// 8. Buat Refresh Token
 	refreshTTL := time.Duration(s.cfg.Security.RefreshTokenTTLMin) * time.Minute
 	refreshToken, err := s.tokenSvc.CreateToken(user, refreshTTL)
 	if err != nil {
 		return nil, errors.New("failed to create refresh token")
 	}
+
+	// 9. Log aktivitas registrasi (BARU)
+	s.logger.Log(ctx, domain.ActivityLog{
+		UserID:    user.ID,
+		Action:    domain.ActionRegister,
+		SessionID: sessionID,
+	})
 
 	// 8. Kembalikan respons
 	return &domain.AuthResponse{
@@ -101,6 +111,7 @@ func (s *userService) Register(ctx context.Context, req *domain.RegisterRequest)
 		Token: domain.TokenResponse{
 			AccessToken:  accessToken,
 			RefreshToken: refreshToken,
+			SessionID:    sessionID.String(),
 		},
 	}, nil
 }
@@ -121,27 +132,31 @@ func (s *userService) Login(ctx context.Context, req *domain.LoginRequest) (*dom
 		return nil, errors.New("invalid email or password")
 	}
 
-	// Log aktivitas login
+	// 3. Buat Session ID baru
+	sessionID := uuid.New()
+
+	// 4. Log aktivitas login
 	s.logger.Log(ctx, domain.ActivityLog{
-		UserID: user.ID,
-		Action: domain.ActionLogin,
+		UserID:    user.ID,
+		Action:    domain.ActionLogin,
+		SessionID: sessionID,
 	})
 
-	// 3. Buat Access Token
+	// 5. Buat Access Token
 	accessTTL := time.Duration(s.cfg.Security.AccessTokenTTLMin) * time.Minute
 	accessToken, err := s.tokenSvc.CreateToken(user, accessTTL)
 	if err != nil {
 		return nil, errors.New("failed to create access token")
 	}
 
-	// 4. Buat Refresh Token
+	// 6. Buat Refresh Token
 	refreshTTL := time.Duration(s.cfg.Security.RefreshTokenTTLMin) * time.Minute
 	refreshToken, err := s.tokenSvc.CreateToken(user, refreshTTL)
 	if err != nil {
 		return nil, errors.New("failed to create refresh token")
 	}
 
-	// 5. Kembalikan respons
+	// 7. Kembalikan respons
 	return &domain.AuthResponse{
 		User: domain.UserResponse{
 			ID:     user.ID,
@@ -152,6 +167,7 @@ func (s *userService) Login(ctx context.Context, req *domain.LoginRequest) (*dom
 		Token: domain.TokenResponse{
 			AccessToken:  accessToken,
 			RefreshToken: refreshToken,
+			SessionID:    sessionID.String(),
 		},
 	}, nil
 }
@@ -169,36 +185,41 @@ func (s *userService) RefreshToken(ctx context.Context, req *domain.RefreshToken
 		return nil, errors.New("user not found for this token")
 	}
 
-	// 3. Buat Access Token baru
+	// 3. Buat Session ID baru
+	sessionID := uuid.New()
+
+	// 4. Buat Access Token baru
 	accessTTL := time.Duration(s.cfg.Security.AccessTokenTTLMin) * time.Minute
 	accessToken, err := s.tokenSvc.CreateToken(user, accessTTL)
 	if err != nil {
 		return nil, errors.New("failed to create new access token")
 	}
 
-	// 4. Buat Refresh Token baru (Best practice: rotasi refresh token)
+	// 5. Buat Refresh Token baru
 	refreshTTL := time.Duration(s.cfg.Security.RefreshTokenTTLMin) * time.Minute
 	refreshToken, err := s.tokenSvc.CreateToken(user, refreshTTL)
 	if err != nil {
 		return nil, errors.New("failed to create new refresh token")
 	}
 
-	// 5. Kembalikan token baru
+	// 6. Kembalikan token baru
 	return &domain.TokenResponse{
 		AccessToken:  accessToken,
 		RefreshToken: refreshToken,
+		SessionID:    sessionID.String(),
 	}, nil
 }
 
-func (s *userService) Logout(ctx context.Context, userID uuid.UUID) error {
+func (s *userService) Logout(ctx context.Context, userID uuid.UUID, sessionID uuid.UUID) error {
 	// Karena Paseto stateless, "logout" di sisi server berarti mencatat aktivitas.
 	// Klien bertanggung jawab untuk menghapus token.
 	// Jika ada blocklist (cth: Redis), token bisa ditambahkan di sini.
 
 	// Log aktivitas logout
 	s.logger.Log(ctx, domain.ActivityLog{
-		UserID: userID,
-		Action: domain.ActionLogout,
+		UserID:    userID,
+		Action:    domain.ActionLogout,
+		SessionID: sessionID,
 	})
 	return nil
 }

@@ -87,7 +87,7 @@ func (s *appService) GetBooksWithProgress(ctx context.Context, userID uuid.UUID)
 }
 
 // GetProgressToRestore mengambil data untuk session restore
-func (s *appService) GetProgressToRestore(ctx context.Context, userID uuid.UUID, bookID uint) (*domain.RestoreProgressResponse, error) {
+func (s *appService) GetProgressToRestore(ctx context.Context, userID uuid.UUID, sessionID uuid.UUID, bookID uint) (*domain.RestoreProgressResponse, error) {
 	progress, err := s.progressRepo.FindByUserAndBook(ctx, userID, bookID)
 	if err != nil {
 		return nil, err
@@ -96,9 +96,10 @@ func (s *appService) GetProgressToRestore(ctx context.Context, userID uuid.UUID,
 	// Logging aktivitas memulai/melanjutkan buku
 	details, _ := json.Marshal(map[string]interface{}{"book_id": bookID})
 	s.logger.Log(ctx, domain.ActivityLog{
-		UserID:  userID,
-		Action:  domain.ActionStartBook,
-		Details: details,
+		UserID:    userID,
+		Action:    domain.ActionStartBook,
+		Details:   details,
+		SessionID: sessionID,
 	})
 
 	if progress == nil {
@@ -116,7 +117,7 @@ func (s *appService) GetProgressToRestore(ctx context.Context, userID uuid.UUID,
 }
 
 // UpdatePageProgress dipanggil setiap pindah halaman
-func (s *appService) UpdatePageProgress(ctx context.Context, userID uuid.UUID, req *domain.UpdateProgressRequest) error {
+func (s *appService) UpdatePageProgress(ctx context.Context, userID uuid.UUID, sessionID uuid.UUID, req *domain.UpdateProgressRequest) error {
 	progress := &domain.UserBookProgress{
 		UserID: userID,
 		BookID: req.BookID,
@@ -133,12 +134,21 @@ func (s *appService) UpdatePageProgress(ctx context.Context, userID uuid.UUID, r
 	// Kontrak bilang 'points_earned_on_page', logika bilang 'menambah'
 	progress.CurrentSessionPoints += req.PointsEarnedOnPage
 
+	// Catatan: Fungsi ini sendiri tidak me-log, jadi hanya perlu menerima parameter
+	// Jika Anda *ingin* me-log setiap pindah halaman, tambahkan panggilannya di sini:
+	// s.logger.Log(ctx, domain.ActivityLog{
+	// 	UserID:    userID,
+	// 	Action:    "PAGE_VIEW", // (Contoh, perlu konstanta baru)
+	// 	SessionID: sessionID,
+	// 	Details:   json.Marshal(map[string]interface{}{"book_id": req.BookID, "page_id": req.PageID}),
+	// })
+
 	// 3. Simpan
 	return s.progressRepo.Update(ctx, progress)
 }
 
 // CompleteBookProgress dipanggil saat buku selesai
-func (s *appService) CompleteBookProgress(ctx context.Context, userID uuid.UUID, req *domain.CompleteProgressRequest) error {
+func (s *appService) CompleteBookProgress(ctx context.Context, userID uuid.UUID, sessionID uuid.UUID, req *domain.CompleteProgressRequest) error {
 	progress, err := s.progressRepo.FindByUserAndBook(ctx, userID, req.BookID)
 	if err != nil {
 		return err
@@ -169,6 +179,7 @@ func (s *appService) CompleteBookProgress(ctx context.Context, userID uuid.UUID,
 		Action:     domain.ActionCompleteBook,
 		DurationMs: &req.DurationMs,
 		Details:    details,
+		SessionID:  sessionID,
 	})
 
 	// 2. Buka buku berikutnya
@@ -252,8 +263,7 @@ func (s *appService) GetAllGames(ctx context.Context, userID uuid.UUID) ([]domai
 	return gameResponses, nil
 }
 
-// TODO: Logging
-func (s *appService) SubmitGameScore(ctx context.Context, userID uuid.UUID, gameID uint, req *domain.SubmitGameScoreRequest) error {
+func (s *appService) SubmitGameScore(ctx context.Context, userID uuid.UUID, sessionID uuid.UUID, gameID uint, req *domain.SubmitGameScoreRequest) error {
 	// 1. Cek apakah gameID valid
 	game, err := s.gameRepo.FindByID(ctx, gameID)
 	if err != nil {
@@ -271,7 +281,7 @@ func (s *appService) SubmitGameScore(ctx context.Context, userID uuid.UUID, game
 
 	newScore := req.Score
 
-	// 3. Logika BRD: Simpan nilai tertinggi
+	// 3. Simpan nilai tertinggi
 	if existingScore != nil {
 		if newScore <= existingScore.HighestScore {
 			// Skor baru tidak lebih tinggi, tidak perlu update
@@ -289,5 +299,18 @@ func (s *appService) SubmitGameScore(ctx context.Context, userID uuid.UUID, game
 		GameID:       gameID,
 		HighestScore: newScore,
 	}
+
+	// Log aktivitas menyelesaikan game
+	details, _ := json.Marshal(map[string]interface{}{
+		"game_id": gameID,
+		"score":   req.Score,
+	})
+	s.logger.Log(ctx, domain.ActivityLog{
+		UserID:    userID,
+		Action:    domain.ActionCompleteGame,
+		SessionID: sessionID,
+		Details:   details,
+	})
+
 	return s.userGameScoreRepo.Upsert(ctx, newScoreEntry)
 }

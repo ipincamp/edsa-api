@@ -89,8 +89,14 @@ func (h *UserHandler) Logout(c *fiber.Ctx) error {
 		return utils.SendError(c, fiber.StatusUnauthorized, "Invalid token")
 	}
 
+	// Ambil session ID dari middleware
+	sessionID, ok := c.Locals("sessionID").(uuid.UUID)
+	if !ok {
+		sessionID = uuid.Nil // Fallback
+	}
+
 	// Panggil Usecase
-	if err := h.userService.Logout(c.Context(), userID); err != nil {
+	if err := h.userService.Logout(c.Context(), userID, sessionID); err != nil {
 		return utils.SendError(c, fiber.StatusInternalServerError, err.Error())
 	}
 

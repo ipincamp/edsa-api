@@ -34,6 +34,15 @@ func getUserIDFromLocals(c *fiber.Ctx) (uuid.UUID, error) {
 	return userID, nil
 }
 
+// getSessionIDFromLocals adalah helper untuk mengambil session ID dari middleware
+func getSessionIDFromLocals(c *fiber.Ctx) uuid.UUID {
+	sessionID, ok := c.Locals("sessionID").(uuid.UUID)
+	if !ok {
+		sessionID = uuid.Nil // Fallback
+	}
+	return sessionID
+}
+
 // --- Book Handler ---
 
 // GetBooksWithProgress menangani 'GET /app/books'
@@ -56,6 +65,7 @@ func (h *AppHandler) GetProgressToRestore(c *fiber.Ctx) error {
 	if err != nil {
 		return err
 	}
+	sessionID := getSessionIDFromLocals(c)
 
 	bookIdStr := c.Params("bookId")
 	bookID, err := strconv.Atoi(bookIdStr)
@@ -63,7 +73,7 @@ func (h *AppHandler) GetProgressToRestore(c *fiber.Ctx) error {
 		return utils.SendError(c, fiber.StatusBadRequest, "Invalid book ID")
 	}
 
-	restoreData, err := h.appService.GetProgressToRestore(c.Context(), userID, uint(bookID))
+	restoreData, err := h.appService.GetProgressToRestore(c.Context(), userID, sessionID, uint(bookID))
 	if err != nil {
 		return utils.SendError(c, fiber.StatusNotFound, err.Error())
 	}
@@ -76,6 +86,7 @@ func (h *AppHandler) UpdatePageProgress(c *fiber.Ctx) error {
 	if err != nil {
 		return err
 	}
+	sessionID := getSessionIDFromLocals(c)
 
 	var req domain.UpdateProgressRequest
 	if err := c.BodyParser(&req); err != nil {
@@ -85,7 +96,7 @@ func (h *AppHandler) UpdatePageProgress(c *fiber.Ctx) error {
 		return utils.SendValidationErrors(c, errs)
 	}
 
-	if err := h.appService.UpdatePageProgress(c.Context(), userID, &req); err != nil {
+	if err := h.appService.UpdatePageProgress(c.Context(), userID, sessionID, &req); err != nil {
 		return utils.SendError(c, fiber.StatusInternalServerError, err.Error())
 	}
 	return utils.SendSuccess(c, fiber.StatusOK, fiber.Map{"message": "Progress updated"})
@@ -97,6 +108,7 @@ func (h *AppHandler) CompleteBookProgress(c *fiber.Ctx) error {
 	if err != nil {
 		return err
 	}
+	sessionID := getSessionIDFromLocals(c)
 
 	var req domain.CompleteProgressRequest
 	if err := c.BodyParser(&req); err != nil {
@@ -106,7 +118,7 @@ func (h *AppHandler) CompleteBookProgress(c *fiber.Ctx) error {
 		return utils.SendValidationErrors(c, errs)
 	}
 
-	if err := h.appService.CompleteBookProgress(c.Context(), userID, &req); err != nil {
+	if err := h.appService.CompleteBookProgress(c.Context(), userID, sessionID, &req); err != nil {
 		return utils.SendError(c, fiber.StatusInternalServerError, err.Error())
 	}
 	return utils.SendSuccess(c, fiber.StatusOK, fiber.Map{"message": "Book completed and progress saved"})
@@ -134,6 +146,7 @@ func (h *AppHandler) SubmitGameScore(c *fiber.Ctx) error {
 	if err != nil {
 		return err
 	}
+	sessionID := getSessionIDFromLocals(c)
 
 	gameIdStr := c.Params("gameId")
 	gameID, err := strconv.Atoi(gameIdStr)
@@ -149,7 +162,7 @@ func (h *AppHandler) SubmitGameScore(c *fiber.Ctx) error {
 		return utils.SendValidationErrors(c, errs)
 	}
 
-	if err := h.appService.SubmitGameScore(c.Context(), userID, uint(gameID), &req); err != nil {
+	if err := h.appService.SubmitGameScore(c.Context(), userID, sessionID, uint(gameID), &req); err != nil {
 		return utils.SendError(c, fiber.StatusInternalServerError, err.Error())
 	}
 	return utils.SendSuccess(c, fiber.StatusOK, fiber.Map{"message": "Score updated successfully"})
