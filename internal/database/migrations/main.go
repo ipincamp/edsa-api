@@ -18,6 +18,7 @@ func GetAllMigrations() []*gormigrate.Migration {
 		CreateGamesTable(),
 		CreateUserGameScoresTable(),
 		CreateActivityLogsTable(),
+		CreateMediaAssetsTable(),
 		// AnotherMigration(),
 	}
 }
