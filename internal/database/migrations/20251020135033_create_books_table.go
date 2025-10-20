@@ -14,7 +14,7 @@ func CreateBooksTable() *gormigrate.Migration {
 		Description   string `gorm:"type:text"`
 		CoverImageURL string `gorm:"type:varchar(255)"`
 		Theme         string `gorm:"type:varchar(100)"`
-		BookOrder     int    `gorm:"default:0"`
+		BookOrder     int    `gorm:"default:0;uniqueIndex"`
 		CreatedAt     time.Time
 		UpdatedAt     time.Time
 		DeletedAt     gorm.DeletedAt `gorm:"index"`

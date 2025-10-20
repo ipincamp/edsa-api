@@ -37,15 +37,15 @@ func SetupRoutes(
 
 	// Rute Auth (tidak dilindungi)
 	auth := api.Group("/auth")
-	auth.Post("/register", userHandler.Register)
-	auth.Post("/login", userHandler.Login)
-	auth.Post("/refresh", userHandler.RefreshToken)
-	auth.Post("/logout", middleware.AuthMiddleware(tokenSvc), userHandler.Logout)
+	auth.Post("/register", userHandler.Register)                                  // PASSED
+	auth.Post("/login", userHandler.Login)                                        // PASSED
+	auth.Post("/refresh", userHandler.RefreshToken)                               // PASSED
+	auth.Post("/logout", middleware.AuthMiddleware(tokenSvc), userHandler.Logout) // PASSED
 
 	// Rute User (dilindungi)
 	protected := api.Group("/users")
 	protected.Use(middleware.AuthMiddleware(tokenSvc))
-	protected.Get("/me", userHandler.GetMe)
+	protected.Get("/me", userHandler.GetMe) // PASSED
 
 	// --- Rute Administrasi ---
 
@@ -82,9 +82,9 @@ func SetupRoutes(
 
 	// Rute Books
 	books := admin.Group("/books")
-	books.Post("/", adminHandler.CreateBook)
-	books.Get("/", adminHandler.GetAllBooks)
-	books.Get("/:bookId", adminHandler.GetBookByID)
+	books.Post("/", adminHandler.CreateBook)        // PASSED
+	books.Get("/", adminHandler.GetAllBooks)        // PASSED
+	books.Get("/:bookId", adminHandler.GetBookByID) // PASSED
 	books.Put("/:bookId", adminHandler.UpdateBook)
 	books.Delete("/:bookId", adminHandler.DeleteBook)
 
