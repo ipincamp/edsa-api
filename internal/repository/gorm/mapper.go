@@ -277,3 +277,59 @@ func UserBookProgressFromDomain(p *domain.UserBookProgress) *UserBookProgressGOR
 		DeletedAt:            p.DeletedAt,
 	}
 }
+
+// --- Game Mappers ---
+
+// Map GORM model ke Domain entity
+func (g *GameGORM) ToDomain() *domain.Game {
+	return &domain.Game{
+		ID:               g.ID,
+		Name:             g.Name,
+		Type:             g.Type,
+		RelatedBookTheme: g.RelatedBookTheme,
+		CreatedAt:        g.CreatedAt,
+		UpdatedAt:        g.UpdatedAt,
+		DeletedAt:        g.DeletedAt,
+	}
+}
+
+// Map Domain entity ke GORM model
+func GameFromDomain(g *domain.Game) *GameGORM {
+	return &GameGORM{
+		ID:               g.ID,
+		Name:             g.Name,
+		Type:             g.Type,
+		RelatedBookTheme: g.RelatedBookTheme,
+		CreatedAt:        g.CreatedAt,
+		UpdatedAt:        g.UpdatedAt,
+		DeletedAt:        g.DeletedAt,
+	}
+}
+
+// --- UserGameScore Mappers ---
+
+// Map GORM model ke Domain entity
+func (s *UserGameScoreGORM) ToDomain() *domain.UserGameScore {
+	return &domain.UserGameScore{
+		ID:           s.ID,
+		UserID:       s.UserID,
+		GameID:       s.GameID,
+		HighestScore: s.HighestScore,
+		CreatedAt:    s.CreatedAt,
+		UpdatedAt:    s.UpdatedAt,
+		DeletedAt:    s.DeletedAt,
+	}
+}
+
+// Map Domain entity ke GORM model
+func UserGameScoreFromDomain(s *domain.UserGameScore) *UserGameScoreGORM {
+	return &UserGameScoreGORM{
+		ID:           s.ID,
+		UserID:       s.UserID,
+		GameID:       s.GameID,
+		HighestScore: s.HighestScore,
+		CreatedAt:    s.CreatedAt,
+		UpdatedAt:    s.UpdatedAt,
+		DeletedAt:    s.DeletedAt,
+	}
+}

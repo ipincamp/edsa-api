@@ -23,6 +23,8 @@ func NewAppHandler(as usecase.AppService, v *validator.GoPlaygroundValidator) *A
 	}
 }
 
+// --- Helper ---
+
 // getUserIDFromLocals adalah helper untuk mengambil ID dari middleware
 func getUserIDFromLocals(c *fiber.Ctx) (uuid.UUID, error) {
 	userID, ok := c.Locals("userID").(uuid.UUID)
@@ -31,6 +33,8 @@ func getUserIDFromLocals(c *fiber.Ctx) (uuid.UUID, error) {
 	}
 	return userID, nil
 }
+
+// --- Book Handler ---
 
 // GetBooksWithProgress menangani 'GET /app/books'
 func (h *AppHandler) GetBooksWithProgress(c *fiber.Ctx) error {
@@ -106,4 +110,47 @@ func (h *AppHandler) CompleteBookProgress(c *fiber.Ctx) error {
 		return utils.SendError(c, fiber.StatusInternalServerError, err.Error())
 	}
 	return utils.SendSuccess(c, fiber.StatusOK, fiber.Map{"message": "Book completed and progress saved"})
+}
+
+// --- Game Handler ---
+
+// GetAllGames menangani 'GET /app/games'
+func (h *AppHandler) GetAllGames(c *fiber.Ctx) error {
+	userID, err := getUserIDFromLocals(c)
+	if err != nil {
+		return err
+	}
+
+	games, err := h.appService.GetAllGames(c.Context(), userID)
+	if err != nil {
+		return utils.SendError(c, fiber.StatusInternalServerError, err.Error())
+	}
+	return utils.SendSuccess(c, fiber.StatusOK, games)
+}
+
+// SubmitGameScore menangani 'POST /app/games/:gameId/score'
+func (h *AppHandler) SubmitGameScore(c *fiber.Ctx) error {
+	userID, err := getUserIDFromLocals(c)
+	if err != nil {
+		return err
+	}
+
+	gameIdStr := c.Params("gameId")
+	gameID, err := strconv.Atoi(gameIdStr)
+	if err != nil || gameID <= 0 {
+		return utils.SendError(c, fiber.StatusBadRequest, "Invalid game ID")
+	}
+
+	var req domain.SubmitGameScoreRequest
+	if err := c.BodyParser(&req); err != nil {
+		return utils.SendError(c, fiber.StatusBadRequest, "Invalid request body")
+	}
+	if errs := h.validate.ValidateStruct(req); len(errs) > 0 {
+		return utils.SendValidationErrors(c, errs)
+	}
+
+	if err := h.appService.SubmitGameScore(c.Context(), userID, uint(gameID), &req); err != nil {
+		return utils.SendError(c, fiber.StatusInternalServerError, err.Error())
+	}
+	return utils.SendSuccess(c, fiber.StatusOK, fiber.Map{"message": "Score updated successfully"})
 }

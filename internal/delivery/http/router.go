@@ -25,17 +25,21 @@ func SetupRoutes(
 	// Grup API v1
 	api := app.Group("/api/v1")
 
-	// Rute Autentikasi
+	// --- Rute Autentikasi ---
+
+	// Rute Auth (tidak dilindungi)
 	auth := api.Group("/auth")
 	auth.Post("/register", userHandler.Register)
 	auth.Post("/login", userHandler.Login)
 
-	// Rute yang dilindungi
+	// Rute User (dilindungi)
 	protected := api.Group("/users")
 	protected.Use(middleware.AuthMiddleware(tokenSvc))
 	protected.Get("/me", userHandler.GetMe)
 
 	// --- Rute Administrasi ---
+
+	// Rute Admin (dilindungi & hanya untuk admin)
 	admin := api.Group("/admin")
 	admin.Use(middleware.AuthMiddleware(tokenSvc))
 	admin.Use(middleware.AdminMiddleware(userRepo))
@@ -94,17 +98,22 @@ func SetupRoutes(
 	interactions.Put("/:interactionId", adminHandler.UpdateInteraction)
 	interactions.Delete("/:interactionId", adminHandler.DeleteInteraction)
 
+	// --- Rute Manajemen Progres & Game ---
+
 	// Rute Aplikasi (Siswa & Guru)
 	appRoutes := api.Group("/app")
 	appRoutes.Use(middleware.AuthMiddleware(tokenSvc))
 
-	// Rute Modul "Read" & "Game"
-	appRoutes.Get("/books", appHandler.GetBooksWithProgress) // Ini adalah GET /app/books
+	// Rute Modul "Read"
+	appRoutes.Get("/books", appHandler.GetBooksWithProgress)
 	appRoutes.Get("/books/:bookId/restore", appHandler.GetProgressToRestore)
 	appRoutes.Post("/progress/update", appHandler.UpdatePageProgress)
 	appRoutes.Post("/progress/complete", appHandler.CompleteBookProgress)
 
-	// TODO: Rute untuk Game
+	// Rute Modul "Game"
+	appRoutes.Get("/games", appHandler.GetAllGames)
+	appRoutes.Post("/games/:gameId/score", appHandler.SubmitGameScore)
 
 	// TODO: Rute manajemen penugasan (Assign/Unassign)
+	// TODO: Rute untuk Speaking
 }

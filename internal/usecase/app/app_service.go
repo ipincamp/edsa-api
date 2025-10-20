@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"log"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/ipincamp/go-edsa-api/internal/domain"
@@ -11,17 +12,23 @@ import (
 )
 
 type appService struct {
-	bookRepo     usecase.BookRepository
-	progressRepo usecase.UserBookProgressRepository
+	bookRepo          usecase.BookRepository
+	progressRepo      usecase.UserBookProgressRepository
+	gameRepo          usecase.GameRepository
+	userGameScoreRepo usecase.UserGameScoreRepository
 }
 
 func NewAppService(
 	bookRepo usecase.BookRepository,
 	progressRepo usecase.UserBookProgressRepository,
+	gameRepo usecase.GameRepository,
+	userGameScoreRepo usecase.UserGameScoreRepository,
 ) usecase.AppService {
 	return &appService{
-		bookRepo:     bookRepo,
-		progressRepo: progressRepo,
+		bookRepo:          bookRepo,
+		progressRepo:      progressRepo,
+		gameRepo:          gameRepo,
+		userGameScoreRepo: userGameScoreRepo,
 	}
 }
 
@@ -178,4 +185,83 @@ func (s *appService) CompleteBookProgress(ctx context.Context, userID uuid.UUID,
 	}
 
 	return nil
+}
+
+func (s *appService) GetAllGames(ctx context.Context, userID uuid.UUID) ([]domain.GameResponse, error) {
+	// 1. Ambil semua master game
+	games, err := s.gameRepo.FindAll(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	// 2. Ambil semua skor game milik user
+	scores, err := s.userGameScoreRepo.FindAllByUserID(ctx, userID)
+	if err != nil {
+		return nil, err
+	}
+
+	// 3. Buat map skor untuk lookup
+	scoreMap := make(map[uint]int)
+	for _, score := range scores {
+		scoreMap[score.GameID] = score.HighestScore
+	}
+
+	// 4. Gabungkan data
+	var gameResponses []domain.GameResponse
+	for _, game := range games {
+		resp := domain.GameResponse{
+			ID:               game.ID,
+			Name:             game.Name,
+			Type:             game.Type,
+			RelatedBookTheme: game.RelatedBookTheme,
+			HighestScore:     0, // Default 0
+		}
+
+		// Jika user punya skor, timpa nilainya
+		if score, ok := scoreMap[game.ID]; ok {
+			resp.HighestScore = score
+		}
+
+		gameResponses = append(gameResponses, resp)
+	}
+	return gameResponses, nil
+}
+
+func (s *appService) SubmitGameScore(ctx context.Context, userID uuid.UUID, gameID uint, req *domain.SubmitGameScoreRequest) error {
+	// 1. Cek apakah gameID valid
+	game, err := s.gameRepo.FindByID(ctx, gameID)
+	if err != nil {
+		return err
+	}
+	if game == nil {
+		return errors.New("game not found")
+	}
+
+	// 2. Dapatkan skor yang ada (jika ada)
+	existingScore, err := s.userGameScoreRepo.FindByUserAndGame(ctx, userID, gameID)
+	if err != nil {
+		return err
+	}
+
+	newScore := req.Score
+
+	// 3. Logika BRD: Simpan nilai tertinggi
+	if existingScore != nil {
+		if newScore <= existingScore.HighestScore {
+			// Skor baru tidak lebih tinggi, tidak perlu update
+			return nil
+		}
+		// Skor baru lebih tinggi, update skor yang ada
+		existingScore.HighestScore = newScore
+		existingScore.UpdatedAt = time.Now()
+		return s.userGameScoreRepo.Upsert(ctx, existingScore)
+	}
+
+	// 4. Jika belum ada skor, buat entri baru
+	newScoreEntry := &domain.UserGameScore{
+		UserID:       userID,
+		GameID:       gameID,
+		HighestScore: newScore,
+	}
+	return s.userGameScoreRepo.Upsert(ctx, newScoreEntry)
 }

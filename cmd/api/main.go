@@ -48,6 +48,9 @@ func main() {
 	interactionRepository := repo.NewInteractionRepository(db)
 	// Progres
 	progressRepository := repo.NewUserBookProgressRepository(db)
+	// Game
+	gameRepository := repo.NewGameRepository(db)
+	userGameScoreRepository := repo.NewUserGameScoreRepository(db)
 
 	// 6. Init Usecases
 	userService := user.NewUserService(
@@ -68,6 +71,8 @@ func main() {
 	appService := app.NewAppService(
 		bookRepository,
 		progressRepository,
+		gameRepository,
+		userGameScoreRepository,
 	)
 
 	// 7. Init Handlers

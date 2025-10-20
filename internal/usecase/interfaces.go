@@ -85,6 +85,19 @@ type UserBookProgressRepository interface {
 	Update(ctx context.Context, progress *domain.UserBookProgress) error
 }
 
+// GameRepository mendefinisikan kontrak untuk data game
+type GameRepository interface {
+	FindAll(ctx context.Context) ([]domain.Game, error)
+	FindByID(ctx context.Context, id uint) (*domain.Game, error)
+}
+
+// UserGameScoreRepository mendefinisikan kontrak untuk data skor game pengguna
+type UserGameScoreRepository interface {
+	FindByUserAndGame(ctx context.Context, userID uuid.UUID, gameID uint) (*domain.UserGameScore, error)
+	FindAllByUserID(ctx context.Context, userID uuid.UUID) ([]domain.UserGameScore, error)
+	Upsert(ctx context.Context, score *domain.UserGameScore) error // Create atau Update
+}
+
 // --- Services ---
 
 // UserService mendefinisikan logika bisnis untuk pengguna
@@ -153,8 +166,12 @@ type AdminService interface {
 
 // Mendefinisikan logika bisnis untuk Modul "Read" & "Game"
 type AppService interface {
+	// Read Module
 	GetBooksWithProgress(ctx context.Context, userID uuid.UUID) ([]domain.BookResponse, error)
 	GetProgressToRestore(ctx context.Context, userID uuid.UUID, bookID uint) (*domain.RestoreProgressResponse, error)
 	UpdatePageProgress(ctx context.Context, userID uuid.UUID, req *domain.UpdateProgressRequest) error
 	CompleteBookProgress(ctx context.Context, userID uuid.UUID, req *domain.CompleteProgressRequest) error
+	// Game Module
+	GetAllGames(ctx context.Context, userID uuid.UUID) ([]domain.GameResponse, error)
+	SubmitGameScore(ctx context.Context, userID uuid.UUID, gameID uint, req *domain.SubmitGameScoreRequest) error
 }

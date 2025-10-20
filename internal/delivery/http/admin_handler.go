@@ -24,6 +24,8 @@ func NewAdminHandler(as usecase.AdminService, v *validator.GoPlaygroundValidator
 }
 
 // --- Helper ---
+
+// getIDParam adalah helper untuk mengambil parameter ID dari URL dan mengonversinya ke uint
 func (h *AdminHandler) getIDParam(c *fiber.Ctx) (uint, error) {
 	idStr := c.Params("id")
 	id, err := strconv.Atoi(idStr)
@@ -33,6 +35,7 @@ func (h *AdminHandler) getIDParam(c *fiber.Ctx) (uint, error) {
 	return uint(id), nil
 }
 
+// getUintIDParam adalah helper untuk mengambil parameter ID dari URL dan mengonversinya ke uint
 func (h *AdminHandler) getUintIDParam(c *fiber.Ctx, paramName string) (uint, error) {
 	idStr := c.Params(paramName)
 	id, err := strconv.Atoi(idStr)
