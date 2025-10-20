@@ -145,3 +145,101 @@ func GroupFromDomain(g *domain.Group) *GroupGORM {
 		DeletedAt: g.DeletedAt,
 	}
 }
+
+// --- Book Mappers ---
+
+// Map GORM model ke Domain entity
+func (b *BookGORM) ToDomain() *domain.Book {
+	return &domain.Book{
+		ID:            b.ID,
+		Title:         b.Title,
+		Description:   b.Description,
+		CoverImageURL: b.CoverImageURL,
+		Theme:         b.Theme,
+		BookOrder:     b.BookOrder,
+		CreatedAt:     b.CreatedAt,
+		UpdatedAt:     b.UpdatedAt,
+		DeletedAt:     b.DeletedAt,
+	}
+}
+
+// Map Domain entity ke GORM model
+func BookFromDomain(b *domain.Book) *BookGORM {
+	return &BookGORM{
+		ID:            b.ID,
+		Title:         b.Title,
+		Description:   b.Description,
+		CoverImageURL: b.CoverImageURL,
+		Theme:         b.Theme,
+		BookOrder:     b.BookOrder,
+		CreatedAt:     b.CreatedAt,
+		UpdatedAt:     b.UpdatedAt,
+		DeletedAt:     b.DeletedAt,
+	}
+}
+
+// --- Page Mappers ---
+
+// Map GORM model ke Domain entity
+func (p *PageGORM) ToDomain() *domain.Page {
+	domainPage := &domain.Page{
+		ID:              p.ID,
+		BookID:          p.BookID,
+		PageNumber:      p.PageNumber,
+		NarrativeText:   p.NarrativeText,
+		InstructionText: p.InstructionText,
+		CreatedAt:       p.CreatedAt,
+		UpdatedAt:       p.UpdatedAt,
+		DeletedAt:       p.DeletedAt,
+	}
+	if p.Book.ID != 0 {
+		domainPage.Book = *p.Book.ToDomain()
+	}
+	return domainPage
+}
+
+// Map Domain entity ke GORM model
+func PageFromDomain(p *domain.Page) *PageGORM {
+	return &PageGORM{
+		ID:              p.ID,
+		BookID:          p.BookID,
+		PageNumber:      p.PageNumber,
+		NarrativeText:   p.NarrativeText,
+		InstructionText: p.InstructionText,
+		CreatedAt:       p.CreatedAt,
+		UpdatedAt:       p.UpdatedAt,
+		DeletedAt:       p.DeletedAt,
+	}
+}
+
+// --- Interaction Mappers ---
+
+// Map GORM model ke Domain entity
+func (i *InteractionGORM) ToDomain() *domain.Interaction {
+	domainInteraction := &domain.Interaction{
+		ID:        i.ID,
+		PageID:    i.PageID,
+		Type:      i.Type,
+		Config:    i.Config,
+		CreatedAt: i.CreatedAt,
+		UpdatedAt: i.UpdatedAt,
+		DeletedAt: i.DeletedAt,
+	}
+	if i.Page.ID != 0 {
+		domainInteraction.Page = *i.Page.ToDomain()
+	}
+	return domainInteraction
+}
+
+// Map Domain entity ke GORM model
+func InteractionFromDomain(i *domain.Interaction) *InteractionGORM {
+	return &InteractionGORM{
+		ID:        i.ID,
+		PageID:    i.PageID,
+		Type:      i.Type,
+		Config:    i.Config,
+		CreatedAt: i.CreatedAt,
+		UpdatedAt: i.UpdatedAt,
+		DeletedAt: i.DeletedAt,
+	}
+}

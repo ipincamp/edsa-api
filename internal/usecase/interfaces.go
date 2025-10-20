@@ -49,6 +49,33 @@ type GroupRepository interface {
 	Delete(ctx context.Context, id uint) error
 }
 
+// BookRepository mendefinisikan kontrak untuk data buku
+type BookRepository interface {
+	Create(ctx context.Context, book *domain.Book) error
+	FindAll(ctx context.Context) ([]domain.Book, error)
+	FindByID(ctx context.Context, id uint) (*domain.Book, error)
+	Update(ctx context.Context, book *domain.Book) error
+	Delete(ctx context.Context, id uint) error
+}
+
+// PageRepository mendefinisikan kontrak untuk data halaman
+type PageRepository interface {
+	Create(ctx context.Context, page *domain.Page) error
+	FindAllByBookID(ctx context.Context, bookID uint) ([]domain.Page, error)
+	FindByID(ctx context.Context, id uint) (*domain.Page, error)
+	Update(ctx context.Context, page *domain.Page) error
+	Delete(ctx context.Context, id uint) error
+}
+
+// InteractionRepository mendefinisikan kontrak untuk data interaksi
+type InteractionRepository interface {
+	Create(ctx context.Context, interaction *domain.Interaction) error
+	FindAllByPageID(ctx context.Context, pageID uint) ([]domain.Interaction, error)
+	FindByID(ctx context.Context, id uint) (*domain.Interaction, error)
+	Update(ctx context.Context, interaction *domain.Interaction) error
+	Delete(ctx context.Context, id uint) error
+}
+
 // --- Services ---
 
 // UserService mendefinisikan logika bisnis untuk pengguna
@@ -92,4 +119,25 @@ type AdminService interface {
 	GetGroupByID(ctx context.Context, id uint) (*domain.GroupResponse, error)
 	UpdateGroup(ctx context.Context, id uint, req *domain.UpdateGroupRequest) (*domain.GroupResponse, error)
 	DeleteGroup(ctx context.Context, id uint) error
+
+	// Book
+	CreateBook(ctx context.Context, req *domain.CreateBookRequest) (*domain.BookResponse, error)
+	GetAllBooks(ctx context.Context) ([]domain.BookResponse, error)
+	GetBookByID(ctx context.Context, id uint) (*domain.BookResponse, error)
+	UpdateBook(ctx context.Context, id uint, req *domain.UpdateBookRequest) (*domain.BookResponse, error)
+	DeleteBook(ctx context.Context, id uint) error
+
+	// Page
+	CreatePage(ctx context.Context, bookID uint, req *domain.CreatePageRequest) (*domain.PageResponse, error)
+	GetAllPagesForBook(ctx context.Context, bookID uint) ([]domain.PageResponse, error)
+	GetPageByID(ctx context.Context, id uint) (*domain.PageResponse, error)
+	UpdatePage(ctx context.Context, id uint, req *domain.UpdatePageRequest) (*domain.PageResponse, error)
+	DeletePage(ctx context.Context, id uint) error
+
+	// Interaction
+	CreateInteraction(ctx context.Context, pageID uint, req *domain.CreateInteractionRequest) (*domain.InteractionResponse, error)
+	GetAllInteractionsForPage(ctx context.Context, pageID uint) ([]domain.InteractionResponse, error)
+	GetInteractionByID(ctx context.Context, id uint) (*domain.InteractionResponse, error)
+	UpdateInteraction(ctx context.Context, id uint, req *domain.UpdateInteractionRequest) (*domain.InteractionResponse, error)
+	DeleteInteraction(ctx context.Context, id uint) error
 }
