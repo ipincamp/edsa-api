@@ -7,6 +7,7 @@ func GetAllMigrations() []*gormigrate.Migration {
 	return []*gormigrate.Migration{
 		CreateRolesTable(),
 		CreateUsersTable(),
+		CreateSubjectsTable(),
 		// AnotherMigration(),
 	}
 }

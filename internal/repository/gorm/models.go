@@ -36,3 +36,16 @@ type UserGORM struct {
 func (UserGORM) TableName() string {
 	return "users"
 }
+
+// SubjectGORM adalah representasi tabel 'subjects' di database
+type SubjectGORM struct {
+	ID        uint   `gorm:"primarykey"`
+	Name      string `gorm:"type:varchar(255);not null"`
+	CreatedAt time.Time
+	UpdatedAt time.Time
+	DeletedAt gorm.DeletedAt `gorm:"index"`
+}
+
+func (SubjectGORM) TableName() string {
+	return "subjects"
+}
