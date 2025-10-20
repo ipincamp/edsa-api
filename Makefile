@@ -70,6 +70,10 @@ migrate-down: ## Rollback the last migration
 	@echo "Rolling back last migration..."
 	@go run $(MIGRATE_GO) down
 
+migrate-reset: ## Drop all tables and re-run all migrations
+	@echo "Resetting database (dropping all tables and re-running 'up')..."
+	@go run $(MIGRATE_GO) reset
+
 ## --------------------------------------
 ## Seeder Commands
 ## --------------------------------------

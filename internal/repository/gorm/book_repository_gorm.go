@@ -73,6 +73,34 @@ func (r *bookRepositoryGORM) FindByOrder(ctx context.Context, order int) (*domai
 	return gormBook.ToDomain(), nil
 }
 
+func (r *bookRepositoryGORM) CreateBookWithOrderShift(ctx context.Context, book *domain.Book) error {
+	// Gunakan transaksi untuk memastikan konsistensi data
+	return r.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		newOrder := book.BookOrder
+
+		// 1. Geser (Shift) semua buku yang ada di urutan >= newOrder
+		// Cth: Insert di pos 1. Buku (1,2,3) -> (2,3,4)
+		if err := tx.Model(&BookGORM{}).
+			Where("book_order >= ?", newOrder).
+			Order("book_order DESC").
+			Update("book_order", gorm.Expr("book_order + 1")).Error; err != nil {
+			return err
+		}
+
+		// 2. Sekarang buat buku baru di posisi newOrder
+		gormBook := BookFromDomain(book)
+		// Pastikan book_order sudah diset dari service
+
+		if err := tx.Create(gormBook).Error; err != nil {
+			return err
+		}
+
+		// Salin ID yang digenerate kembali ke domain object
+		book.ID = gormBook.ID
+		return nil // Commit transaksi
+	})
+}
+
 func (r *bookRepositoryGORM) UpdateBookWithOrderShift(ctx context.Context, book *domain.Book, newOrder int) error {
 	return r.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
 		oldOrder := book.BookOrder

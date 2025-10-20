@@ -102,7 +102,7 @@ type BookGORM struct {
 	Description   string     `gorm:"type:text"`
 	CoverImageURL string     `gorm:"type:varchar(255)"`
 	Theme         string     `gorm:"type:varchar(100)"`
-	BookOrder     int        `gorm:"default:0"`
+	BookOrder     int        `gorm:"default:0;uniqueIndex"`
 	Pages         []PageGORM `gorm:"foreignKey:BookID"` // Relasi one-to-many
 	CreatedAt     time.Time
 	UpdatedAt     time.Time

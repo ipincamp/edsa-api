@@ -343,7 +343,7 @@ func (s *adminService) CreateBook(ctx context.Context, req *domain.CreateBookReq
 		Theme:         req.Theme,
 		BookOrder:     req.BookOrder,
 	}
-	if err := s.bookRepo.Create(ctx, book); err != nil {
+	if err := s.bookRepo.CreateBookWithOrderShift(ctx, book); err != nil {
 		return nil, err
 	}
 	return toBookResponse(book), nil
