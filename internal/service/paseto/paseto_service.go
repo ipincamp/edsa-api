@@ -19,8 +19,8 @@ type pasetoService struct {
 
 // Kustom Paseto payload
 type PasetoPayload struct {
-	UserID uuid.UUID `json:"user_id"`
-	Email  string    `json:"email"`
+	UserID string `json:"user_id"`
+	Email  string `json:"email"`
 }
 
 func NewPasetoService(symmetricKeyBase64 string) (usecase.TokenService, error) {
@@ -45,7 +45,7 @@ func NewPasetoService(symmetricKeyBase64 string) (usecase.TokenService, error) {
 
 func (s *pasetoService) CreateToken(user *domain.User, duration time.Duration) (string, error) {
 	payload := PasetoPayload{
-		UserID: user.ID,
+		UserID: user.ID.String(),
 		Email:  user.Email,
 	}
 
@@ -84,5 +84,10 @@ func (s *pasetoService) ValidateToken(tokenString string) (uuid.UUID, error) {
 		return uuid.Nil, fmt.Errorf("failed to get payload from token: %w", err)
 	}
 
-	return payload.UserID, nil
+	userID, err := uuid.Parse(payload.UserID)
+	if err != nil {
+		return uuid.Nil, errors.New("invalid user ID format in token payload")
+	}
+
+	return userID, nil
 }
