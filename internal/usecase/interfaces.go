@@ -2,6 +2,7 @@ package usecase
 
 import (
 	"context"
+	"mime/multipart"
 	"time"
 
 	"github.com/google/uuid"
@@ -104,6 +105,12 @@ type ActivityLogRepository interface {
 	FindAllByUserID(ctx context.Context, userID uuid.UUID) ([]domain.ActivityLog, error)
 }
 
+// MediaAssetRepository mendefinisikan kontrak untuk data aset media
+type MediaAssetRepository interface {
+	Create(ctx context.Context, asset *domain.MediaAsset) error
+	// TODO: Tambahkan Find, Delete jika diperlukan
+}
+
 // --- Services ---
 
 // UserService mendefinisikan logika bisnis untuk pengguna
@@ -191,4 +198,14 @@ type ActivityLoggerService interface {
 type DashboardService interface {
 	GetStudentActivity(ctx context.Context, studentID uuid.UUID) ([]domain.ActivityLogResponse, error)
 	// TODO: Tambahkan method dashboard lainnya
+}
+
+// FileStorageService mendefinisikan kontrak untuk mengunggah file
+type FileStorageService interface {
+	Upload(file *multipart.FileHeader) (publicURL, filePath string, err error)
+}
+
+// MediaService mendefinisikan logika bisnis untuk manajemen media
+type MediaService interface {
+	UploadFile(ctx context.Context, file *multipart.FileHeader, ownerID, ownerType string) (*domain.MediaAssetResponse, error)
 }

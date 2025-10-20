@@ -217,3 +217,22 @@ type ActivityLogGORM struct {
 func (ActivityLogGORM) TableName() string {
 	return "activity_logs"
 }
+
+// MediaAssetGORM adalah representasi tabel 'media_assets' di database
+type MediaAssetGORM struct {
+	ID        uuid.UUID `gorm:"type:uuid;default:gen_random_uuid();primarykey"`
+	FileName  string    `gorm:"type:varchar(255);not null"`
+	FilePath  string    `gorm:"type:varchar(255);not null"`
+	PublicURL string    `gorm:"type:varchar(255);not null"`
+	MimeType  string    `gorm:"type:varchar(100)"`
+	FileSize  int64     `gorm:"not null"`
+	OwnerID   string    `gorm:"type:varchar(255);index"`
+	OwnerType string    `gorm:"type:varchar(100);index"`
+	CreatedAt time.Time
+	UpdatedAt time.Time
+	DeletedAt gorm.DeletedAt `gorm:"index"`
+}
+
+func (MediaAssetGORM) TableName() string {
+	return "media_assets"
+}
