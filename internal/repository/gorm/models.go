@@ -198,3 +198,22 @@ type UserGameScoreGORM struct {
 func (UserGameScoreGORM) TableName() string {
 	return "user_game_scores"
 }
+
+// ActivityLogGORM adalah representasi tabel 'activity_logs' di database
+type ActivityLogGORM struct {
+	ID             uint      `gorm:"primarykey"`
+	UserID         uuid.UUID `gorm:"not null;index"`
+	User           UserGORM  `gorm:"foreignKey:UserID"`
+	SessionID      uuid.UUID `gorm:"not null;index"`
+	Action         string    `gorm:"type:varchar(100);not null;index"`
+	TimestampStart time.Time `gorm:"not null"`
+	DurationMs     *int
+	Details        json.RawMessage `gorm:"type:jsonb"`
+	CreatedAt      time.Time
+	UpdatedAt      time.Time
+	DeletedAt      gorm.DeletedAt `gorm:"index"`
+}
+
+func (ActivityLogGORM) TableName() string {
+	return "activity_logs"
+}

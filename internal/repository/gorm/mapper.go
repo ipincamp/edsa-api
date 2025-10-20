@@ -333,3 +333,37 @@ func UserGameScoreFromDomain(s *domain.UserGameScore) *UserGameScoreGORM {
 		DeletedAt:    s.DeletedAt,
 	}
 }
+
+// --- ActivityLog Mappers ---
+
+// Map GORM model ke Domain entity
+func (l *ActivityLogGORM) ToDomain() *domain.ActivityLog {
+	return &domain.ActivityLog{
+		ID:             l.ID,
+		UserID:         l.UserID,
+		SessionID:      l.SessionID,
+		Action:         l.Action,
+		TimestampStart: l.TimestampStart,
+		DurationMs:     l.DurationMs,
+		Details:        l.Details,
+		CreatedAt:      l.CreatedAt,
+		UpdatedAt:      l.UpdatedAt,
+		DeletedAt:      l.DeletedAt,
+	}
+}
+
+// Map Domain entity ke GORM model
+func ActivityLogFromDomain(l *domain.ActivityLog) *ActivityLogGORM {
+	return &ActivityLogGORM{
+		ID:             l.ID,
+		UserID:         l.UserID,
+		SessionID:      l.SessionID,
+		Action:         l.Action,
+		TimestampStart: l.TimestampStart,
+		DurationMs:     l.DurationMs,
+		Details:        l.Details,
+		CreatedAt:      l.CreatedAt,
+		UpdatedAt:      l.UpdatedAt,
+		DeletedAt:      l.DeletedAt,
+	}
+}

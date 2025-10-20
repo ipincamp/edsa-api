@@ -98,6 +98,12 @@ type UserGameScoreRepository interface {
 	Upsert(ctx context.Context, score *domain.UserGameScore) error // Create atau Update
 }
 
+// ActivityLogRepository mendefinisikan kontrak untuk data log aktivitas pengguna
+type ActivityLogRepository interface {
+	Create(ctx context.Context, log *domain.ActivityLog) error
+	FindAllByUserID(ctx context.Context, userID uuid.UUID) ([]domain.ActivityLog, error)
+}
+
 // --- Services ---
 
 // UserService mendefinisikan logika bisnis untuk pengguna
@@ -174,4 +180,15 @@ type AppService interface {
 	// Game Module
 	GetAllGames(ctx context.Context, userID uuid.UUID) ([]domain.GameResponse, error)
 	SubmitGameScore(ctx context.Context, userID uuid.UUID, gameID uint, req *domain.SubmitGameScoreRequest) error
+}
+
+// ActivityLoggerService mendefinisikan logika bisnis untuk pencatatan aktivitas pengguna
+type ActivityLoggerService interface {
+	Log(ctx context.Context, logData domain.ActivityLog)
+}
+
+// Mendefinisikan logika bisnis untuk Dashboard Guru
+type DashboardService interface {
+	GetStudentActivity(ctx context.Context, studentID uuid.UUID) ([]domain.ActivityLogResponse, error)
+	// TODO: Tambahkan method dashboard lainnya
 }
