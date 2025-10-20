@@ -9,20 +9,29 @@ import (
 )
 
 type adminService struct {
-	subjectRepo usecase.SubjectRepository
-	classRepo   usecase.ClassRepository
-	groupRepo   usecase.GroupRepository
+	subjectRepo     usecase.SubjectRepository
+	classRepo       usecase.ClassRepository
+	groupRepo       usecase.GroupRepository
+	bookRepo        usecase.BookRepository
+	pageRepo        usecase.PageRepository
+	interactionRepo usecase.InteractionRepository
 }
 
 func NewAdminService(
 	subjectRepo usecase.SubjectRepository,
 	classRepo usecase.ClassRepository,
 	groupRepo usecase.GroupRepository,
+	bookRepo usecase.BookRepository,
+	pageRepo usecase.PageRepository,
+	interactionRepo usecase.InteractionRepository,
 ) usecase.AdminService {
 	return &adminService{
-		subjectRepo: subjectRepo,
-		classRepo:   classRepo,
-		groupRepo:   groupRepo,
+		subjectRepo:     subjectRepo,
+		classRepo:       classRepo,
+		groupRepo:       groupRepo,
+		bookRepo:        bookRepo,
+		pageRepo:        pageRepo,
+		interactionRepo: interactionRepo,
 	}
 }
 
@@ -56,6 +65,44 @@ func toGroupResponse(g *domain.Group) *domain.GroupResponse {
 	}
 	if g.Class.ID != 0 {
 		resp.Class = *toClassResponse(&g.Class)
+	}
+	return resp
+}
+
+func toBookResponse(b *domain.Book) *domain.BookResponse {
+	return &domain.BookResponse{
+		ID:            b.ID,
+		Title:         b.Title,
+		Description:   b.Description,
+		CoverImageURL: b.CoverImageURL,
+		Theme:         b.Theme,
+		BookOrder:     b.BookOrder,
+	}
+}
+
+func toPageResponse(p *domain.Page) *domain.PageResponse {
+	resp := &domain.PageResponse{
+		ID:              p.ID,
+		BookID:          p.BookID,
+		PageNumber:      p.PageNumber,
+		NarrativeText:   p.NarrativeText,
+		InstructionText: p.InstructionText,
+	}
+	if p.Book.ID != 0 {
+		resp.Book = *toBookResponse(&p.Book)
+	}
+	return resp
+}
+
+func toInteractionResponse(i *domain.Interaction) *domain.InteractionResponse {
+	resp := &domain.InteractionResponse{
+		ID:     i.ID,
+		PageID: i.PageID,
+		Type:   i.Type,
+		Config: i.Config,
+	}
+	if i.Page.ID != 0 {
+		resp.Page = *toPageResponse(&i.Page)
 	}
 	return resp
 }
@@ -284,4 +331,212 @@ func (s *adminService) UpdateGroup(ctx context.Context, id uint, req *domain.Upd
 
 func (s *adminService) DeleteGroup(ctx context.Context, id uint) error {
 	return s.groupRepo.Delete(ctx, id)
+}
+
+// --- Book Methods ---
+
+func (s *adminService) CreateBook(ctx context.Context, req *domain.CreateBookRequest) (*domain.BookResponse, error) {
+	book := &domain.Book{
+		Title:         req.Title,
+		Description:   req.Description,
+		CoverImageURL: req.CoverImageURL,
+		Theme:         req.Theme,
+		BookOrder:     req.BookOrder,
+	}
+	if err := s.bookRepo.Create(ctx, book); err != nil {
+		return nil, err
+	}
+	return toBookResponse(book), nil
+}
+
+func (s *adminService) GetAllBooks(ctx context.Context) ([]domain.BookResponse, error) {
+	books, err := s.bookRepo.FindAll(ctx)
+	if err != nil {
+		return nil, err
+	}
+	var responses []domain.BookResponse
+	for _, b := range books {
+		responses = append(responses, *toBookResponse(&b))
+	}
+	return responses, nil
+}
+
+func (s *adminService) GetBookByID(ctx context.Context, id uint) (*domain.BookResponse, error) {
+	book, err := s.bookRepo.FindByID(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+	if book == nil {
+		return nil, errors.New("book not found")
+	}
+	return toBookResponse(book), nil
+}
+
+func (s *adminService) UpdateBook(ctx context.Context, id uint, req *domain.UpdateBookRequest) (*domain.BookResponse, error) {
+	book, err := s.bookRepo.FindByID(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+	if book == nil {
+		return nil, errors.New("book not found")
+	}
+
+	book.Title = req.Title
+	book.Description = req.Description
+	book.CoverImageURL = req.CoverImageURL
+	book.Theme = req.Theme
+	book.BookOrder = req.BookOrder
+
+	if err := s.bookRepo.Update(ctx, book); err != nil {
+		return nil, err
+	}
+	return toBookResponse(book), nil
+}
+
+func (s *adminService) DeleteBook(ctx context.Context, id uint) error {
+	return s.bookRepo.Delete(ctx, id)
+}
+
+// --- Page Methods ---
+
+func (s *adminService) CreatePage(ctx context.Context, bookID uint, req *domain.CreatePageRequest) (*domain.PageResponse, error) {
+	// Cek apakah BookID ada
+	book, err := s.bookRepo.FindByID(ctx, bookID)
+	if err != nil {
+		return nil, err
+	}
+	if book == nil {
+		return nil, errors.New("book not found")
+	}
+
+	page := &domain.Page{
+		BookID:          bookID,
+		PageNumber:      req.PageNumber,
+		NarrativeText:   req.NarrativeText,
+		InstructionText: req.InstructionText,
+	}
+	if err := s.pageRepo.Create(ctx, page); err != nil {
+		return nil, err
+	}
+
+	page.Book = *book // Attach book
+	return toPageResponse(page), nil
+}
+
+func (s *adminService) GetAllPagesForBook(ctx context.Context, bookID uint) ([]domain.PageResponse, error) {
+	pages, err := s.pageRepo.FindAllByBookID(ctx, bookID)
+	if err != nil {
+		return nil, err
+	}
+	var responses []domain.PageResponse
+	for _, p := range pages {
+		responses = append(responses, *toPageResponse(&p))
+	}
+	return responses, nil
+}
+
+func (s *adminService) GetPageByID(ctx context.Context, id uint) (*domain.PageResponse, error) {
+	page, err := s.pageRepo.FindByID(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+	if page == nil {
+		return nil, errors.New("page not found")
+	}
+	return toPageResponse(page), nil
+}
+
+func (s *adminService) UpdatePage(ctx context.Context, id uint, req *domain.UpdatePageRequest) (*domain.PageResponse, error) {
+	page, err := s.pageRepo.FindByID(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+	if page == nil {
+		return nil, errors.New("page not found")
+	}
+
+	page.PageNumber = req.PageNumber
+	page.NarrativeText = req.NarrativeText
+	page.InstructionText = req.InstructionText
+
+	if err := s.pageRepo.Update(ctx, page); err != nil {
+		return nil, err
+	}
+	// page sudah terisi data `Book` dari FindByID
+	return toPageResponse(page), nil
+}
+
+func (s *adminService) DeletePage(ctx context.Context, id uint) error {
+	return s.pageRepo.Delete(ctx, id)
+}
+
+// --- Interaction Methods ---
+
+func (s *adminService) CreateInteraction(ctx context.Context, pageID uint, req *domain.CreateInteractionRequest) (*domain.InteractionResponse, error) {
+	// Cek apakah PageID ada
+	page, err := s.pageRepo.FindByID(ctx, pageID)
+	if err != nil {
+		return nil, err
+	}
+	if page == nil {
+		return nil, errors.New("page not found")
+	}
+
+	interaction := &domain.Interaction{
+		PageID: pageID,
+		Type:   req.Type,
+		Config: req.Config,
+	}
+	if err := s.interactionRepo.Create(ctx, interaction); err != nil {
+		return nil, err
+	}
+
+	interaction.Page = *page // Attach page
+	return toInteractionResponse(interaction), nil
+}
+
+func (s *adminService) GetAllInteractionsForPage(ctx context.Context, pageID uint) ([]domain.InteractionResponse, error) {
+	interactions, err := s.interactionRepo.FindAllByPageID(ctx, pageID)
+	if err != nil {
+		return nil, err
+	}
+	var responses []domain.InteractionResponse
+	for _, i := range interactions {
+		responses = append(responses, *toInteractionResponse(&i))
+	}
+	return responses, nil
+}
+
+func (s *adminService) GetInteractionByID(ctx context.Context, id uint) (*domain.InteractionResponse, error) {
+	interaction, err := s.interactionRepo.FindByID(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+	if interaction == nil {
+		return nil, errors.New("interaction not found")
+	}
+	return toInteractionResponse(interaction), nil
+}
+
+func (s *adminService) UpdateInteraction(ctx context.Context, id uint, req *domain.UpdateInteractionRequest) (*domain.InteractionResponse, error) {
+	interaction, err := s.interactionRepo.FindByID(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+	if interaction == nil {
+		return nil, errors.New("interaction not found")
+	}
+
+	interaction.Type = req.Type
+	interaction.Config = req.Config
+
+	if err := s.interactionRepo.Update(ctx, interaction); err != nil {
+		return nil, err
+	}
+	// interaction sudah terisi data `Page.Book` dari FindByID
+	return toInteractionResponse(interaction), nil
+}
+
+func (s *adminService) DeleteInteraction(ctx context.Context, id uint) error {
+	return s.interactionRepo.Delete(ctx, id)
 }
