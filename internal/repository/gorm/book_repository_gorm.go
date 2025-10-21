@@ -3,6 +3,7 @@ package gorm
 import (
 	"context"
 	"errors"
+	"fmt"
 
 	"github.com/ipincamp/go-edsa-api/internal/domain"
 	"github.com/ipincamp/go-edsa-api/internal/usecase"
@@ -74,66 +75,133 @@ func (r *bookRepositoryGORM) FindByOrder(ctx context.Context, order int) (*domai
 }
 
 func (r *bookRepositoryGORM) CreateBookWithOrderShift(ctx context.Context, book *domain.Book) error {
-	// Gunakan transaksi untuk memastikan konsistensi data
 	return r.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
 		newOrder := book.BookOrder
+		// log.Printf("[DEBUG] CreateBookWithOrderShift: Attempting to insert at order %d for book '%s'", newOrder, book.Title)
 
-		// 1. Geser (Shift) semua buku yang ada di urutan >= newOrder
-		// Cth: Insert di pos 1. Buku (1,2,3) -> (2,3,4)
+		// 1. Find IDs of books to shift (ordered highest first)
+		var idsToShift []uint
 		if err := tx.Model(&BookGORM{}).
 			Where("book_order >= ?", newOrder).
-			Order("book_order DESC").
-			Update("book_order", gorm.Expr("book_order + 1")).Error; err != nil {
+			Order("book_order DESC"). // Highest order first is CRITICAL here
+			Pluck("id", &idsToShift).Error; err != nil {
+			// log.Printf("[ERROR] Failed finding books to shift: %v", err)
 			return err
 		}
+		// log.Printf("[DEBUG] Found %d books to shift (IDs: %v)", len(idsToShift), idsToShift)
 
-		// 2. Sekarang buat buku baru di posisi newOrder
+		// 2. Shift them one by one, starting from the highest order
+		if len(idsToShift) > 0 {
+			// log.Printf("[DEBUG] Shifting books one by one...")
+			for _, idToShift := range idsToShift {
+				// log.Printf("[DEBUG] Incrementing book_order for ID: %d", idToShift)
+				// Update book_order = book_order + 1 for the specific ID
+				result := tx.Model(&BookGORM{}).Where("id = ?", idToShift).UpdateColumn("book_order", gorm.Expr("book_order + 1"))
+				// We use UpdateColumn to avoid triggering hooks/UpdatedAt unnecessarily during the shift
+				if result.Error != nil {
+					// log.Printf("[ERROR] Failed shifting book ID %d: %v", idToShift, result.Error)
+					return fmt.Errorf("failed shifting book ID %d: %w", idToShift, result.Error)
+				}
+				if result.RowsAffected == 0 {
+					// log.Printf("[WARN] Shift update affected 0 rows for ID %d (maybe it was already updated/deleted?)", idToShift)
+					// Decide if this should be a critical error or just a warning
+				}
+			}
+			// log.Printf("[DEBUG] Finished shifting %d books individually.", len(idsToShift))
+		} else {
+			// log.Printf("[DEBUG] No books found at or after order %d, no shifting needed.", newOrder)
+		}
+
+		// 3. Create the new book
 		gormBook := BookFromDomain(book)
-		// Pastikan book_order sudah diset dari service
-
+		gormBook.BookOrder = newOrder
+		// log.Printf("[DEBUG] Creating new book '%s' with final order %d", gormBook.Title, gormBook.BookOrder)
 		if err := tx.Create(gormBook).Error; err != nil {
+			// log.Printf("[ERROR] Failed during create after shift: %v", err)
 			return err
 		}
 
-		// Salin ID yang digenerate kembali ke domain object
 		book.ID = gormBook.ID
-		return nil // Commit transaksi
+		// log.Printf("[DEBUG] Successfully created book ID %d at order %d", book.ID, newOrder)
+		return nil // Commit transaction
 	})
 }
 
 func (r *bookRepositoryGORM) UpdateBookWithOrderShift(ctx context.Context, book *domain.Book, newOrder int) error {
 	return r.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
-		oldOrder := book.BookOrder
+		var currentBookInDB BookGORM
+		if err := tx.Model(&BookGORM{}).Select("book_order").First(&currentBookInDB, book.ID).Error; err != nil {
+			// log.Printf("[ERROR] UpdateShift: Failed to get current book order for ID %d: %v", book.ID, err)
+			return errors.New("failed to find book being updated")
+		}
+		oldOrder := currentBookInDB.BookOrder
 
-		// 1. Geser buku-buku lain untuk memberi ruang
-		if newOrder < oldOrder {
-			// Pindah ke atas (misal 5 -> 2)
-			// Buku urutan 2, 3, 4 harus jadi 3, 4, 5 (+1)
-			if err := tx.Model(&BookGORM{}).
-				Where("book_order >= ? AND book_order < ?", newOrder, oldOrder).
-				Update("book_order", gorm.Expr("book_order + 1")).Error; err != nil {
+		if oldOrder == newOrder {
+			// log.Printf("[DEBUG] UpdateShift: Order not changed for book ID %d. Performing standard update.", book.ID)
+			// If order hasn't changed, just do a normal save.
+			gormBook := BookFromDomain(book)
+			gormBook.BookOrder = newOrder // Ensure order is set
+			if err := tx.Save(gormBook).Error; err != nil {
+				// log.Printf("[ERROR] Failed saving target book ID %d (no order change): %v", book.ID, err)
 				return err
 			}
-		} else {
-			// Pindah ke bawah (misal 2 -> 5)
-			// Buku urutan 3, 4, 5 harus jadi 2, 3, 4 (-1)
+			return nil // Commit early
+		}
+
+		// log.Printf("[DEBUG] UpdateBookWithOrderShift: Moving book ID %d from order %d to %d", book.ID, oldOrder, newOrder)
+
+		// 1. Shift books to make space or fill gap
+		if newOrder < oldOrder {
+			// Moving Up (e.g., 5 -> 2). Books [newOrder, oldOrder-1] need +1
+			var idsToShift []uint
 			if err := tx.Model(&BookGORM{}).
-				Where("book_order > ? AND book_order <= ?", oldOrder, newOrder).
-				Update("book_order", gorm.Expr("book_order - 1")).Error; err != nil {
+				Where("book_order >= ? AND book_order < ? AND id != ?", newOrder, oldOrder, book.ID).
+				Order("book_order DESC"). // Process highest first
+				Pluck("id", &idsToShift).Error; err != nil {
+				// log.Printf("[ERROR] UpdateShift (Up): Failed finding books to shift: %v", err)
 				return err
+			}
+			// log.Printf("[DEBUG] Moving up: Found %d books to increment (IDs: %v)", len(idsToShift), idsToShift)
+			for _, idToShift := range idsToShift {
+				// log.Printf("[DEBUG] Moving up: Incrementing order for ID %d", idToShift)
+				if err := tx.Model(&BookGORM{}).Where("id = ?", idToShift).UpdateColumn("book_order", gorm.Expr("book_order + 1")).Error; err != nil {
+					// log.Printf("[ERROR] Failed shifting book ID %d up: %v", idToShift, err)
+					return fmt.Errorf("failed shifting book ID %d up: %w", idToShift, err)
+				}
+			}
+
+		} else { // newOrder > oldOrder
+			// Moving Down (e.g., 2 -> 5). Books [oldOrder+1, newOrder] need -1
+			var idsToShift []uint
+			if err := tx.Model(&BookGORM{}).
+				Where("book_order > ? AND book_order <= ? AND id != ?", oldOrder, newOrder, book.ID).
+				Order("book_order ASC"). // Process lowest first
+				Pluck("id", &idsToShift).Error; err != nil {
+				// log.Printf("[ERROR] UpdateShift (Down): Failed finding books to shift: %v", err)
+				return err
+			}
+			// log.Printf("[DEBUG] Moving down: Found %d books to decrement (IDs: %v)", len(idsToShift), idsToShift)
+			for _, idToShift := range idsToShift {
+				// log.Printf("[DEBUG] Moving down: Decrementing order for ID %d", idToShift)
+				if err := tx.Model(&BookGORM{}).Where("id = ?", idToShift).UpdateColumn("book_order", gorm.Expr("book_order - 1")).Error; err != nil {
+					// log.Printf("[ERROR] Failed shifting book ID %d down: %v", idToShift, err)
+					return fmt.Errorf("failed shifting book ID %d down: %w", idToShift, err)
+				}
 			}
 		}
 
-		// 2. Update buku ini (termasuk Title, Desc, dll)
+		// 2. Update the target book (Title, Desc, AND the new BookOrder)
 		gormBook := BookFromDomain(book)
-		// Set urutan baru
-		gormBook.BookOrder = newOrder
+		gormBook.BookOrder = newOrder // Explicitly set the final order
+		// log.Printf("[DEBUG] Updating target book ID %d with final order %d", gormBook.ID, gormBook.BookOrder)
 
-		// Gunakan Save untuk update semua field (termasuk Title, dll)
+		// Use Save to update all fields passed in 'book', plus the explicitly set BookOrder
 		if err := tx.Save(gormBook).Error; err != nil {
+			// log.Printf("[ERROR] Failed saving target book ID %d: %v", book.ID, err)
 			return err
 		}
 
-		return nil // Commit transaksi
+		// log.Printf("[DEBUG] Successfully updated book ID %d to order %d", book.ID, newOrder)
+		return nil // Commit transaction
 	})
 }
