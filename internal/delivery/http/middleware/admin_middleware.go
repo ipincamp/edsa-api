@@ -16,21 +16,21 @@ func AdminMiddleware(userRepo usecase.UserRepository) fiber.Handler {
 		userID, ok := c.Locals("userID").(uuid.UUID)
 		if !ok || userID == uuid.Nil {
 			// Ini seharusnya tidak terjadi jika AuthMiddleware berjalan dulu
-			return utils.SendError(c, fiber.StatusUnauthorized, "Authentication context not found")
+			return utils.SendSimpleError(c, fiber.StatusUnauthorized, "Invalid session", "Authentication context not found")
 		}
 
 		// 2. Dapatkan data pengguna dari repository
 		user, err := userRepo.FindByID(c.Context(), userID)
 		if err != nil {
-			return utils.SendError(c, fiber.StatusInternalServerError, "Failed to retrieve user data")
+			return utils.SendSimpleError(c, fiber.StatusInternalServerError, "Session error", err.Error())
 		}
 		if user == nil {
-			return utils.SendError(c, fiber.StatusUnauthorized, "User not found")
+			return utils.SendSimpleError(c, fiber.StatusUnauthorized, "Invalid session", "User not found")
 		}
 
 		// 3. Periksa peran pengguna
 		if user.Role.Name != domain.RoleNameAdmin {
-			return utils.SendError(c, fiber.StatusForbidden, "Forbidden: Access restricted to administrators")
+			return utils.SendSimpleError(c, fiber.StatusForbidden, "Forbidden", "Access restricted to administrators only")
 		}
 
 		// 4. Lolos, lanjutkan ke handler berikutnya

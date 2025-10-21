@@ -15,21 +15,21 @@ func TeacherMiddleware(userRepo usecase.UserRepository) fiber.Handler {
 		// 1. Ambil userID dari context
 		userID, ok := c.Locals("userID").(uuid.UUID)
 		if !ok || userID == uuid.Nil {
-			return utils.SendError(c, fiber.StatusUnauthorized, "Authentication context not found")
+			return utils.SendSimpleError(c, fiber.StatusUnauthorized, "Invalid session", "Authentication context not found")
 		}
 
 		// 2. Dapatkan data pengguna dari repository
 		user, err := userRepo.FindByID(c.Context(), userID)
 		if err != nil {
-			return utils.SendError(c, fiber.StatusInternalServerError, "Failed to retrieve user data")
+			return utils.SendSimpleError(c, fiber.StatusInternalServerError, "Session error", err.Error())
 		}
 		if user == nil {
-			return utils.SendError(c, fiber.StatusUnauthorized, "User not found")
+			return utils.SendSimpleError(c, fiber.StatusUnauthorized, "Invalid session", "User not found")
 		}
 
 		// 3. Periksa peran pengguna
 		if user.Role.Name != domain.RoleNameTeacher {
-			return utils.SendError(c, fiber.StatusForbidden, "Forbidden: Access restricted to teachers")
+			return utils.SendSimpleError(c, fiber.StatusForbidden, "Forbidden", "Access restricted to teachers only")
 		}
 
 		// 4. Lolos, lanjutkan ke handler berikutnya
