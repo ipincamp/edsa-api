@@ -25,14 +25,14 @@ func (h *DashboardHandler) GetStudentActivity(c *fiber.Ctx) error {
 	studentIdStr := c.Params("studentId")
 	studentID, err := uuid.Parse(studentIdStr)
 	if err != nil {
-		return utils.SendError(c, fiber.StatusBadRequest, "Invalid student ID format")
+		return utils.SendSimpleError(c, fiber.StatusBadRequest, "Invalid student ID format", err.Error())
 	}
 
 	// Panggil Usecase
 	activities, err := h.dashboardService.GetStudentActivity(c.Context(), studentID)
 	if err != nil {
-		return utils.SendError(c, fiber.StatusNotFound, err.Error())
+		return utils.SendSimpleError(c, fiber.StatusNotFound, err.Error(), err.Error())
 	}
 
-	return utils.SendSuccess(c, fiber.StatusOK, activities)
+	return utils.SendSuccess(c, fiber.StatusOK, "Student activity retrieved successfully", activities)
 }

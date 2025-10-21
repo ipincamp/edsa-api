@@ -50,7 +50,7 @@ func (h *AdminHandler) getUintIDParam(c *fiber.Ctx, paramName string) (uint, err
 func (h *AdminHandler) CreateSubject(c *fiber.Ctx) error {
 	var req domain.CreateSubjectRequest
 	if err := c.BodyParser(&req); err != nil {
-		return utils.SendError(c, fiber.StatusBadRequest, "Invalid request body")
+		return utils.SendSimpleError(c, fiber.StatusBadRequest, "Invalid request body", err.Error())
 	}
 	if errs := h.validate.ValidateStruct(req); len(errs) > 0 {
 		return utils.SendValidationErrors(c, errs)
@@ -58,41 +58,41 @@ func (h *AdminHandler) CreateSubject(c *fiber.Ctx) error {
 
 	subject, err := h.adminService.CreateSubject(c.Context(), &req)
 	if err != nil {
-		return utils.SendError(c, fiber.StatusInternalServerError, err.Error())
+		return utils.SendSimpleError(c, fiber.StatusInternalServerError, err.Error(), err.Error())
 	}
-	return utils.SendSuccess(c, fiber.StatusCreated, subject)
+	return utils.SendSuccess(c, fiber.StatusCreated, "Subject created successfully", subject)
 }
 
 func (h *AdminHandler) GetAllSubjects(c *fiber.Ctx) error {
 	subjects, err := h.adminService.GetAllSubjects(c.Context())
 	if err != nil {
-		return utils.SendError(c, fiber.StatusInternalServerError, err.Error())
+		return utils.SendSimpleError(c, fiber.StatusInternalServerError, err.Error(), err.Error())
 	}
-	return utils.SendSuccess(c, fiber.StatusOK, subjects)
+	return utils.SendSuccess(c, fiber.StatusOK, "Subjects retrieved successfully", subjects)
 }
 
 func (h *AdminHandler) GetSubjectByID(c *fiber.Ctx) error {
 	id, err := h.getIDParam(c)
 	if err != nil {
-		return utils.SendError(c, fiber.StatusBadRequest, err.Error())
+		return utils.SendSimpleError(c, fiber.StatusBadRequest, err.Error(), err.Error())
 	}
 
 	subject, err := h.adminService.GetSubjectByID(c.Context(), id)
 	if err != nil {
-		return utils.SendError(c, fiber.StatusNotFound, err.Error())
+		return utils.SendSimpleError(c, fiber.StatusNotFound, err.Error(), err.Error())
 	}
-	return utils.SendSuccess(c, fiber.StatusOK, subject)
+	return utils.SendSuccess(c, fiber.StatusOK, "Subject retrieved successfully", subject)
 }
 
 func (h *AdminHandler) UpdateSubject(c *fiber.Ctx) error {
 	id, err := h.getIDParam(c)
 	if err != nil {
-		return utils.SendError(c, fiber.StatusBadRequest, err.Error())
+		return utils.SendSimpleError(c, fiber.StatusBadRequest, err.Error(), err.Error())
 	}
 
 	var req domain.UpdateSubjectRequest
 	if err := c.BodyParser(&req); err != nil {
-		return utils.SendError(c, fiber.StatusBadRequest, "Invalid request body")
+		return utils.SendSimpleError(c, fiber.StatusBadRequest, "Invalid request body", err.Error())
 	}
 	if errs := h.validate.ValidateStruct(req); len(errs) > 0 {
 		return utils.SendValidationErrors(c, errs)
@@ -100,22 +100,22 @@ func (h *AdminHandler) UpdateSubject(c *fiber.Ctx) error {
 
 	subject, err := h.adminService.UpdateSubject(c.Context(), id, &req)
 	if err != nil {
-		return utils.SendError(c, fiber.StatusNotFound, err.Error())
+		return utils.SendSimpleError(c, fiber.StatusNotFound, err.Error(), err.Error())
 	}
-	return utils.SendSuccess(c, fiber.StatusOK, subject)
+	return utils.SendSuccess(c, fiber.StatusOK, "Subject updated successfully", subject)
 }
 
 func (h *AdminHandler) DeleteSubject(c *fiber.Ctx) error {
 	id, err := h.getIDParam(c)
 	if err != nil {
-		return utils.SendError(c, fiber.StatusBadRequest, err.Error())
+		return utils.SendSimpleError(c, fiber.StatusBadRequest, err.Error(), err.Error())
 	}
 
 	if err := h.adminService.DeleteSubject(c.Context(), id); err != nil {
 		// Bisa jadi error 404 (not found) atau 409 (conflict jika ada relasi)
-		return utils.SendError(c, fiber.StatusInternalServerError, err.Error())
+		return utils.SendSimpleError(c, fiber.StatusInternalServerError, err.Error(), err.Error())
 	}
-	return c.SendStatus(fiber.StatusNoContent)
+	return utils.SendSuccess(c, fiber.StatusOK, "Subject deleted successfully", nil)
 }
 
 // --- Class Handlers ---
@@ -123,7 +123,7 @@ func (h *AdminHandler) DeleteSubject(c *fiber.Ctx) error {
 func (h *AdminHandler) CreateClass(c *fiber.Ctx) error {
 	var req domain.CreateClassRequest
 	if err := c.BodyParser(&req); err != nil {
-		return utils.SendError(c, fiber.StatusBadRequest, "Invalid request body")
+		return utils.SendSimpleError(c, fiber.StatusBadRequest, "Invalid request body", err.Error())
 	}
 	if errs := h.validate.ValidateStruct(req); len(errs) > 0 {
 		return utils.SendValidationErrors(c, errs)
@@ -131,41 +131,41 @@ func (h *AdminHandler) CreateClass(c *fiber.Ctx) error {
 
 	class, err := h.adminService.CreateClass(c.Context(), &req)
 	if err != nil {
-		return utils.SendError(c, fiber.StatusBadRequest, err.Error()) // 400 jika subject_id tidak ada
+		return utils.SendSimpleError(c, fiber.StatusBadRequest, err.Error(), err.Error()) // 400 jika subject_id tidak ada
 	}
-	return utils.SendSuccess(c, fiber.StatusCreated, class)
+	return utils.SendSuccess(c, fiber.StatusCreated, "Class created successfully", class)
 }
 
 func (h *AdminHandler) GetAllClasses(c *fiber.Ctx) error {
 	classes, err := h.adminService.GetAllClasses(c.Context())
 	if err != nil {
-		return utils.SendError(c, fiber.StatusInternalServerError, err.Error())
+		return utils.SendSimpleError(c, fiber.StatusInternalServerError, err.Error(), err.Error())
 	}
-	return utils.SendSuccess(c, fiber.StatusOK, classes)
+	return utils.SendSuccess(c, fiber.StatusOK, "Classes retrieved successfully", classes)
 }
 
 func (h *AdminHandler) GetClassByID(c *fiber.Ctx) error {
 	id, err := h.getIDParam(c)
 	if err != nil {
-		return utils.SendError(c, fiber.StatusBadRequest, err.Error())
+		return utils.SendSimpleError(c, fiber.StatusBadRequest, err.Error(), err.Error())
 	}
 
 	class, err := h.adminService.GetClassByID(c.Context(), id)
 	if err != nil {
-		return utils.SendError(c, fiber.StatusNotFound, err.Error())
+		return utils.SendSimpleError(c, fiber.StatusNotFound, err.Error(), err.Error())
 	}
-	return utils.SendSuccess(c, fiber.StatusOK, class)
+	return utils.SendSuccess(c, fiber.StatusOK, "Class retrieved successfully", class)
 }
 
 func (h *AdminHandler) UpdateClass(c *fiber.Ctx) error {
 	id, err := h.getIDParam(c)
 	if err != nil {
-		return utils.SendError(c, fiber.StatusBadRequest, err.Error())
+		return utils.SendSimpleError(c, fiber.StatusBadRequest, err.Error(), err.Error())
 	}
 
 	var req domain.UpdateClassRequest
 	if err := c.BodyParser(&req); err != nil {
-		return utils.SendError(c, fiber.StatusBadRequest, "Invalid request body")
+		return utils.SendSimpleError(c, fiber.StatusBadRequest, "Invalid request body", err.Error())
 	}
 	if errs := h.validate.ValidateStruct(req); len(errs) > 0 {
 		return utils.SendValidationErrors(c, errs)
@@ -173,21 +173,21 @@ func (h *AdminHandler) UpdateClass(c *fiber.Ctx) error {
 
 	class, err := h.adminService.UpdateClass(c.Context(), id, &req)
 	if err != nil {
-		return utils.SendError(c, fiber.StatusNotFound, err.Error()) // 404 jika class/subject tidak ada
+		return utils.SendSimpleError(c, fiber.StatusNotFound, err.Error(), err.Error()) // 404 jika class/subject tidak ada
 	}
-	return utils.SendSuccess(c, fiber.StatusOK, class)
+	return utils.SendSuccess(c, fiber.StatusOK, "Class updated successfully", class)
 }
 
 func (h *AdminHandler) DeleteClass(c *fiber.Ctx) error {
 	id, err := h.getIDParam(c)
 	if err != nil {
-		return utils.SendError(c, fiber.StatusBadRequest, err.Error())
+		return utils.SendSimpleError(c, fiber.StatusBadRequest, err.Error(), err.Error())
 	}
 
 	if err := h.adminService.DeleteClass(c.Context(), id); err != nil {
-		return utils.SendError(c, fiber.StatusInternalServerError, err.Error())
+		return utils.SendSimpleError(c, fiber.StatusInternalServerError, err.Error(), err.Error())
 	}
-	return c.SendStatus(fiber.StatusNoContent)
+	return utils.SendSuccess(c, fiber.StatusOK, "Class deleted successfully", nil)
 }
 
 // --- Group Handlers ---
@@ -195,7 +195,7 @@ func (h *AdminHandler) DeleteClass(c *fiber.Ctx) error {
 func (h *AdminHandler) CreateGroup(c *fiber.Ctx) error {
 	var req domain.CreateGroupRequest
 	if err := c.BodyParser(&req); err != nil {
-		return utils.SendError(c, fiber.StatusBadRequest, "Invalid request body")
+		return utils.SendSimpleError(c, fiber.StatusBadRequest, "Invalid request body", err.Error())
 	}
 	if errs := h.validate.ValidateStruct(req); len(errs) > 0 {
 		return utils.SendValidationErrors(c, errs)
@@ -203,41 +203,41 @@ func (h *AdminHandler) CreateGroup(c *fiber.Ctx) error {
 
 	group, err := h.adminService.CreateGroup(c.Context(), &req)
 	if err != nil {
-		return utils.SendError(c, fiber.StatusBadRequest, err.Error()) // 400 jika class_id tidak ada
+		return utils.SendSimpleError(c, fiber.StatusBadRequest, err.Error(), err.Error()) // 400 jika class_id tidak ada
 	}
-	return utils.SendSuccess(c, fiber.StatusCreated, group)
+	return utils.SendSuccess(c, fiber.StatusCreated, "Group created successfully", group)
 }
 
 func (h *AdminHandler) GetAllGroups(c *fiber.Ctx) error {
 	groups, err := h.adminService.GetAllGroups(c.Context())
 	if err != nil {
-		return utils.SendError(c, fiber.StatusInternalServerError, err.Error())
+		return utils.SendSimpleError(c, fiber.StatusInternalServerError, err.Error(), err.Error())
 	}
-	return utils.SendSuccess(c, fiber.StatusOK, groups)
+	return utils.SendSuccess(c, fiber.StatusOK, "Groups retrieved successfully", groups)
 }
 
 func (h *AdminHandler) GetGroupByID(c *fiber.Ctx) error {
 	id, err := h.getIDParam(c)
 	if err != nil {
-		return utils.SendError(c, fiber.StatusBadRequest, err.Error())
+		return utils.SendSimpleError(c, fiber.StatusBadRequest, err.Error(), err.Error())
 	}
 
 	group, err := h.adminService.GetGroupByID(c.Context(), id)
 	if err != nil {
-		return utils.SendError(c, fiber.StatusNotFound, err.Error())
+		return utils.SendSimpleError(c, fiber.StatusNotFound, err.Error(), err.Error())
 	}
-	return utils.SendSuccess(c, fiber.StatusOK, group)
+	return utils.SendSuccess(c, fiber.StatusOK, "Group retrieved successfully", group)
 }
 
 func (h *AdminHandler) UpdateGroup(c *fiber.Ctx) error {
 	id, err := h.getIDParam(c)
 	if err != nil {
-		return utils.SendError(c, fiber.StatusBadRequest, err.Error())
+		return utils.SendSimpleError(c, fiber.StatusBadRequest, err.Error(), err.Error())
 	}
 
 	var req domain.UpdateGroupRequest
 	if err := c.BodyParser(&req); err != nil {
-		return utils.SendError(c, fiber.StatusBadRequest, "Invalid request body")
+		return utils.SendSimpleError(c, fiber.StatusBadRequest, "Invalid request body", err.Error())
 	}
 	if errs := h.validate.ValidateStruct(req); len(errs) > 0 {
 		return utils.SendValidationErrors(c, errs)
@@ -245,21 +245,21 @@ func (h *AdminHandler) UpdateGroup(c *fiber.Ctx) error {
 
 	group, err := h.adminService.UpdateGroup(c.Context(), id, &req)
 	if err != nil {
-		return utils.SendError(c, fiber.StatusNotFound, err.Error()) // 404 jika group/class tidak ada
+		return utils.SendSimpleError(c, fiber.StatusNotFound, err.Error(), err.Error()) // 404 jika group/class tidak ada
 	}
-	return utils.SendSuccess(c, fiber.StatusOK, group)
+	return utils.SendSuccess(c, fiber.StatusOK, "Group updated successfully", group)
 }
 
 func (h *AdminHandler) DeleteGroup(c *fiber.Ctx) error {
 	id, err := h.getIDParam(c)
 	if err != nil {
-		return utils.SendError(c, fiber.StatusBadRequest, err.Error())
+		return utils.SendSimpleError(c, fiber.StatusBadRequest, err.Error(), err.Error())
 	}
 
 	if err := h.adminService.DeleteGroup(c.Context(), id); err != nil {
-		return utils.SendError(c, fiber.StatusInternalServerError, err.Error())
+		return utils.SendSimpleError(c, fiber.StatusInternalServerError, err.Error(), err.Error())
 	}
-	return c.SendStatus(fiber.StatusNoContent)
+	return utils.SendSuccess(c, fiber.StatusOK, "Group deleted successfully", nil)
 }
 
 // --- Book Handlers ---
@@ -267,7 +267,7 @@ func (h *AdminHandler) DeleteGroup(c *fiber.Ctx) error {
 func (h *AdminHandler) CreateBook(c *fiber.Ctx) error {
 	var req domain.CreateBookRequest
 	if err := c.BodyParser(&req); err != nil {
-		return utils.SendError(c, fiber.StatusBadRequest, "Invalid request body")
+		return utils.SendSimpleError(c, fiber.StatusBadRequest, "Invalid request body", err.Error())
 	}
 	if errs := h.validate.ValidateStruct(req); len(errs) > 0 {
 		return utils.SendValidationErrors(c, errs)
@@ -275,41 +275,41 @@ func (h *AdminHandler) CreateBook(c *fiber.Ctx) error {
 
 	book, err := h.adminService.CreateBook(c.Context(), &req)
 	if err != nil {
-		return utils.SendError(c, fiber.StatusInternalServerError, err.Error())
+		return utils.SendSimpleError(c, fiber.StatusInternalServerError, err.Error(), err.Error())
 	}
-	return utils.SendSuccess(c, fiber.StatusCreated, book)
+	return utils.SendSuccess(c, fiber.StatusCreated, "Book created successfully", book)
 }
 
 func (h *AdminHandler) GetAllBooks(c *fiber.Ctx) error {
 	books, err := h.adminService.GetAllBooks(c.Context())
 	if err != nil {
-		return utils.SendError(c, fiber.StatusInternalServerError, err.Error())
+		return utils.SendSimpleError(c, fiber.StatusInternalServerError, err.Error(), err.Error())
 	}
-	return utils.SendSuccess(c, fiber.StatusOK, books)
+	return utils.SendSuccess(c, fiber.StatusOK, "Books retrieved successfully", books)
 }
 
 func (h *AdminHandler) GetBookByID(c *fiber.Ctx) error {
 	id, err := h.getUintIDParam(c, "bookId")
 	if err != nil {
-		return utils.SendError(c, fiber.StatusBadRequest, err.Error())
+		return utils.SendSimpleError(c, fiber.StatusBadRequest, err.Error(), err.Error())
 	}
 
 	book, err := h.adminService.GetBookByID(c.Context(), id)
 	if err != nil {
-		return utils.SendError(c, fiber.StatusNotFound, err.Error())
+		return utils.SendSimpleError(c, fiber.StatusNotFound, err.Error(), err.Error())
 	}
-	return utils.SendSuccess(c, fiber.StatusOK, book)
+	return utils.SendSuccess(c, fiber.StatusOK, "Book retrieved successfully", book)
 }
 
 func (h *AdminHandler) UpdateBook(c *fiber.Ctx) error {
 	id, err := h.getUintIDParam(c, "bookId")
 	if err != nil {
-		return utils.SendError(c, fiber.StatusBadRequest, err.Error())
+		return utils.SendSimpleError(c, fiber.StatusBadRequest, err.Error(), err.Error())
 	}
 
 	var req domain.UpdateBookRequest
 	if err := c.BodyParser(&req); err != nil {
-		return utils.SendError(c, fiber.StatusBadRequest, "Invalid request body")
+		return utils.SendSimpleError(c, fiber.StatusBadRequest, "Invalid request body", err.Error())
 	}
 	if errs := h.validate.ValidateStruct(req); len(errs) > 0 {
 		return utils.SendValidationErrors(c, errs)
@@ -317,21 +317,21 @@ func (h *AdminHandler) UpdateBook(c *fiber.Ctx) error {
 
 	book, err := h.adminService.UpdateBook(c.Context(), id, &req)
 	if err != nil {
-		return utils.SendError(c, fiber.StatusNotFound, err.Error())
+		return utils.SendSimpleError(c, fiber.StatusNotFound, err.Error(), err.Error())
 	}
-	return utils.SendSuccess(c, fiber.StatusOK, book)
+	return utils.SendSuccess(c, fiber.StatusOK, "Book updated successfully", book)
 }
 
 func (h *AdminHandler) DeleteBook(c *fiber.Ctx) error {
 	id, err := h.getUintIDParam(c, "bookId")
 	if err != nil {
-		return utils.SendError(c, fiber.StatusBadRequest, err.Error())
+		return utils.SendSimpleError(c, fiber.StatusBadRequest, err.Error(), err.Error())
 	}
 
 	if err := h.adminService.DeleteBook(c.Context(), id); err != nil {
-		return utils.SendError(c, fiber.StatusInternalServerError, err.Error())
+		return utils.SendSimpleError(c, fiber.StatusInternalServerError, err.Error(), err.Error())
 	}
-	return c.SendStatus(fiber.StatusNoContent)
+	return utils.SendSuccess(c, fiber.StatusOK, "Book deleted successfully", nil)
 }
 
 // --- Page Handlers ---
@@ -339,12 +339,12 @@ func (h *AdminHandler) DeleteBook(c *fiber.Ctx) error {
 func (h *AdminHandler) CreatePage(c *fiber.Ctx) error {
 	bookID, err := h.getUintIDParam(c, "bookId")
 	if err != nil {
-		return utils.SendError(c, fiber.StatusBadRequest, err.Error())
+		return utils.SendSimpleError(c, fiber.StatusBadRequest, err.Error(), err.Error())
 	}
 
 	var req domain.CreatePageRequest
 	if err := c.BodyParser(&req); err != nil {
-		return utils.SendError(c, fiber.StatusBadRequest, "Invalid request body")
+		return utils.SendSimpleError(c, fiber.StatusBadRequest, "Invalid request body", err.Error())
 	}
 	if errs := h.validate.ValidateStruct(req); len(errs) > 0 {
 		return utils.SendValidationErrors(c, errs)
@@ -352,46 +352,46 @@ func (h *AdminHandler) CreatePage(c *fiber.Ctx) error {
 
 	page, err := h.adminService.CreatePage(c.Context(), bookID, &req)
 	if err != nil {
-		return utils.SendError(c, fiber.StatusBadRequest, err.Error()) // 400 jika bookId tidak ada
+		return utils.SendSimpleError(c, fiber.StatusBadRequest, err.Error(), err.Error()) // 400 jika bookId tidak ada
 	}
-	return utils.SendSuccess(c, fiber.StatusCreated, page)
+	return utils.SendSuccess(c, fiber.StatusCreated, "Page created successfully", page)
 }
 
 func (h *AdminHandler) GetAllPagesForBook(c *fiber.Ctx) error {
 	bookID, err := h.getUintIDParam(c, "bookId")
 	if err != nil {
-		return utils.SendError(c, fiber.StatusBadRequest, err.Error())
+		return utils.SendSimpleError(c, fiber.StatusBadRequest, err.Error(), err.Error())
 	}
 
 	pages, err := h.adminService.GetAllPagesForBook(c.Context(), bookID)
 	if err != nil {
-		return utils.SendError(c, fiber.StatusInternalServerError, err.Error())
+		return utils.SendSimpleError(c, fiber.StatusInternalServerError, err.Error(), err.Error())
 	}
-	return utils.SendSuccess(c, fiber.StatusOK, pages)
+	return utils.SendSuccess(c, fiber.StatusOK, "Pages retrieved successfully", pages)
 }
 
 func (h *AdminHandler) GetPageByID(c *fiber.Ctx) error {
 	id, err := h.getUintIDParam(c, "pageId")
 	if err != nil {
-		return utils.SendError(c, fiber.StatusBadRequest, err.Error())
+		return utils.SendSimpleError(c, fiber.StatusBadRequest, err.Error(), err.Error())
 	}
 
 	page, err := h.adminService.GetPageByID(c.Context(), id)
 	if err != nil {
-		return utils.SendError(c, fiber.StatusNotFound, err.Error())
+		return utils.SendSimpleError(c, fiber.StatusNotFound, err.Error(), err.Error())
 	}
-	return utils.SendSuccess(c, fiber.StatusOK, page)
+	return utils.SendSuccess(c, fiber.StatusOK, "Page retrieved successfully", page)
 }
 
 func (h *AdminHandler) UpdatePage(c *fiber.Ctx) error {
 	id, err := h.getUintIDParam(c, "pageId")
 	if err != nil {
-		return utils.SendError(c, fiber.StatusBadRequest, err.Error())
+		return utils.SendSimpleError(c, fiber.StatusBadRequest, err.Error(), err.Error())
 	}
 
 	var req domain.UpdatePageRequest
 	if err := c.BodyParser(&req); err != nil {
-		return utils.SendError(c, fiber.StatusBadRequest, "Invalid request body")
+		return utils.SendSimpleError(c, fiber.StatusBadRequest, "Invalid request body", err.Error())
 	}
 	if errs := h.validate.ValidateStruct(req); len(errs) > 0 {
 		return utils.SendValidationErrors(c, errs)
@@ -399,21 +399,21 @@ func (h *AdminHandler) UpdatePage(c *fiber.Ctx) error {
 
 	page, err := h.adminService.UpdatePage(c.Context(), id, &req)
 	if err != nil {
-		return utils.SendError(c, fiber.StatusNotFound, err.Error())
+		return utils.SendSimpleError(c, fiber.StatusNotFound, err.Error(), err.Error())
 	}
-	return utils.SendSuccess(c, fiber.StatusOK, page)
+	return utils.SendSuccess(c, fiber.StatusOK, "Page updated successfully", page)
 }
 
 func (h *AdminHandler) DeletePage(c *fiber.Ctx) error {
 	id, err := h.getUintIDParam(c, "pageId")
 	if err != nil {
-		return utils.SendError(c, fiber.StatusBadRequest, err.Error())
+		return utils.SendSimpleError(c, fiber.StatusBadRequest, err.Error(), err.Error())
 	}
 
 	if err := h.adminService.DeletePage(c.Context(), id); err != nil {
-		return utils.SendError(c, fiber.StatusInternalServerError, err.Error())
+		return utils.SendSimpleError(c, fiber.StatusInternalServerError, err.Error(), err.Error())
 	}
-	return c.SendStatus(fiber.StatusNoContent)
+	return utils.SendSuccess(c, fiber.StatusOK, "Page deleted successfully", nil)
 }
 
 // --- Interaction Handlers ---
@@ -421,12 +421,12 @@ func (h *AdminHandler) DeletePage(c *fiber.Ctx) error {
 func (h *AdminHandler) CreateInteraction(c *fiber.Ctx) error {
 	pageID, err := h.getUintIDParam(c, "pageId")
 	if err != nil {
-		return utils.SendError(c, fiber.StatusBadRequest, err.Error())
+		return utils.SendSimpleError(c, fiber.StatusBadRequest, err.Error(), err.Error())
 	}
 
 	var req domain.CreateInteractionRequest
 	if err := c.BodyParser(&req); err != nil {
-		return utils.SendError(c, fiber.StatusBadRequest, "Invalid request body")
+		return utils.SendSimpleError(c, fiber.StatusBadRequest, "Invalid request body", err.Error())
 	}
 	if errs := h.validate.ValidateStruct(req); len(errs) > 0 {
 		return utils.SendValidationErrors(c, errs)
@@ -434,46 +434,46 @@ func (h *AdminHandler) CreateInteraction(c *fiber.Ctx) error {
 
 	interaction, err := h.adminService.CreateInteraction(c.Context(), pageID, &req)
 	if err != nil {
-		return utils.SendError(c, fiber.StatusBadRequest, err.Error()) // 400 jika pageId tidak ada
+		return utils.SendSimpleError(c, fiber.StatusBadRequest, err.Error(), err.Error()) // 400 jika pageId tidak ada
 	}
-	return utils.SendSuccess(c, fiber.StatusCreated, interaction)
+	return utils.SendSuccess(c, fiber.StatusCreated, "Interaction created successfully", interaction)
 }
 
 func (h *AdminHandler) GetAllInteractionsForPage(c *fiber.Ctx) error {
 	pageID, err := h.getUintIDParam(c, "pageId")
 	if err != nil {
-		return utils.SendError(c, fiber.StatusBadRequest, err.Error())
+		return utils.SendSimpleError(c, fiber.StatusBadRequest, err.Error(), err.Error())
 	}
 
 	interactions, err := h.adminService.GetAllInteractionsForPage(c.Context(), pageID)
 	if err != nil {
-		return utils.SendError(c, fiber.StatusInternalServerError, err.Error())
+		return utils.SendSimpleError(c, fiber.StatusInternalServerError, err.Error(), err.Error())
 	}
-	return utils.SendSuccess(c, fiber.StatusOK, interactions)
+	return utils.SendSuccess(c, fiber.StatusOK, "Interactions retrieved successfully", interactions)
 }
 
 func (h *AdminHandler) GetInteractionByID(c *fiber.Ctx) error {
 	id, err := h.getUintIDParam(c, "interactionId")
 	if err != nil {
-		return utils.SendError(c, fiber.StatusBadRequest, err.Error())
+		return utils.SendSimpleError(c, fiber.StatusBadRequest, err.Error(), err.Error())
 	}
 
 	interaction, err := h.adminService.GetInteractionByID(c.Context(), id)
 	if err != nil {
-		return utils.SendError(c, fiber.StatusNotFound, err.Error())
+		return utils.SendSimpleError(c, fiber.StatusNotFound, err.Error(), err.Error())
 	}
-	return utils.SendSuccess(c, fiber.StatusOK, interaction)
+	return utils.SendSuccess(c, fiber.StatusOK, "Interaction retrieved successfully", interaction)
 }
 
 func (h *AdminHandler) UpdateInteraction(c *fiber.Ctx) error {
 	id, err := h.getUintIDParam(c, "interactionId")
 	if err != nil {
-		return utils.SendError(c, fiber.StatusBadRequest, err.Error())
+		return utils.SendSimpleError(c, fiber.StatusBadRequest, err.Error(), err.Error())
 	}
 
 	var req domain.UpdateInteractionRequest
 	if err := c.BodyParser(&req); err != nil {
-		return utils.SendError(c, fiber.StatusBadRequest, "Invalid request body")
+		return utils.SendSimpleError(c, fiber.StatusBadRequest, "Invalid request body", err.Error())
 	}
 	if errs := h.validate.ValidateStruct(req); len(errs) > 0 {
 		return utils.SendValidationErrors(c, errs)
@@ -481,19 +481,19 @@ func (h *AdminHandler) UpdateInteraction(c *fiber.Ctx) error {
 
 	interaction, err := h.adminService.UpdateInteraction(c.Context(), id, &req)
 	if err != nil {
-		return utils.SendError(c, fiber.StatusNotFound, err.Error())
+		return utils.SendSimpleError(c, fiber.StatusNotFound, err.Error(), err.Error())
 	}
-	return utils.SendSuccess(c, fiber.StatusOK, interaction)
+	return utils.SendSuccess(c, fiber.StatusOK, "Interaction updated successfully", interaction)
 }
 
 func (h *AdminHandler) DeleteInteraction(c *fiber.Ctx) error {
 	id, err := h.getUintIDParam(c, "interactionId")
 	if err != nil {
-		return utils.SendError(c, fiber.StatusBadRequest, err.Error())
+		return utils.SendSimpleError(c, fiber.StatusBadRequest, err.Error(), err.Error())
 	}
 
 	if err := h.adminService.DeleteInteraction(c.Context(), id); err != nil {
-		return utils.SendError(c, fiber.StatusInternalServerError, err.Error())
+		return utils.SendSimpleError(c, fiber.StatusInternalServerError, err.Error(), err.Error())
 	}
-	return c.SendStatus(fiber.StatusNoContent)
+	return utils.SendSuccess(c, fiber.StatusOK, "Interaction deleted successfully", nil)
 }

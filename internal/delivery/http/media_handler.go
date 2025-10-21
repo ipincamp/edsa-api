@@ -27,22 +27,26 @@ func (h *MediaHandler) UploadFile(c *fiber.Ctx) error {
 	// 1. Ambil file dari form
 	file, err := c.FormFile("file")
 	if err != nil {
-		return utils.SendError(c, fiber.StatusBadRequest, "File 'file' is required")
+		return utils.SendSimpleError(c, fiber.StatusBadRequest, "Missing file", err.Error())
 	}
 
 	// 2. Ambil data polimorfik
 	ownerID := c.FormValue("owner_id")
 	ownerType := c.FormValue("owner_type") // Cth: "book_cover", "interaction_audio"
 
-	if ownerID == "" || ownerType == "" {
-		return utils.SendError(c, fiber.StatusBadRequest, "Fields 'owner_id' and 'owner_type' are required")
+	if ownerID == "" {
+		return utils.SendSimpleError(c, fiber.StatusBadRequest, "Missing owner_id", "Field 'owner_id' is required")
+	}
+
+	if ownerType == "" {
+		return utils.SendSimpleError(c, fiber.StatusBadRequest, "Missing owner_type", "Field 'owner_type' is required")
 	}
 
 	// 3. Panggil usecase
 	asset, err := h.mediaService.UploadFile(c.Context(), file, ownerID, ownerType)
 	if err != nil {
-		return utils.SendError(c, fiber.StatusInternalServerError, err.Error())
+		return utils.SendSimpleError(c, fiber.StatusInternalServerError, err.Error(), err.Error())
 	}
 
-	return utils.SendSuccess(c, fiber.StatusCreated, asset)
+	return utils.SendSuccess(c, fiber.StatusCreated, "File uploaded successfully", asset)
 }

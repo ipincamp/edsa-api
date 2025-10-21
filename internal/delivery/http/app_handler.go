@@ -29,7 +29,8 @@ func NewAppHandler(as usecase.AppService, v *validator.GoPlaygroundValidator) *A
 func getUserIDFromLocals(c *fiber.Ctx) (uuid.UUID, error) {
 	userID, ok := c.Locals("userID").(uuid.UUID)
 	if !ok || userID == uuid.Nil {
-		return uuid.Nil, utils.SendError(c, fiber.StatusUnauthorized, "Invalid token")
+		// Mengembalikan error yang akan dikirim oleh global error handler
+		return uuid.Nil, utils.SendSimpleError(c, fiber.StatusUnauthorized, "Invalid token", "Invalid user ID in token")
 	}
 	return userID, nil
 }
@@ -54,9 +55,9 @@ func (h *AppHandler) GetBooksWithProgress(c *fiber.Ctx) error {
 
 	books, err := h.appService.GetBooksWithProgress(c.Context(), userID)
 	if err != nil {
-		return utils.SendError(c, fiber.StatusInternalServerError, err.Error())
+		return utils.SendSimpleError(c, fiber.StatusInternalServerError, err.Error(), err.Error())
 	}
-	return utils.SendSuccess(c, fiber.StatusOK, books)
+	return utils.SendSuccess(c, fiber.StatusOK, "Books retrieved successfully", books)
 }
 
 // GetProgressToRestore menangani 'GET /app/books/:bookId/restore'
@@ -70,14 +71,14 @@ func (h *AppHandler) GetProgressToRestore(c *fiber.Ctx) error {
 	bookIdStr := c.Params("bookId")
 	bookID, err := strconv.Atoi(bookIdStr)
 	if err != nil || bookID <= 0 {
-		return utils.SendError(c, fiber.StatusBadRequest, "Invalid book ID")
+		return utils.SendSimpleError(c, fiber.StatusBadRequest, "Invalid book ID", err.Error())
 	}
 
 	restoreData, err := h.appService.GetProgressToRestore(c.Context(), userID, sessionID, uint(bookID))
 	if err != nil {
-		return utils.SendError(c, fiber.StatusNotFound, err.Error())
+		return utils.SendSimpleError(c, fiber.StatusNotFound, err.Error(), err.Error())
 	}
-	return utils.SendSuccess(c, fiber.StatusOK, restoreData)
+	return utils.SendSuccess(c, fiber.StatusOK, "Progress restored successfully", restoreData)
 }
 
 // UpdatePageProgress menangani 'POST /app/progress/update'
@@ -90,16 +91,17 @@ func (h *AppHandler) UpdatePageProgress(c *fiber.Ctx) error {
 
 	var req domain.UpdateProgressRequest
 	if err := c.BodyParser(&req); err != nil {
-		return utils.SendError(c, fiber.StatusBadRequest, "Invalid request body")
+		return utils.SendSimpleError(c, fiber.StatusBadRequest, "Invalid request body", err.Error())
 	}
 	if errs := h.validate.ValidateStruct(req); len(errs) > 0 {
 		return utils.SendValidationErrors(c, errs)
 	}
 
 	if err := h.appService.UpdatePageProgress(c.Context(), userID, sessionID, &req); err != nil {
-		return utils.SendError(c, fiber.StatusInternalServerError, err.Error())
+		return utils.SendSimpleError(c, fiber.StatusInternalServerError, err.Error(), err.Error())
 	}
-	return utils.SendSuccess(c, fiber.StatusOK, fiber.Map{"message": "Progress updated"})
+	// Mengirim data 'nil' karena pesannya sudah ada di root response
+	return utils.SendSuccess(c, fiber.StatusOK, "Progress updated", nil)
 }
 
 // CompleteBookProgress menangani 'POST /app/progress/complete'
@@ -112,16 +114,16 @@ func (h *AppHandler) CompleteBookProgress(c *fiber.Ctx) error {
 
 	var req domain.CompleteProgressRequest
 	if err := c.BodyParser(&req); err != nil {
-		return utils.SendError(c, fiber.StatusBadRequest, "Invalid request body")
+		return utils.SendSimpleError(c, fiber.StatusBadRequest, "Invalid request body", err.Error())
 	}
 	if errs := h.validate.ValidateStruct(req); len(errs) > 0 {
 		return utils.SendValidationErrors(c, errs)
 	}
 
 	if err := h.appService.CompleteBookProgress(c.Context(), userID, sessionID, &req); err != nil {
-		return utils.SendError(c, fiber.StatusInternalServerError, err.Error())
+		return utils.SendSimpleError(c, fiber.StatusInternalServerError, err.Error(), err.Error())
 	}
-	return utils.SendSuccess(c, fiber.StatusOK, fiber.Map{"message": "Book completed and progress saved"})
+	return utils.SendSuccess(c, fiber.StatusOK, "Book completed and progress saved", nil)
 }
 
 // --- Game Handler ---
@@ -135,9 +137,9 @@ func (h *AppHandler) GetAllGames(c *fiber.Ctx) error {
 
 	games, err := h.appService.GetAllGames(c.Context(), userID)
 	if err != nil {
-		return utils.SendError(c, fiber.StatusInternalServerError, err.Error())
+		return utils.SendSimpleError(c, fiber.StatusInternalServerError, err.Error(), err.Error())
 	}
-	return utils.SendSuccess(c, fiber.StatusOK, games)
+	return utils.SendSuccess(c, fiber.StatusOK, "Games retrieved successfully", games)
 }
 
 // SubmitGameScore menangani 'POST /app/games/:gameId/score'
@@ -151,19 +153,19 @@ func (h *AppHandler) SubmitGameScore(c *fiber.Ctx) error {
 	gameIdStr := c.Params("gameId")
 	gameID, err := strconv.Atoi(gameIdStr)
 	if err != nil || gameID <= 0 {
-		return utils.SendError(c, fiber.StatusBadRequest, "Invalid game ID")
+		return utils.SendSimpleError(c, fiber.StatusBadRequest, "Invalid game ID", err.Error())
 	}
 
 	var req domain.SubmitGameScoreRequest
 	if err := c.BodyParser(&req); err != nil {
-		return utils.SendError(c, fiber.StatusBadRequest, "Invalid request body")
+		return utils.SendSimpleError(c, fiber.StatusBadRequest, "Invalid request body", err.Error())
 	}
 	if errs := h.validate.ValidateStruct(req); len(errs) > 0 {
 		return utils.SendValidationErrors(c, errs)
 	}
 
 	if err := h.appService.SubmitGameScore(c.Context(), userID, sessionID, uint(gameID), &req); err != nil {
-		return utils.SendError(c, fiber.StatusInternalServerError, err.Error())
+		return utils.SendSimpleError(c, fiber.StatusInternalServerError, err.Error(), err.Error())
 	}
-	return utils.SendSuccess(c, fiber.StatusOK, fiber.Map{"message": "Score updated successfully"})
+	return utils.SendSuccess(c, fiber.StatusOK, "Score updated successfully", nil)
 }
