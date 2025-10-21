@@ -8,6 +8,7 @@ import (
 	"github.com/ipincamp/go-edsa-api/internal/config"
 	"github.com/ipincamp/go-edsa-api/internal/delivery/http"
 	"github.com/ipincamp/go-edsa-api/internal/pkg/database"
+	"github.com/ipincamp/go-edsa-api/internal/pkg/utils"
 	"github.com/ipincamp/go-edsa-api/internal/pkg/validator"
 	repo "github.com/ipincamp/go-edsa-api/internal/repository/gorm"
 	"github.com/ipincamp/go-edsa-api/internal/service/argon2id"
@@ -108,13 +109,16 @@ func main() {
 		// Error handling kustom
 		ErrorHandler: func(c *fiber.Ctx, err error) error {
 			code := fiber.StatusInternalServerError
+			message := "Failed" // Pesan default
+
 			if e, ok := err.(*fiber.Error); ok {
 				code = e.Code
+				message = e.Message // Gunakan pesan dari Fiber jika ada
 			}
-			return c.Status(code).JSON(fiber.Map{
-				"status":  "error",
-				"message": err.Error(),
-			})
+
+			// Gunakan helper response error yang baru
+			// 'message' adalah pesan utama, err.Error() adalah detail di 'value'
+			return utils.SendSimpleError(c, code, message, err.Error())
 		},
 	})
 
