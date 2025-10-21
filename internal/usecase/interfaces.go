@@ -206,6 +206,7 @@ type DashboardService interface {
 // FileStorageService mendefinisikan kontrak untuk mengunggah file
 type FileStorageService interface {
 	Upload(file *multipart.FileHeader, fileID uuid.UUID) (filePath string, err error)
+	Delete(filePath string) error
 }
 
 // MediaService mendefinisikan logika bisnis untuk manajemen media

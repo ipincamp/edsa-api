@@ -109,7 +109,11 @@ func (s *mediaService) UploadFile(ctx context.Context, file *multipart.FileHeade
 
 	// 6. Simpan metadata ke database
 	if err := s.mediaRepo.Create(ctx, asset); err != nil {
-		// TODO: Implementasikan rollback (hapus file fisik jika gagal simpan DB)
+		// Jika simpan DB gagal, hapus file fisik yang sudah terlanjur di-upload.
+		if delErr := s.storageSvc.Delete(filePath); delErr != nil {
+			// Ini adalah skenario terburuk: DB gagal, Hapus file juga gagal.
+		}
+		// Kembalikan error database yang asli
 		return nil, err
 	}
 

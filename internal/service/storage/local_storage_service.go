@@ -62,3 +62,21 @@ func (s *localStorageService) Upload(file *multipart.FileHeader, fileID uuid.UUI
 
 	return relativePath, nil
 }
+
+func (s *localStorageService) Delete(filePath string) error {
+	// filePath adalah path relatif, cth: "uploads/uuid.png"
+
+	// 1. Tentukan path absolut
+	// Cth: ./public + uploads/uuid.png
+	fullPath := filepath.Join(s.cfg.Storage.StoragePath, filePath)
+
+	// 2. Hapus file
+	if err := os.Remove(fullPath); err != nil {
+		// Jika file tidak ada, itu bukan error kritis, anggap sukses
+		if os.IsNotExist(err) {
+			return nil
+		}
+		return fmt.Errorf("failed to delete file: %w", err)
+	}
+	return nil
+}
