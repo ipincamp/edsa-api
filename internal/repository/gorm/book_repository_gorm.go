@@ -150,6 +150,15 @@ func (r *bookRepositoryGORM) UpdateBookWithOrderShift(ctx context.Context, book 
 
 		// log.Printf("[DEBUG] UpdateBookWithOrderShift: Moving book ID %d from order %d to %d", book.ID, oldOrder, newOrder)
 
+		// Pindahkan buku yang ditarget ke 'order' sementara (cth: 0)
+		// Ini untuk "membebaskan" slot 'oldOrder' agar bisa diisi oleh buku lain.
+		// Kita menggunakan 0 karena validasi domain adalah >= 1.
+		// log.Printf("[DEBUG] UpdateShift: Temporarily moving book ID %d to order 0", book.ID)
+		if err := tx.Model(&BookGORM{}).Where("id = ?", book.ID).UpdateColumn("book_order", 0).Error; err != nil {
+			// log.Printf("[ERROR] UpdateShift: Failed to move target book (ID %d) to temp order: %v", book.ID, err)
+			return fmt.Errorf("failed setting temp order for target book: %w", err)
+		}
+
 		// 1. Shift books to make space or fill gap
 		if newOrder < oldOrder {
 			// Moving Up (e.g., 5 -> 2). Books [newOrder, oldOrder-1] need +1
