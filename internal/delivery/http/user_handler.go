@@ -26,7 +26,7 @@ func (h *UserHandler) Register(c *fiber.Ctx) error {
 
 	// Parse & Validasi
 	if err := c.BodyParser(&req); err != nil {
-		return utils.SendError(c, fiber.StatusBadRequest, "Invalid request body")
+		return utils.SendSimpleError(c, fiber.StatusBadRequest, "Invalid request body", err.Error())
 	}
 	if errs := h.validate.ValidateStruct(req); len(errs) > 0 {
 		return utils.SendValidationErrors(c, errs)
@@ -36,10 +36,10 @@ func (h *UserHandler) Register(c *fiber.Ctx) error {
 	authResponse, err := h.userService.Register(c.Context(), &req)
 	if err != nil {
 		// Seharusnya ada error handling yang lebih baik di sini
-		return utils.SendError(c, fiber.StatusConflict, err.Error())
+		return utils.SendSimpleError(c, fiber.StatusConflict, err.Error(), err.Error())
 	}
 
-	return utils.SendSuccess(c, fiber.StatusCreated, authResponse)
+	return utils.SendSuccess(c, fiber.StatusCreated, "User registered successfully", authResponse)
 }
 
 func (h *UserHandler) Login(c *fiber.Ctx) error {
@@ -47,7 +47,7 @@ func (h *UserHandler) Login(c *fiber.Ctx) error {
 
 	// Parse & Validasi
 	if err := c.BodyParser(&req); err != nil {
-		return utils.SendError(c, fiber.StatusBadRequest, "Invalid request body")
+		return utils.SendSimpleError(c, fiber.StatusBadRequest, "Invalid request body", err.Error())
 	}
 	if errs := h.validate.ValidateStruct(req); len(errs) > 0 {
 		return utils.SendValidationErrors(c, errs)
@@ -56,10 +56,10 @@ func (h *UserHandler) Login(c *fiber.Ctx) error {
 	// Panggil Usecase
 	authResponse, err := h.userService.Login(c.Context(), &req)
 	if err != nil {
-		return utils.SendError(c, fiber.StatusUnauthorized, err.Error())
+		return utils.SendSimpleError(c, fiber.StatusUnauthorized, err.Error(), err.Error())
 	}
 
-	return utils.SendSuccess(c, fiber.StatusOK, authResponse)
+	return utils.SendSuccess(c, fiber.StatusOK, "Login successful", authResponse)
 }
 
 func (h *UserHandler) RefreshToken(c *fiber.Ctx) error {
@@ -67,7 +67,7 @@ func (h *UserHandler) RefreshToken(c *fiber.Ctx) error {
 
 	// Parse & Validasi
 	if err := c.BodyParser(&req); err != nil {
-		return utils.SendError(c, fiber.StatusBadRequest, "Invalid request body")
+		return utils.SendSimpleError(c, fiber.StatusBadRequest, "Invalid request body", err.Error())
 	}
 	if errs := h.validate.ValidateStruct(req); len(errs) > 0 {
 		return utils.SendValidationErrors(c, errs)
@@ -76,17 +76,17 @@ func (h *UserHandler) RefreshToken(c *fiber.Ctx) error {
 	// Panggil Usecase
 	tokenResponse, err := h.userService.RefreshToken(c.Context(), &req)
 	if err != nil {
-		return utils.SendError(c, fiber.StatusUnauthorized, err.Error())
+		return utils.SendSimpleError(c, fiber.StatusUnauthorized, err.Error(), err.Error())
 	}
 
-	return utils.SendSuccess(c, fiber.StatusOK, tokenResponse)
+	return utils.SendSuccess(c, fiber.StatusOK, "Token refreshed successfully", tokenResponse)
 }
 
 func (h *UserHandler) Logout(c *fiber.Ctx) error {
 	// Ambil user ID dari middleware
 	userID, ok := c.Locals("userID").(uuid.UUID)
 	if !ok || userID == uuid.Nil {
-		return utils.SendError(c, fiber.StatusUnauthorized, "Invalid token")
+		return utils.SendSimpleError(c, fiber.StatusUnauthorized, "Invalid token", "Invalid user ID in token")
 	}
 
 	// Ambil session ID dari middleware
@@ -97,23 +97,23 @@ func (h *UserHandler) Logout(c *fiber.Ctx) error {
 
 	// Panggil Usecase
 	if err := h.userService.Logout(c.Context(), userID, sessionID); err != nil {
-		return utils.SendError(c, fiber.StatusInternalServerError, err.Error())
+		return utils.SendSimpleError(c, fiber.StatusInternalServerError, err.Error(), err.Error())
 	}
 
-	return utils.SendSuccess(c, fiber.StatusOK, fiber.Map{"message": "Logged out successfully"})
+	return utils.SendSuccess(c, fiber.StatusOK, "Logged out successfully", nil)
 }
 
 func (h *UserHandler) GetMe(c *fiber.Ctx) error {
 	// Ambil user ID dari middleware
 	userID, ok := c.Locals("userID").(uuid.UUID)
 	if !ok || userID == uuid.Nil {
-		return utils.SendError(c, fiber.StatusUnauthorized, "Invalid token")
+		return utils.SendSimpleError(c, fiber.StatusUnauthorized, "Invalid token", "Invalid user ID in token")
 	}
 
 	user, err := h.userService.GetUserByID(c.Context(), userID)
 	if err != nil {
-		return utils.SendError(c, fiber.StatusNotFound, err.Error())
+		return utils.SendSimpleError(c, fiber.StatusNotFound, err.Error(), err.Error())
 	}
 
-	return utils.SendSuccess(c, fiber.StatusOK, user)
+	return utils.SendSuccess(c, fiber.StatusOK, "User profile retrieved successfully", user)
 }
