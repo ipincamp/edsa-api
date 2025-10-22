@@ -20,10 +20,13 @@ The API is built using Laravel 12 and follows RESTful principles. It provides en
 
 ## Requirements
 
-- PHP 8.0 or higher
-- Composer
-- MySQL
-- Node.js and npm (for frontend assets)
+- **Composer** `v2.8.12`
+- **PHP** `v8.4.1-NTS`
+- **Laravel Installer** `v5.18.0`
+- **Git** `v2.51.1`
+- **MariaDB** `v10.11.13`
+- **NodeJS** `v22.20.0`
+- **NPM** `v10.9.3`
 
 ## Running on Docker
 
