@@ -1,28 +1,24 @@
 package domain
 
 import (
-	"encoding/json"
 	"time"
+
+	"gorm.io/gorm"
 )
 
-// Role adalah entitas untuk data role user
-type Role struct {
-	ID          string          `gorm:"type:uuid;primary_key;default:uuid_generate_v4()"`
-	Name        string          `gorm:"type:varchar(50);uniqueIndex;not null"`
-	Permissions json.RawMessage `gorm:"type:jsonb"`
-	CreatedAt   time.Time
-	UpdatedAt   time.Time
-}
+// Definisi nama-nama role yang tersedia
+const (
+	RoleNameAdmin   = "admin"
+	RoleNameTeacher = "teacher"
+	RoleNameStudent = "student"
+	RoleNamePublic  = "public"
+)
 
-// GetPermissions parses the JSON permissions field and returns a map[string]bool
-func (r *Role) GetPermissions() (map[string]bool, error) {
-	if r.Permissions == nil {
-		return make(map[string]bool), nil
-	}
-	var permissions map[string]bool
-	err := json.Unmarshal(r.Permissions, &permissions)
-	if err != nil {
-		return nil, err
-	}
-	return permissions, nil
+// Role adalah entitas domain inti untuk role pengguna
+type Role struct {
+	ID        uint
+	Name      string
+	CreatedAt time.Time
+	UpdatedAt time.Time
+	DeletedAt gorm.DeletedAt
 }

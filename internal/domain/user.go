@@ -3,24 +3,59 @@ package domain
 import (
 	"time"
 
+	"github.com/google/uuid"
 	"gorm.io/gorm"
 )
 
-// User adalah entitas untuk data user aplikasi
+// User adalah entitas domain inti untuk pengguna
 type User struct {
-	ID              string `gorm:"type:uuid;primary_key;default:uuid_generate_v4()"`
-	Name            string `gorm:"type:varchar(100);not null"`
-	Email           string `gorm:"type:varchar(255);uniqueIndex;not null"`
-	EmailVerifiedAt *time.Time
-	Password        string `gorm:"type:varchar(255);not null" json:"-"`
-	RoleID          string `gorm:"type:uuid"`
-
-	Role          Role
-	Enrollments   []Enrollment       `gorm:"foreignKey:StudentID"`
-	TaughtClasses []ClassTeacher     `gorm:"foreignKey:TeacherID"`
-	JoinRequests  []JoinGroupRequest `gorm:"foreignKey:ApplicantUserID"`
-
+	ID        uuid.UUID
+	Name      string
+	Email     string
+	Password  string
+	RoleID    uint
+	Role      Role
 	CreatedAt time.Time
 	UpdatedAt time.Time
-	DeletedAt gorm.DeletedAt `gorm:"index"`
+	DeletedAt gorm.DeletedAt
+}
+
+// --- Data Transfer Objects (DTOs) ---
+
+// RegisterRequest adalah DTO untuk pendaftaran pengguna baru.
+type RegisterRequest struct {
+	Name     string `json:"name" validate:"required,min=3,max=100"`
+	Email    string `json:"email" validate:"required,email"`
+	Password string `json:"password" validate:"required,min=8"`
+}
+
+// LoginRequest adalah DTO untuk autentikasi pengguna.
+type LoginRequest struct {
+	Email    string `json:"email" validate:"required,email"`
+	Password string `json:"password" validate:"required"`
+}
+
+// RefreshTokenRequest adalah DTO for token refresh.
+type RefreshTokenRequest struct {
+	RefreshToken string `json:"refresh_token" validate:"required"`
+}
+
+// UserResponse adalah DTO untuk data pengguna yang aman dikirim ke klien.
+type UserResponse struct {
+	ID     uuid.UUID `json:"id"`
+	Name   string    `json:"name"`
+	Email  string    `json:"email"`
+	RoleID uint      `json:"role_id"`
+}
+
+// TokenResponse adalah DTO untuk token autentikasi.
+type TokenResponse struct {
+	AccessToken  string `json:"access_token"`
+	RefreshToken string `json:"refresh_token"`
+}
+
+// AuthResponse adalah DTO untuk respons login/register.
+type AuthResponse struct {
+	User  UserResponse  `json:"user"`
+	Token TokenResponse `json:"token"`
 }

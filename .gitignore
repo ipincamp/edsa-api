@@ -8,6 +8,7 @@
 *.so
 *.dylib
 bin/
+tmp/
 
 # Test binary, built with `go test -c`
 *.test
@@ -32,3 +33,6 @@ go.work.sum
 # Editor/IDE
 # .idea/
 .vscode/
+
+# Public uploads
+/public/uploads/
