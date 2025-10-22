@@ -15,6 +15,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
+use Laravel\Sanctum\PersonalAccessToken;
 
 #[Group('Auth')]
 class AuthController extends Controller
@@ -287,9 +288,7 @@ class AuthController extends Controller
     public function logout(Request $request): JsonResponse
     {
         try {
-            auth()->guard('web')->logout();
-            $request->user()->currentAccessToken()->delete();
-
+            // Catat aktivitas SEBELUM logout, saat data user masih ada
             activity('auth api')
                 ->performedOn($request->user())
                 ->event('logout')
@@ -302,6 +301,17 @@ class AuthController extends Controller
                     ],
                 ])
                 ->log('Logout');
+
+            // Logout dari session web (jika ada)
+            auth()->guard('web')->logout();
+
+            // Cek apakah user otentikasi pakai token API
+            $token = $request->user()->currentAccessToken();
+
+            // Hanya hapus jika itu adalah token database (PersonalAccessToken)
+            if ($token instanceof PersonalAccessToken) {
+                $token->delete();
+            }
 
             /* Successfully */
             return $this->json(
