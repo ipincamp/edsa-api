@@ -21,7 +21,14 @@ return [
 
     'allowed_origins' => ['*'],
 
-    'allowed_origins_patterns' => [], // ['https://CHANGE.ME'],
+    'allowed_origins_patterns' => [
+        env('FRONTEND_URL', 'http://localhost'),
+        'http://edsa-app.cloud',
+        'https://edsa-app.cloud',
+        // Development Only
+        // 'http://localhost:3000',
+        // 'http://localhost:5173',
+    ],
 
     'allowed_headers' => ['*'],
 
@@ -29,6 +36,6 @@ return [
 
     'max_age' => 0,
 
-    'supports_credentials' => false,
+    'supports_credentials' => env('APP_ENV', 'local') === 'production',
 
 ];
