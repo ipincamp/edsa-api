@@ -63,6 +63,7 @@
             "@php artisan db:seed --class=DevelopmentSeeder",
             "@php artisan db:seed --class=BookSeeder",
             "@php artisan permission:sync -P",
+            "@php artisan vendor:publish --tag='activitylog-config'",
             "@php artisan storage:link"
         ],
         "pro-setup": [
