@@ -10,7 +10,8 @@ import (
 	"github.com/ipincamp/go-edsa-api/internal/pkg/database"
 	"github.com/ipincamp/go-edsa-api/internal/pkg/utils"
 	"github.com/ipincamp/go-edsa-api/internal/pkg/validator"
-	repo "github.com/ipincamp/go-edsa-api/internal/repository/gorm"
+	"github.com/ipincamp/go-edsa-api/internal/repository/cache"
+	"github.com/ipincamp/go-edsa-api/internal/repository/gorm"
 	"github.com/ipincamp/go-edsa-api/internal/service/argon2id"
 	"github.com/ipincamp/go-edsa-api/internal/service/paseto"
 	"github.com/ipincamp/go-edsa-api/internal/service/storage"
@@ -42,58 +43,69 @@ func main() {
 	fileStorageService := storage.NewLocalStorageService(cfg)
 
 	// 5. Init Repositories
-	userRepository := repo.NewUserRepository(db)
-	roleRepository := repo.NewRoleRepository(db)
+	// Buat GORM Role Repo (untuk di-pass ke cache)
+	roleRepositoryGORM := gorm.NewRoleRepository(db)
+
+	// Buat Cache Role Repo
+	roleRepositoryCACHE, err := cache.NewRoleRepositoryCACHE(roleRepositoryGORM)
+	if err != nil {
+		log.Fatalf("Failed to create role cache: %v", err)
+	}
+
+	// Inject cache repo ke UserRepository
+	// (Struct userRepositoryGORM sudah konsisten)
+	userRepositoryGORM := gorm.NewUserRepository(db, roleRepositoryCACHE)
+
 	// Admin
-	subjectRepository := repo.NewSubjectRepository(db)
-	classRepository := repo.NewClassRepository(db)
-	groupRepository := repo.NewGroupRepository(db)
+	subjectRepositoryGORM := gorm.NewSubjectRepository(db)
+	classRepositoryGORM := gorm.NewClassRepository(db)
+	groupRepositoryGORM := gorm.NewGroupRepository(db)
 	// Konten
-	bookRepository := repo.NewBookRepository(db)
-	pageRepository := repo.NewPageRepository(db)
-	interactionRepository := repo.NewInteractionRepository(db)
+	bookRepositoryGORM := gorm.NewBookRepository(db)
+	pageRepositoryGORM := gorm.NewPageRepository(db)
+	interactionRepositoryGORM := gorm.NewInteractionRepository(db)
 	// Progres
-	progressRepository := repo.NewUserBookProgressRepository(db)
+	progressRepositoryGORM := gorm.NewUserBookProgressRepository(db)
 	// Game
-	gameRepository := repo.NewGameRepository(db)
-	userGameScoreRepository := repo.NewUserGameScoreRepository(db)
+	gameRepositoryGORM := gorm.NewGameRepository(db)
+	userGameScoreRepositoryGORM := gorm.NewUserGameScoreRepository(db)
 	// Log Aktivitas
-	activityLogRepository := repo.NewActivityLogRepository(db)
+	activityLogRepositoryGORM := gorm.NewActivityLogRepository(db)
 	// Repo Media
-	mediaAssetRepository := repo.NewMediaAssetRepository(db)
+	mediaAssetRepositoryGORM := gorm.NewMediaAssetRepository(db)
 
 	// 6. Init Usecases
-	loggerService := logger.NewActivityLoggerService(activityLogRepository)
+	loggerService := logger.NewActivityLoggerService(activityLogRepositoryGORM)
 	userService := user.NewUserService(
-		userRepository,
-		roleRepository,
+		userRepositoryGORM,
+		roleRepositoryCACHE, // Inject cache repo ke UserService
 		passwordService,
 		tokenService,
 		cfg,
 		loggerService,
 	)
 	adminService := admin.NewAdminService(
-		subjectRepository,
-		classRepository,
-		groupRepository,
-		bookRepository,
-		pageRepository,
-		interactionRepository,
+		subjectRepositoryGORM,
+		classRepositoryGORM,
+		groupRepositoryGORM,
+		bookRepositoryGORM,
+		pageRepositoryGORM,
+		interactionRepositoryGORM,
 	)
 	appService := app.NewAppService(
-		bookRepository,
-		progressRepository,
-		gameRepository,
-		userGameScoreRepository,
+		bookRepositoryGORM,
+		progressRepositoryGORM,
+		gameRepositoryGORM,
+		userGameScoreRepositoryGORM,
 		loggerService,
 	)
 	dashboardService := dashboard.NewDashboardService(
-		activityLogRepository,
-		userRepository,
+		activityLogRepositoryGORM,
+		userRepositoryGORM,
 	)
 	mediaService := media.NewMediaService(
 		fileStorageService,
-		mediaAssetRepository,
+		mediaAssetRepositoryGORM,
 		cfg,
 	)
 
@@ -131,7 +143,7 @@ func main() {
 		dashboardHandler,
 		mediaHandler,
 		tokenService,
-		userRepository,
+		userRepositoryGORM,
 		cfg,
 	)
 

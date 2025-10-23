@@ -14,6 +14,8 @@ import (
 // RoleRepository mendefinisikan kontrak untuk akses data peran pengguna
 type RoleRepository interface {
 	FindByName(ctx context.Context, name string) (*domain.Role, error)
+	FindByID(ctx context.Context, id uint) (*domain.Role, error)
+	FindAll(ctx context.Context) ([]domain.Role, error)
 }
 
 // UserRepository mendefinisikan kontrak untuk persistensi data pengguna

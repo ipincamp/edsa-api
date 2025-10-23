@@ -11,11 +11,16 @@ import (
 )
 
 type userRepositoryGORM struct {
-	db *gorm.DB
+	db       *gorm.DB
+	roleRepo usecase.RoleRepository
 }
 
-func NewUserRepository(db *gorm.DB) usecase.UserRepository {
-	return &userRepositoryGORM{db: db}
+// Modifikasi NewUserRepository untuk menerima roleRepo
+func NewUserRepository(db *gorm.DB, roleRepo usecase.RoleRepository) usecase.UserRepository {
+	return &userRepositoryGORM{
+		db:       db,
+		roleRepo: roleRepo,
+	}
 }
 
 func (r *userRepositoryGORM) Create(ctx context.Context, user *domain.User) error {
@@ -30,24 +35,56 @@ func (r *userRepositoryGORM) Create(ctx context.Context, user *domain.User) erro
 
 func (r *userRepositoryGORM) FindByEmail(ctx context.Context, email string) (*domain.User, error) {
 	var gormUser UserGORM
-	result := r.db.WithContext(ctx).Preload("Role").Where("email = ?", email).First(&gormUser)
+	result := r.db.WithContext(ctx).Where("email = ?", email).First(&gormUser)
 	if result.Error != nil {
 		if errors.Is(result.Error, gorm.ErrRecordNotFound) {
 			return nil, nil
 		}
 		return nil, result.Error
 	}
-	return gormUser.ToDomain(), nil
+
+	// Konversi ke domain (tanpa role)
+	domainUser := gormUser.ToDomain()
+
+	// Ambil role dari cache
+	role, err := r.roleRepo.FindByID(ctx, domainUser.RoleID)
+	if err != nil {
+		// Ini adalah error cache/DB, bukan error "tidak ditemukan"
+		return nil, errors.New("database error: failed to find role for user")
+	}
+	if role == nil {
+		// Ini adalah masalah integritas data
+		return nil, errors.New("data integrity error: user role not found")
+	}
+
+	domainUser.Role = *role // Set role dari cache
+	return domainUser, nil
 }
 
 func (r *userRepositoryGORM) FindByID(ctx context.Context, id uuid.UUID) (*domain.User, error) {
 	var gormUser UserGORM
-	result := r.db.WithContext(ctx).Preload("Role").First(&gormUser, id)
+	result := r.db.WithContext(ctx).First(&gormUser, id)
 	if result.Error != nil {
 		if errors.Is(result.Error, gorm.ErrRecordNotFound) {
 			return nil, nil
 		}
 		return nil, result.Error
 	}
-	return gormUser.ToDomain(), nil
+
+	// Konversi ke domain (tanpa role)
+	domainUser := gormUser.ToDomain()
+
+	// Ambil role dari cache
+	role, err := r.roleRepo.FindByID(ctx, domainUser.RoleID)
+	if err != nil {
+		// Ini adalah error cache/DB, bukan error "tidak ditemukan"
+		return nil, errors.New("database error: failed to find role for user")
+	}
+	if role == nil {
+		// Ini adalah masalah integritas data
+		return nil, errors.New("data integrity error: user role not found")
+	}
+
+	domainUser.Role = *role // Set role dari cache
+	return domainUser, nil
 }
