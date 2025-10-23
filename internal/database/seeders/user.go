@@ -11,14 +11,13 @@ import (
 	"gorm.io/gorm"
 )
 
-func UserAdminSeeder(db *gorm.DB) {
+func UserAdminSeeder(db *gorm.DB) error {
 	log.Println("Seeding admin user...")
 
 	// 1. Dapatkan ID role "admin" dari database
 	var userRole repo.RoleGORM
 	if err := db.Where("name = ?", "admin").First(&userRole).Error; err != nil {
-		log.Fatalf("Failed to find 'admin' role. Did you run SeedRoles? Error: %v", err)
-		return
+		return fmt.Errorf("failed to find 'admin' role. Did you run SeedRoles? Error: %w", err)
 	}
 
 	// 2. Ambil kredensial admin dari config (menggunakan global AppConfig)
@@ -31,14 +30,14 @@ func UserAdminSeeder(db *gorm.DB) {
 	var existing repo.UserGORM
 	if db.Where("email = ?", adminEmail).First(&existing).Error == nil {
 		log.Printf("User with email %s already exists, skipping.\n", adminEmail)
-		return
+		return nil
 	}
 
 	// 4. Hash password admin
 	passSvc := argon2id.NewPasswordService()
 	hashedPassword, err := passSvc.Hash(adminPassword)
 	if err != nil {
-		log.Fatalf("Failed to hash admin password for seeder: %v", err)
+		return fmt.Errorf("failed to hash admin password for seeder: %w", err)
 	}
 
 	// 5. Buat user admin baru dari config (tidak pakai factory)
@@ -51,20 +50,19 @@ func UserAdminSeeder(db *gorm.DB) {
 
 	// 6. Simpan ke database
 	if err := db.Create(user).Error; err != nil {
-		log.Printf("Failed to seed admin user: %v\n", err)
-		return
+		return fmt.Errorf("failed to seed admin user: %w", err)
 	}
 	fmt.Println("Seeded admin user successfully from config.")
+	return nil
 }
 
-func UserTeacherSeeder(db *gorm.DB) {
+func UserTeacherSeeder(db *gorm.DB) error {
 	log.Println("Seeding teachers...")
 
 	// 1. Dapatkan ID role "teacher" dari database
 	var userRole repo.RoleGORM
 	if err := db.Where("name = ?", "teacher").First(&userRole).Error; err != nil {
-		log.Fatalf("Failed to find 'teacher' role. Did you run SeedRoles? Error: %v", err)
-		return
+		return fmt.Errorf("failed to find 'teacher' role. Did you run SeedRoles? Error: %w", err)
 	}
 
 	count := 3
@@ -80,20 +78,20 @@ func UserTeacherSeeder(db *gorm.DB) {
 		}
 
 		if err := db.Create(user).Error; err != nil {
-			log.Printf("Failed to seed user: %v\n", err)
+			return fmt.Errorf("failed to seed teacher user: %w", err)
 		}
 	}
 	fmt.Printf("Seeded %d users successfully.\n", count)
+	return nil
 }
 
-func UserStudentSeeder(db *gorm.DB) {
+func UserStudentSeeder(db *gorm.DB) error {
 	log.Println("Seeding students...")
 
 	// 1. Dapatkan ID role "student" dari database
 	var userRole repo.RoleGORM
 	if err := db.Where("name = ?", "student").First(&userRole).Error; err != nil {
-		log.Fatalf("Failed to find 'student' role. Did you run SeedRoles? Error: %v", err)
-		return
+		return fmt.Errorf("failed to find 'student' role. Did you run SeedRoles? Error: %w", err)
 	}
 
 	count := 5
@@ -109,20 +107,20 @@ func UserStudentSeeder(db *gorm.DB) {
 		}
 
 		if err := db.Create(user).Error; err != nil {
-			log.Printf("Failed to seed user: %v\n", err)
+			return fmt.Errorf("failed to seed student user: %w", err)
 		}
 	}
 	fmt.Printf("Seeded %d users successfully.\n", count)
+	return nil
 }
 
-func UserPublicSeeder(db *gorm.DB) {
+func UserPublicSeeder(db *gorm.DB) error {
 	log.Println("Seeding public users...")
 
 	// 1. Dapatkan ID role "public" dari database
 	var userRole repo.RoleGORM
 	if err := db.Where("name = ?", "public").First(&userRole).Error; err != nil {
-		log.Fatalf("Failed to find 'public' role. Did you run SeedRoles? Error: %v", err)
-		return
+		return fmt.Errorf("failed to find 'public' role. Did you run SeedRoles? Error: %w", err)
 	}
 
 	count := 2
@@ -138,8 +136,9 @@ func UserPublicSeeder(db *gorm.DB) {
 		}
 
 		if err := db.Create(user).Error; err != nil {
-			log.Printf("Failed to seed user: %v\n", err)
+			return fmt.Errorf("failed to seed public user: %w", err)
 		}
 	}
 	fmt.Printf("Seeded %d users successfully.\n", count)
+	return nil
 }

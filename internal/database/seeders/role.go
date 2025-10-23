@@ -1,6 +1,7 @@
 package seeders
 
 import (
+	"fmt"
 	"log"
 
 	"github.com/ipincamp/go-edsa-api/internal/domain"
@@ -8,7 +9,7 @@ import (
 	"gorm.io/gorm"
 )
 
-func RoleSeeder(db *gorm.DB) {
+func RoleSeeder(db *gorm.DB) error {
 	log.Println("Seeding roles...")
 	roles := []repo.RoleGORM{
 		{Name: domain.RoleNameAdmin},
@@ -20,10 +21,11 @@ func RoleSeeder(db *gorm.DB) {
 	for _, role := range roles {
 		result := db.FirstOrCreate(&role, repo.RoleGORM{Name: role.Name})
 		if result.Error != nil {
-			log.Printf("Failed to seed role '%s': %v\n", role.Name, result.Error)
+			return fmt.Errorf("failed to seed role '%s': %w", role.Name, result.Error)
 		}
 		if result.RowsAffected > 0 {
 			log.Printf("Seeded role: %s\n", role.Name)
 		}
 	}
+	return nil
 }

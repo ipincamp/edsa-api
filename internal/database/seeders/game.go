@@ -1,13 +1,14 @@
 package seeders
 
 import (
+	"fmt"
 	"log"
 
 	repo "github.com/ipincamp/go-edsa-api/internal/repository/gorm"
 	"gorm.io/gorm"
 )
 
-func GameSeeder(db *gorm.DB) {
+func GameSeeder(db *gorm.DB) error {
 	log.Println("Seeding games...")
 
 	games := []repo.GameGORM{
@@ -24,10 +25,11 @@ func GameSeeder(db *gorm.DB) {
 	for _, game := range games {
 		result := db.FirstOrCreate(&game, repo.GameGORM{Name: game.Name})
 		if result.Error != nil {
-			log.Printf("Failed to seed game '%s': %v\n", game.Name, result.Error)
+			return fmt.Errorf("failed to seed game '%s': %w", game.Name, result.Error)
 		}
 		if result.RowsAffected > 0 {
 			log.Printf("Seeded game: %s\n", game.Name)
 		}
 	}
+	return nil
 }

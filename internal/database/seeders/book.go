@@ -1,13 +1,14 @@
 package seeders
 
 import (
+	"fmt"
 	"log"
 
 	repo "github.com/ipincamp/go-edsa-api/internal/repository/gorm"
 	"gorm.io/gorm"
 )
 
-func BookSeeder(db *gorm.DB) {
+func BookSeeder(db *gorm.DB) error {
 	log.Println("Seeding books...")
 
 	// 8 Buku berdasarkan 8 tema di BRD
@@ -74,10 +75,11 @@ func BookSeeder(db *gorm.DB) {
 		// Buat atau cari berdasarkan Judul
 		result := db.FirstOrCreate(&book, repo.BookGORM{Title: book.Title})
 		if result.Error != nil {
-			log.Printf("Failed to seed book '%s': %v\n", book.Title, result.Error)
+			return fmt.Errorf("failed to seed book '%s': %w", book.Title, result.Error)
 		}
 		if result.RowsAffected > 0 {
 			log.Printf("Seeded book: %s\n", book.Title)
 		}
 	}
+	return nil
 }
