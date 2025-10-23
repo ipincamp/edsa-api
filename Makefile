@@ -1,100 +1,130 @@
 # ==============================================================================
-# Makefile for Go Project
+# Makefile untuk Proyek Go (EDSA API)
 # ==============================================================================
 
-# Your application binary name
+# Variabel Proyek
 BINARY_NAME=edsa
-GOBIN=$(GOPATH)/bin
-GOPATH=$(shell go env GOPATH)
 MAIN_GO=./cmd/api/main.go
 MIGRATE_GO=./cmd/migrate/main.go
 SEED_GO=./cmd/seed/main.go
+
+# Variabel Lingkungan
+GOPATH=$(shell go env GOPATH)
+GOBIN=$(GOPATH)/bin
 TIMEZONE=Asia/Jakarta
 
-# Default command
-help: ## Show available commands
-	@echo "Available commands:"
-	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-20s\033[0m %s\n", $$1, $$2}'
+# Perintah default yang dijalankan jika 'make' dipanggil tanpa target
+.DEFAULT_GOAL := help
 
-## --------------------------------------
-## Build & Run Commands
-## --------------------------------------
+# ==============================================================================
+# DEFINISI PERINTAH
+# ==============================================================================
 
-clean: ## Clean up build artifacts
-	@echo "Cleaning up..."
+help: ## ℹ️ Tampilkan semua perintah yang tersedia
+	@echo "Perintah yang tersedia:"
+	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | \
+	awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-25s\033[0m %s\n", $$1, $$2}'
+
+# --------------------------------------
+# Perintah Build & Run
+# --------------------------------------
+
+build-run: ## --- Build & Run ---
+	@# Target palsu ini hanya untuk pengelompokan di 'make help'
+
+clean: ## 🧹 Bersihkan artefak build (direktori ./bin dan ./tmp)
+	@echo "Membersihkan artefak build..."
 	@rm -rf ./bin/* ./tmp
 
-build: ## Compile Go code into binary
-	@echo "Building binary..."
+build: ## 🏗️ Kompilasi aplikasi Go ke binary di ./bin
+	@echo "Mem-build binary..."
 	@mkdir -p ./bin
 	@go build -o ./bin/$(BINARY_NAME) $(MAIN_GO)
 
-run: build ## Run the application in production mode
-	@echo "Running in production mode..."
+run: build ## 🚀 Jalankan aplikasi (mode production)
+	@echo "Menjalankan (mode production)..."
 	@ENV=production TZ=$(TIMEZONE) ./bin/$(BINARY_NAME)
 
-dev: air-install ## Run the application in development mode with auto-reload
-	@echo "Running in development mode with auto-reload..."
+dev: air-install ## 🔄 Jalankan aplikasi (dev) dengan auto-reload (membutuhkan 'Air')
+	@echo "Menjalankan (mode development) dengan auto-reload..."
 	@$(GOBIN)/air
 
-debug: ## Run the application with Delve debugger
-	@echo "Starting debugger (Delve)..."
+debug: ## 🐞 Jalankan aplikasi dengan debugger (Delve)
+	@echo "Memulai debugger (Delve)..."
 	@go install github.com/go-delve/delve/cmd/dlv@latest
 	@$(GOBIN)/dlv debug $(MAIN_GO)
 
+# Target internal untuk 'dev', tidak perlu ditampilkan di help
 air-install:
-	@echo "Installing Air..."
-	@go install github.com/air-verse/air@latest
+	@if ! command -v $(GOBIN)/air &> /dev/null; then \
+		echo "Menginstall 'Air' untuk auto-reload..."; \
+		go install github.com/air-verse/air@latest; \
+	fi
 
-## --------------------------------------
-## Migration Commands
-## --------------------------------------
+# --------------------------------------
+# Perintah Migrasi Database
+# --------------------------------------
 
-create-migration: ## Create a new migration file with template. Example: make create-migration name=create_users_table
-	@echo "Creating migration file with template..."
+database-migrations: ## --- Database Migrations ---
+	@# Target palsu ini hanya untuk pengelompokan di 'make help'
+
+create-migration: ## 📝 Buat file migrasi baru. Cth: make create-migration name=create_users_table
+	@echo "Membuat file migrasi..."
 	@if [ -z "$(name)" ]; then \
-		echo "Usage: make create-migration name=<migration_name>"; \
+		echo "Usage: make create-migration name=<nama_migrasi>"; \
 		exit 1; \
 	fi
 	@timestamp=$$(date +%Y%m%d%H%M%S); \
 	func_name=$$(echo "$(name)" | sed -e 's/_\([a-z]\)/\u\1/g' -e 's/^\([a-z]\)/\u\1/g'); \
 	filepath=internal/database/migrations/$${timestamp}_$(name).go; \
-	printf 'package migrations\n\nimport (\n\t"github.com/go-gormigrate/gormigrate/v2"\n\t"gorm.io/gorm"\n)\n\nfunc %s() *gormigrate.Migration {\n\t// TODO: Define struct here\n\t// Example: type YourStruct struct {}\n\treturn &gormigrate.Migration{\n\t\tID: "%s",\n\t\tMigrate: func(tx *gorm.DB) error {\n\t\t\t// TODO: Implement table or column creation here\n\t\t\t// Example: return tx.AutoMigrate(&YourStruct{})\n\t\t\treturn nil\n\t\t},\n\t\tRollback: func(tx *gorm.DB) error {\n\t\t\t// TODO: Implement table or column deletion here\n\t\t\t// Example: return tx.Migrator().DropTable("your_table")\n\t\t\treturn nil\n\t\t},\n\t}\n}\n' "$$func_name" "$$timestamp" > $$filepath; \
-	echo "Successfully created: $$filepath"
+	printf 'package migrations\n\nimport (\n\t"github.com/go-gormigrate/gormigrate/v2"\n\t"gorm.io/gorm"\n)\n\nfunc %s() *gormigrate.Migration {\n\t// TODO: Tentukan struct Anda di sini\n\t// type YourStruct struct {}\n\treturn &gormigrate.Migration{\n\t\tID: "%s",\n\t\tMigrate: func(tx *gorm.DB) error {\n\t\t\t// TODO: Implementasi migrasi (buat tabel/kolom)\n\t\t\t// Cth: return tx.AutoMigrate(&YourStruct{})\n\t\t\treturn nil\n\t\t},\n\t\tRollback: func(tx *gorm.DB) error {\n\t\t\t// TODO: Implementasi rollback (hapus tabel/kolom)\n\t\t\t// Cth: return tx.Migrator().DropTable("your_structs")\n\t\t\treturn nil\n\t\t},\n\t}\n}\n' "$$func_name" "$$timestamp" > $$filepath; \
+	echo "Berhasil membuat: $$filepath"
 
-migrate: ## Run all pending migrations
-	@echo "Running migrations..."
+migrate: ## ⬆️ Jalankan semua migrasi yang tertunda (up)
+	@echo "Menjalankan migrasi (up)..."
 	@go run $(MIGRATE_GO) up
 
-migrate-down: ## Rollback the last migration
-	@echo "Rolling back last migration..."
+migrate-down: ## ⬇️ Batalkan (rollback) migrasi terakhir (down)
+	@echo "Me-rollback migrasi terakhir..."
 	@go run $(MIGRATE_GO) down
 
-migrate-reset: ## Drop all tables and re-run all migrations
-	@echo "Resetting database (dropping all tables and re-running 'up')..."
+migrate-reset: ## 🔄 HAPUS semua tabel lalu jalankan ulang SEMUA migrasi (ideal untuk dev)
+	@echo "Mer-reset database (drop semua tabel & migrasi ulang)..."
 	@go run $(MIGRATE_GO) reset
 
-db-drop-all: ## DANGER! Drop all known tables and DO NOT re-migrate.
-	@echo "DANGER! Dropping all known tables (leaves database empty)..."
+db-drop-all: ## ⚠️ DANGER! HAPUS semua tabel & JANGAN migrasi ulang (mengosongkan DB)
+	@echo "PERHATIAN! Menghapus semua tabel (tanpa migrasi ulang)..."
 	@go run $(MIGRATE_GO) drop-all
 
-## --------------------------------------
-## Seeder Commands
-## --------------------------------------
+# --------------------------------------
+# Perintah Seeder Database
+# --------------------------------------
 
-create-seeder: ## Create a new seeder file with template. Example: make create-seeder name=product
-	@echo "Creating seeder file with template..."
+database-seeders: ## --- Database Seeders ---
+	@# Target palsu ini hanya untuk pengelompokan di 'make help'
+
+create-seeder: ## 🌱 Buat file seeder baru. Cth: make create-seeder name=admin_user
+	@echo "Membuat file seeder..."
 	@if [ -z "$(name)" ]; then \
-		echo "Usage: make create-seeder name=<seeder_name>"; \
+		echo "Usage: make create-seeder name=<nama_seeder>"; \
 		exit 1; \
 	fi
 	@func_name=$$(echo "$(name)" | sed -e 's/_\([a-z]\)/\u\1/g' -e 's/^\([a-z]\)/\u\1/g')Seeder; \
 	filepath=internal/database/seeders/$(name).go; \
-	printf 'package seeders\n\nimport (\n\t"log"\n\n\t"gorm.io/gorm"\n)\n\nfunc %s(db *gorm.DB) {\n\t// TODO: Implement your seeder logic here\n\t// Use db.FirstOrCreate() to avoid duplicates\n\tlog.Println("%s ran successfully")\n}\n' "$$func_name" "$$func_name" > $$filepath; \
-	echo "Successfully created: $$filepath"
+	printf 'package seeders\n\nimport (\n\t"log"\n\n\t"gorm.io/gorm"\n)\n\nfunc %s(db *gorm.DB) error {\n\t// TODO: Implementasi logika seeder Anda di sini\n\t// Gunakan db.FirstOrCreate() untuk menghindari duplikat\n\tlog.Println("%s berjalan sukses")\n\treturn nil\n}\n' "$$func_name" "$$func_name" > $$filepath; \
+	echo "Berhasil membuat: $$filepath"
 
-seed: ## Run all registered seeders
-	@echo "Running database seeders..."
+seed: ## 💾 Jalankan semua seeder untuk mengisi data awal (roles, admin, dll)
+	@echo "Menjalankan database seeders..."
 	@go run $(SEED_GO)
 
-.PHONY: build clean seed debug help migrate-create migrate-down migrate run create-seeder dev air-install db-drop-all migrate-reset
+# ==============================================================================
+# PENGATURAN MAKEFILE
+# ==============================================================================
+
+# Mendefinisikan target mana yang bukan file
+# Ini mencegah 'make' bingung jika ada file/folder dengan nama yang sama
+.PHONY: help \
+	build-run clean build run dev debug air-install \
+	database-migrations create-migration migrate migrate-down migrate-reset db-drop-all \
+	database-seeders create-seeder seed
