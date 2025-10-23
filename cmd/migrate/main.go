@@ -20,7 +20,7 @@ func dropAllTables(db *gorm.DB) error {
 		"media_assets",
 		"activity_logs",
 		"user_game_scores",
-		"user_book_progress",
+		"user_book_progresses",
 		"interactions",
 		"user_groups",
 		"pages",
