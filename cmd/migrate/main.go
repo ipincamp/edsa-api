@@ -59,7 +59,7 @@ func main() {
 	m := gormigrate.New(db, gormigrate.DefaultOptions, migrations.GetAllMigrations())
 
 	if len(os.Args) < 2 {
-		log.Fatal("Missing command. Usage: go run cmd/migrate/main.go [up|down]")
+		log.Fatal("Missing command. Usage: go run cmd/migrate/main.go [up|down|reset|drop-all]")
 	}
 
 	command := os.Args[1]
@@ -89,7 +89,15 @@ func main() {
 		}
 		log.Println("Migrations ran successfully")
 		log.Println("Database reset complete.")
+
+	case "drop-all":
+		log.Println("DANGER: Dropping all known tables (including migrations table)...")
+		if err := dropAllTables(db); err != nil {
+			log.Fatalf("Could not drop all tables: %v", err)
+		}
+		log.Println("All known tables dropped successfully. Database is now empty of these tables.")
+
 	default:
-		log.Fatalf("Unknown command: %s. Use 'up', 'down', or 'reset'.", command)
+		log.Fatalf("Unknown command: %s. Use 'up', 'down', 'reset', or 'drop-all'.", command)
 	}
 }

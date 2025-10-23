@@ -74,6 +74,10 @@ migrate-reset: ## Drop all tables and re-run all migrations
 	@echo "Resetting database (dropping all tables and re-running 'up')..."
 	@go run $(MIGRATE_GO) reset
 
+db-drop-all: ## DANGER! Drop all known tables and DO NOT re-migrate.
+	@echo "DANGER! Dropping all known tables (leaves database empty)..."
+	@go run $(MIGRATE_GO) drop-all
+
 ## --------------------------------------
 ## Seeder Commands
 ## --------------------------------------
@@ -93,4 +97,4 @@ seed: ## Run all registered seeders
 	@echo "Running database seeders..."
 	@go run $(SEED_GO)
 
-.PHONY: build clean seed debug help migrate-create migrate-down migrate run create-seeder dev air-install
+.PHONY: build clean seed debug help migrate-create migrate-down migrate run create-seeder dev air-install db-drop-all migrate-reset
