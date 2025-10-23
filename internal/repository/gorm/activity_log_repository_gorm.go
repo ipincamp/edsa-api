@@ -27,6 +27,27 @@ func (r *activityLogRepositoryGORM) Create(ctx context.Context, log *domain.Acti
 	return nil
 }
 
+func (r *activityLogRepositoryGORM) CreateBatch(ctx context.Context, logs []domain.ActivityLog) error {
+	if len(logs) == 0 {
+		return nil
+	}
+
+	// Konversi domain slice ke gorm slice
+	gormLogs := make([]ActivityLogGORM, len(logs))
+	for i, logEntry := range logs {
+		// Kita butuh pointer ke logEntry untuk fungsi mapper
+		entry := logEntry
+		gormLogs[i] = *ActivityLogFromDomain(&entry)
+	}
+
+	// GORM's Create() secara otomatis melakukan bulk insert jika diberi slice
+	result := r.db.WithContext(ctx).Create(&gormLogs)
+	if result.Error != nil {
+		return result.Error
+	}
+	return nil
+}
+
 func (r *activityLogRepositoryGORM) FindAllByUserID(ctx context.Context, userID uuid.UUID) ([]domain.ActivityLog, error) {
 	var gormLogs []ActivityLogGORM
 	if err := r.db.WithContext(ctx).

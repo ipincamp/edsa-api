@@ -106,6 +106,7 @@ type UserGameScoreRepository interface {
 // ActivityLogRepository mendefinisikan kontrak untuk data log aktivitas pengguna
 type ActivityLogRepository interface {
 	Create(ctx context.Context, log *domain.ActivityLog) error
+	CreateBatch(ctx context.Context, logs []domain.ActivityLog) error
 	FindAllByUserID(ctx context.Context, userID uuid.UUID) ([]domain.ActivityLog, error)
 }
 
@@ -197,6 +198,7 @@ type AppService interface {
 // ActivityLoggerService mendefinisikan logika bisnis untuk pencatatan aktivitas pengguna
 type ActivityLoggerService interface {
 	Log(ctx context.Context, logData domain.ActivityLog)
+	Shutdown(ctx context.Context) error
 }
 
 // Mendefinisikan logika bisnis untuk Dashboard Guru

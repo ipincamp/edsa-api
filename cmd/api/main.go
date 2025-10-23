@@ -1,8 +1,13 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"log"
+	"os"
+	"os/signal"
+	"syscall"
+	"time"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/ipincamp/go-edsa-api/internal/config"
@@ -147,7 +152,40 @@ func main() {
 		cfg,
 	)
 
-	// 10. Start Server
-	log.Printf("Starting server on port %d...", cfg.App.Port)
-	log.Fatal(app.Listen(fmt.Sprintf(":%d", cfg.App.Port)))
+	// 10. Start Server with Graceful Shutdown
+
+	// Channel untuk mendengarkan sinyal OS (cth: Ctrl+C, SIGTERM)
+	quit := make(chan os.Signal, 1)
+	signal.Notify(quit, os.Interrupt, syscall.SIGTERM)
+
+	// Jalankan server di goroutine agar tidak memblokir
+	go func() {
+		log.Printf("Starting server on port %d...", cfg.App.Port)
+		if err := app.Listen(fmt.Sprintf(":%d", cfg.App.Port)); err != nil {
+			// Kita gunakan log.Printf agar shutdown bisa berjalan
+			log.Printf("Server failed to start: %v", err)
+			quit <- syscall.Signal(0) // Kirim sinyal dummy untuk memicu shutdown
+		}
+	}()
+
+	// Blokir main goroutine sampai sinyal diterima
+	<-quit
+
+	log.Println("Received shutdown signal. Gracefully shutting down...")
+
+	// Beri waktu 5 detik untuk server menyelesaikan request yang sedang berjalan
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	// Shutdown Fiber server
+	if err := app.Shutdown(); err != nil {
+		log.Printf("Fiber server shutdown failed: %v", err)
+	}
+
+	// Shutdown Logger Service (ini akan memproses sisa batch)
+	if err := loggerService.Shutdown(ctx); err != nil {
+		log.Printf("Logger service shutdown failed: %v", err)
+	}
+
+	log.Println("Server gracefully shut down.")
 }
