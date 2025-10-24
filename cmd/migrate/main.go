@@ -55,7 +55,7 @@ func dropAllTables(db *gorm.DB) error {
 
 func main() {
 	config.LoadConfig()
-	db := database.NewPostgresConnection(config.GetDatabaseDSN())
+	db := database.NewPostgresConnection(config.GetDatabaseDSN(), config.AppConfig.App.Env)
 
 	m := gormigrate.New(db, gormigrate.DefaultOptions, migrations.GetAllMigrations())
 

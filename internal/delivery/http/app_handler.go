@@ -12,14 +12,16 @@ import (
 )
 
 type AppHandler struct {
-	appService usecase.AppService
-	validate   *validator.GoPlaygroundValidator
+	appService       usecase.AppService
+	dashboardService usecase.DashboardService
+	validate         *validator.GoPlaygroundValidator
 }
 
-func NewAppHandler(as usecase.AppService, v *validator.GoPlaygroundValidator) *AppHandler {
+func NewAppHandler(as usecase.AppService, ds usecase.DashboardService, v *validator.GoPlaygroundValidator) *AppHandler {
 	return &AppHandler{
-		appService: as,
-		validate:   v,
+		appService:       as,
+		dashboardService: ds,
+		validate:         v,
 	}
 }
 
@@ -168,4 +170,44 @@ func (h *AppHandler) SubmitGameScore(c *fiber.Ctx) error {
 		return utils.SendSimpleError(c, fiber.StatusInternalServerError, err.Error(), err.Error())
 	}
 	return utils.SendSuccess(c, fiber.StatusOK, "Score updated successfully", nil)
+}
+
+// --- Activity Handler ---
+
+// GetMyActivity menangani 'GET /app/activity'
+func (h *AppHandler) GetMyActivity(c *fiber.Ctx) error {
+	// 1. Ambil 'userID' dari token
+	userID, err := getUserIDFromLocals(c)
+	if err != nil {
+		return err // Error sudah dikirim oleh helper
+	}
+
+	// 2. Ambil filter paginasi dari query params
+	page, _ := strconv.Atoi(c.Query("page", "1"))
+	limit, _ := strconv.Atoi(c.Query("limit", "10"))
+	startDate := c.Query("start_date")
+	endDate := c.Query("end_date")
+
+	filters := &domain.ActivityLogQuery{
+		Page:      page,
+		Limit:     limit,
+		StartDate: startDate,
+		EndDate:   endDate,
+	}
+
+	// 3. Panggil Usecase (dari dashboardService)
+	paginatedData, err := h.dashboardService.GetStudentActivity(c.Context(), userID, filters)
+	if err != nil {
+		return utils.SendSimpleError(c, fiber.StatusNotFound, err.Error(), err.Error())
+	}
+
+	// 4. Kembalikan menggunakan format SendPagination
+	meta := utils.PaginationMeta{
+		Page:      paginatedData.Meta.Page,
+		Limit:     paginatedData.Meta.Limit,
+		TotalPage: paginatedData.Meta.TotalPage,
+		TotalData: paginatedData.Meta.TotalData,
+	}
+
+	return utils.SendPagination(c, "My activity retrieved successfully", paginatedData.List, meta)
 }

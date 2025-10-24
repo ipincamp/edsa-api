@@ -10,7 +10,7 @@ import (
 
 func main() {
 	config.LoadConfig()
-	db := database.NewPostgresConnection(config.GetDatabaseDSN())
+	db := database.NewPostgresConnection(config.GetDatabaseDSN(), config.AppConfig.App.Env)
 
 	log.Println("Starting database seeding transaction...")
 

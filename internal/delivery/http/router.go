@@ -132,6 +132,9 @@ func SetupRoutes(
 	appRoutes.Get("/games", appHandler.GetAllGames)
 	appRoutes.Post("/games/:gameId/score", appHandler.SubmitGameScore)
 
+	// Rute Aktivitas Pengguna
+	appRoutes.Get("/activity", appHandler.GetMyActivity)
+
 	// --- Rute Dashboard (Guru) ---
 
 	// Rute Dashboard Guru

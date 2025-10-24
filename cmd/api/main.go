@@ -38,7 +38,7 @@ func main() {
 	cfg := config.AppConfig
 
 	// 2. Init Database (PostgreSQL + GORM)
-	db := database.NewPostgresConnection(config.GetDatabaseDSN())
+	db := database.NewPostgresConnection(config.GetDatabaseDSN(), cfg.App.Env)
 
 	// 3. Init Validator
 	validate := validator.NewValidator()
@@ -131,7 +131,7 @@ func main() {
 	// 7. Init Handlers
 	userHandler := http.NewUserHandler(userService, validate)
 	adminHandler := http.NewAdminHandler(adminService, validate)
-	appHandler := http.NewAppHandler(appService, validate)
+	appHandler := http.NewAppHandler(appService, dashboardService, validate)
 	dashboardHandler := http.NewDashboardHandler(dashboardService, validate)
 	mediaHandler := http.NewMediaHandler(mediaService, validate, loggerService)
 
