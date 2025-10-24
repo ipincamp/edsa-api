@@ -240,3 +240,20 @@ type MediaAssetGORM struct {
 func (MediaAssetGORM) TableName() string {
 	return "media_assets"
 }
+
+// GroupBookSettingGORM adalah representasi tabel 'group_book_settings' di database
+type GroupBookSettingGORM struct {
+	ID         uint      `gorm:"primarykey"`
+	GroupID    uint      `gorm:"not null;uniqueIndex:idx_group_book"`
+	Group      GroupGORM `gorm:"foreignKey:GroupID"`
+	BookID     uint      `gorm:"not null;uniqueIndex:idx_group_book"`
+	Book       BookGORM  `gorm:"foreignKey:BookID"`
+	IsUnlocked bool      `gorm:"default:false"`
+	CreatedAt  time.Time
+	UpdatedAt  time.Time
+	DeletedAt  gorm.DeletedAt `gorm:"index"`
+}
+
+func (GroupBookSettingGORM) TableName() string {
+	return "group_book_settings"
+}

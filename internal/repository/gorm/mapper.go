@@ -407,3 +407,38 @@ func MediaAssetFromDomain(m *domain.MediaAsset) *MediaAssetGORM {
 		DeletedByUserID:  m.DeletedByUserID,
 	}
 }
+
+// --- GroupBookSetting Mappers ---
+
+// Map GORM model ke Domain entity
+func (s *GroupBookSettingGORM) ToDomain() *domain.GroupBookSetting {
+	domainSetting := &domain.GroupBookSetting{
+		ID:         s.ID,
+		GroupID:    s.GroupID,
+		BookID:     s.BookID,
+		IsUnlocked: s.IsUnlocked,
+		CreatedAt:  s.CreatedAt,
+		UpdatedAt:  s.UpdatedAt,
+		DeletedAt:  s.DeletedAt,
+	}
+	if s.Group.ID != 0 {
+		domainSetting.Group = *s.Group.ToDomain()
+	}
+	if s.Book.ID != 0 {
+		domainSetting.Book = *s.Book.ToDomain()
+	}
+	return domainSetting
+}
+
+// Map Domain entity ke GORM model
+func GroupBookSettingFromDomain(s *domain.GroupBookSetting) *GroupBookSettingGORM {
+	return &GroupBookSettingGORM{
+		ID:         s.ID,
+		GroupID:    s.GroupID,
+		BookID:     s.BookID,
+		IsUnlocked: s.IsUnlocked,
+		CreatedAt:  s.CreatedAt,
+		UpdatedAt:  s.UpdatedAt,
+		DeletedAt:  s.DeletedAt,
+	}
+}
