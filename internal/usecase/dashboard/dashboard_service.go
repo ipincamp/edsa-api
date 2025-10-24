@@ -6,6 +6,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/ipincamp/go-edsa-api/internal/domain"
+	"github.com/ipincamp/go-edsa-api/internal/pkg/applogger"
 	"github.com/ipincamp/go-edsa-api/internal/usecase"
 )
 
@@ -45,6 +46,7 @@ func (s *dashboardService) GetStudentActivity(ctx context.Context, studentID uui
 	// 1. Validasi apakah studentID ada
 	student, err := s.userRepo.FindByID(ctx, studentID)
 	if err != nil {
+		applogger.ErrorLogger.Printf("GetStudentActivity: DB error checking student %s: %v", studentID, err)
 		return nil, errors.New("database error checking student")
 	}
 	if student == nil {
@@ -54,6 +56,7 @@ func (s *dashboardService) GetStudentActivity(ctx context.Context, studentID uui
 	// 2. Ambil semua log untuk user tersebut
 	logs, err := s.activityLogRepo.FindAllByUserID(ctx, studentID)
 	if err != nil {
+		applogger.ErrorLogger.Printf("GetStudentActivity: DB error fetching logs for student %s: %v", studentID, err)
 		return nil, errors.New("database error fetching logs")
 	}
 

@@ -5,6 +5,7 @@ import (
 	"errors"
 
 	"github.com/ipincamp/go-edsa-api/internal/domain"
+	"github.com/ipincamp/go-edsa-api/internal/pkg/applogger"
 	"github.com/ipincamp/go-edsa-api/internal/usecase"
 )
 
@@ -114,6 +115,7 @@ func (s *adminService) CreateSubject(ctx context.Context, req *domain.CreateSubj
 		Name: req.Name,
 	}
 	if err := s.subjectRepo.Create(ctx, subject); err != nil {
+		applogger.ErrorLogger.Printf("CreateSubject: Failed to create subject: %v", err)
 		return nil, err
 	}
 	return toSubjectResponse(subject), nil
@@ -122,6 +124,7 @@ func (s *adminService) CreateSubject(ctx context.Context, req *domain.CreateSubj
 func (s *adminService) GetAllSubjects(ctx context.Context) ([]domain.SubjectResponse, error) {
 	subjects, err := s.subjectRepo.FindAll(ctx)
 	if err != nil {
+		applogger.ErrorLogger.Printf("GetAllSubjects: Failed to find all subjects: %v", err)
 		return nil, err
 	}
 	var responses []domain.SubjectResponse
@@ -134,6 +137,7 @@ func (s *adminService) GetAllSubjects(ctx context.Context) ([]domain.SubjectResp
 func (s *adminService) GetSubjectByID(ctx context.Context, id uint) (*domain.SubjectResponse, error) {
 	subject, err := s.subjectRepo.FindByID(ctx, id)
 	if err != nil {
+		applogger.ErrorLogger.Printf("GetSubjectByID: Failed to find subject %d: %v", id, err)
 		return nil, err
 	}
 	if subject == nil {
@@ -145,6 +149,7 @@ func (s *adminService) GetSubjectByID(ctx context.Context, id uint) (*domain.Sub
 func (s *adminService) UpdateSubject(ctx context.Context, id uint, req *domain.UpdateSubjectRequest) (*domain.SubjectResponse, error) {
 	subject, err := s.subjectRepo.FindByID(ctx, id)
 	if err != nil {
+		applogger.ErrorLogger.Printf("UpdateSubject: Failed to find subject %d: %v", id, err)
 		return nil, err
 	}
 	if subject == nil {
@@ -153,6 +158,7 @@ func (s *adminService) UpdateSubject(ctx context.Context, id uint, req *domain.U
 
 	subject.Name = req.Name
 	if err := s.subjectRepo.Update(ctx, subject); err != nil {
+		applogger.ErrorLogger.Printf("UpdateSubject: Failed to update subject %d: %v", id, err)
 		return nil, err
 	}
 	return toSubjectResponse(subject), nil
@@ -161,24 +167,20 @@ func (s *adminService) UpdateSubject(ctx context.Context, id uint, req *domain.U
 func (s *adminService) DeleteSubject(ctx context.Context, id uint) error {
 	// TODO: Cek apakah ada class yang masih terikat sebelum hapus?
 	// Untuk saat ini, biarkan DB constraint (OnDelete:RESTRICT) yang menangani
-	return s.subjectRepo.Delete(ctx, id)
+	if err := s.subjectRepo.Delete(ctx, id); err != nil {
+		applogger.ErrorLogger.Printf("DeleteSubject: Failed to delete subject %d: %v", id, err)
+		return err
+	}
+	return nil
 }
 
 // --- Class Methods ---
 
 func (s *adminService) CreateClass(ctx context.Context, req *domain.CreateClassRequest) (*domain.ClassResponse, error) {
-	// Validasi apakah SubjectID ada
-	_, err := s.subjectRepo.FindByID(ctx, req.SubjectID)
-	if err != nil {
-		return nil, errors.New("failed to check subject")
-	}
-	if err == nil { // Jika error-nya nil, berarti subject tidak ditemukan (seharusnya)
-		// FIXME: Logika FindByID perlu diperjelas. Asumsi: FindByID mengembalikan error jika tidak ada.
-		// Mari kita asumsikan FindByID mengembalikan (nil, nil) jika not found
-	}
 	// Asumsi: Kita butuh subject ada
 	subject, err := s.subjectRepo.FindByID(ctx, req.SubjectID)
 	if err != nil {
+		applogger.ErrorLogger.Printf("CreateClass: Failed to check subject %d: %v", req.SubjectID, err)
 		return nil, err // Error DB
 	}
 	if subject == nil {
@@ -190,6 +192,7 @@ func (s *adminService) CreateClass(ctx context.Context, req *domain.CreateClassR
 		SubjectID: req.SubjectID,
 	}
 	if err := s.classRepo.Create(ctx, class); err != nil {
+		applogger.ErrorLogger.Printf("CreateClass: Failed to create class: %v", err)
 		return nil, err
 	}
 
@@ -200,6 +203,7 @@ func (s *adminService) CreateClass(ctx context.Context, req *domain.CreateClassR
 func (s *adminService) GetAllClasses(ctx context.Context) ([]domain.ClassResponse, error) {
 	classes, err := s.classRepo.FindAll(ctx)
 	if err != nil {
+		applogger.ErrorLogger.Printf("GetAllClasses: Failed to find all classes: %v", err)
 		return nil, err
 	}
 	var responses []domain.ClassResponse
@@ -212,6 +216,7 @@ func (s *adminService) GetAllClasses(ctx context.Context) ([]domain.ClassRespons
 func (s *adminService) GetClassByID(ctx context.Context, id uint) (*domain.ClassResponse, error) {
 	class, err := s.classRepo.FindByID(ctx, id)
 	if err != nil {
+		applogger.ErrorLogger.Printf("GetClassByID: Failed to find class %d: %v", id, err)
 		return nil, err
 	}
 	if class == nil {
@@ -224,6 +229,7 @@ func (s *adminService) UpdateClass(ctx context.Context, id uint, req *domain.Upd
 	// Cek class
 	class, err := s.classRepo.FindByID(ctx, id)
 	if err != nil {
+		applogger.ErrorLogger.Printf("UpdateClass: Failed to find class %d: %v", id, err)
 		return nil, err
 	}
 	if class == nil {
@@ -233,6 +239,7 @@ func (s *adminService) UpdateClass(ctx context.Context, id uint, req *domain.Upd
 	// Cek subject baru
 	subject, err := s.subjectRepo.FindByID(ctx, req.SubjectID)
 	if err != nil {
+		applogger.ErrorLogger.Printf("UpdateClass: Failed to find subject %d: %v", req.SubjectID, err)
 		return nil, err
 	}
 	if subject == nil {
@@ -243,6 +250,7 @@ func (s *adminService) UpdateClass(ctx context.Context, id uint, req *domain.Upd
 	class.SubjectID = req.SubjectID
 
 	if err := s.classRepo.Update(ctx, class); err != nil {
+		applogger.ErrorLogger.Printf("UpdateClass: Failed to update class %d: %v", id, err)
 		return nil, err
 	}
 
@@ -251,7 +259,11 @@ func (s *adminService) UpdateClass(ctx context.Context, id uint, req *domain.Upd
 }
 
 func (s *adminService) DeleteClass(ctx context.Context, id uint) error {
-	return s.classRepo.Delete(ctx, id)
+	if err := s.classRepo.Delete(ctx, id); err != nil {
+		applogger.ErrorLogger.Printf("DeleteClass: Failed to delete class %d: %v", id, err)
+		return err
+	}
+	return nil
 }
 
 // --- Group Methods ---
@@ -260,6 +272,7 @@ func (s *adminService) CreateGroup(ctx context.Context, req *domain.CreateGroupR
 	// Cek ClassID
 	class, err := s.classRepo.FindByID(ctx, req.ClassID)
 	if err != nil {
+		applogger.ErrorLogger.Printf("CreateGroup: Failed to find class %d: %v", req.ClassID, err)
 		return nil, err
 	}
 	if class == nil {
@@ -271,6 +284,7 @@ func (s *adminService) CreateGroup(ctx context.Context, req *domain.CreateGroupR
 		ClassID: req.ClassID,
 	}
 	if err := s.groupRepo.Create(ctx, group); err != nil {
+		applogger.ErrorLogger.Printf("CreateGroup: Failed to create group: %v", err)
 		return nil, err
 	}
 
@@ -281,6 +295,7 @@ func (s *adminService) CreateGroup(ctx context.Context, req *domain.CreateGroupR
 func (s *adminService) GetAllGroups(ctx context.Context) ([]domain.GroupResponse, error) {
 	groups, err := s.groupRepo.FindAll(ctx)
 	if err != nil {
+		applogger.ErrorLogger.Printf("GetAllGroups: Failed to find all groups: %v", err)
 		return nil, err
 	}
 	var responses []domain.GroupResponse
@@ -293,6 +308,7 @@ func (s *adminService) GetAllGroups(ctx context.Context) ([]domain.GroupResponse
 func (s *adminService) GetGroupByID(ctx context.Context, id uint) (*domain.GroupResponse, error) {
 	group, err := s.groupRepo.FindByID(ctx, id)
 	if err != nil {
+		applogger.ErrorLogger.Printf("GetGroupByID: Failed to find group %d: %v", id, err)
 		return nil, err
 	}
 	if group == nil {
@@ -304,6 +320,7 @@ func (s *adminService) GetGroupByID(ctx context.Context, id uint) (*domain.Group
 func (s *adminService) UpdateGroup(ctx context.Context, id uint, req *domain.UpdateGroupRequest) (*domain.GroupResponse, error) {
 	group, err := s.groupRepo.FindByID(ctx, id)
 	if err != nil {
+		applogger.ErrorLogger.Printf("UpdateGroup: Failed to find group %d: %v", id, err)
 		return nil, err
 	}
 	if group == nil {
@@ -312,6 +329,7 @@ func (s *adminService) UpdateGroup(ctx context.Context, id uint, req *domain.Upd
 
 	class, err := s.classRepo.FindByID(ctx, req.ClassID)
 	if err != nil {
+		applogger.ErrorLogger.Printf("UpdateGroup: Failed to find class %d: %v", req.ClassID, err)
 		return nil, err
 	}
 	if class == nil {
@@ -322,6 +340,7 @@ func (s *adminService) UpdateGroup(ctx context.Context, id uint, req *domain.Upd
 	group.ClassID = req.ClassID
 
 	if err := s.groupRepo.Update(ctx, group); err != nil {
+		applogger.ErrorLogger.Printf("UpdateGroup: Failed to update group %d: %v", id, err)
 		return nil, err
 	}
 
@@ -330,7 +349,11 @@ func (s *adminService) UpdateGroup(ctx context.Context, id uint, req *domain.Upd
 }
 
 func (s *adminService) DeleteGroup(ctx context.Context, id uint) error {
-	return s.groupRepo.Delete(ctx, id)
+	if err := s.groupRepo.Delete(ctx, id); err != nil {
+		applogger.ErrorLogger.Printf("DeleteGroup: Failed to delete group %d: %v", id, err)
+		return err
+	}
+	return nil
 }
 
 // --- Book Methods ---
@@ -344,6 +367,7 @@ func (s *adminService) CreateBook(ctx context.Context, req *domain.CreateBookReq
 		BookOrder:     req.BookOrder,
 	}
 	if err := s.bookRepo.CreateBookWithOrderShift(ctx, book); err != nil {
+		applogger.ErrorLogger.Printf("CreateBook: Failed to create book with order shift: %v", err)
 		return nil, err
 	}
 	return toBookResponse(book), nil
@@ -352,6 +376,7 @@ func (s *adminService) CreateBook(ctx context.Context, req *domain.CreateBookReq
 func (s *adminService) GetAllBooks(ctx context.Context) ([]domain.BookResponse, error) {
 	books, err := s.bookRepo.FindAll(ctx)
 	if err != nil {
+		applogger.ErrorLogger.Printf("GetAllBooks: Failed to find all books: %v", err)
 		return nil, err
 	}
 	var responses []domain.BookResponse
@@ -364,6 +389,7 @@ func (s *adminService) GetAllBooks(ctx context.Context) ([]domain.BookResponse, 
 func (s *adminService) GetBookByID(ctx context.Context, id uint) (*domain.BookResponse, error) {
 	book, err := s.bookRepo.FindByID(ctx, id)
 	if err != nil {
+		applogger.ErrorLogger.Printf("GetBookByID: Failed to find book %d: %v", id, err)
 		return nil, err
 	}
 	if book == nil {
@@ -376,6 +402,7 @@ func (s *adminService) UpdateBook(ctx context.Context, id uint, req *domain.Upda
 	// 1. Ambil data buku yang ada
 	book, err := s.bookRepo.FindByID(ctx, id)
 	if err != nil {
+		applogger.ErrorLogger.Printf("UpdateBook: Failed to find book %d: %v", id, err)
 		return nil, err
 	}
 	if book == nil {
@@ -407,14 +434,15 @@ func (s *adminService) UpdateBook(ctx context.Context, id uint, req *domain.Upda
 
 	// 4. Panggil repository yang sesuai
 	if orderChanged {
-		// Panggil logic 'shift' (dari jawaban saya sebelumnya)
-		// 'book' sudah berisi Title/Desc/Theme yang baru
+		// Panggil logic 'shift'
 		if err := s.bookRepo.UpdateBookWithOrderShift(ctx, book, newOrder); err != nil {
+			applogger.ErrorLogger.Printf("UpdateBook: Failed to update book %d with order shift: %v", id, err)
 			return nil, err
 		}
 	} else {
 		// Panggil update biasa (hanya Title/Desc/Theme, tanpa 'shift')
 		if err := s.bookRepo.Update(ctx, book); err != nil {
+			applogger.ErrorLogger.Printf("UpdateBook: Failed to update book %d (no order shift): %v", id, err)
 			return nil, err
 		}
 	}
@@ -425,7 +453,11 @@ func (s *adminService) UpdateBook(ctx context.Context, id uint, req *domain.Upda
 }
 
 func (s *adminService) DeleteBook(ctx context.Context, id uint) error {
-	return s.bookRepo.Delete(ctx, id)
+	if err := s.bookRepo.Delete(ctx, id); err != nil {
+		applogger.ErrorLogger.Printf("DeleteBook: Failed to delete book %d: %v", id, err)
+		return err
+	}
+	return nil
 }
 
 // --- Page Methods ---
@@ -434,6 +466,7 @@ func (s *adminService) CreatePage(ctx context.Context, bookID uint, req *domain.
 	// Cek apakah BookID ada
 	book, err := s.bookRepo.FindByID(ctx, bookID)
 	if err != nil {
+		applogger.ErrorLogger.Printf("CreatePage: Failed to find book %d: %v", bookID, err)
 		return nil, err
 	}
 	if book == nil {
@@ -447,6 +480,7 @@ func (s *adminService) CreatePage(ctx context.Context, bookID uint, req *domain.
 		InstructionText: req.InstructionText,
 	}
 	if err := s.pageRepo.Create(ctx, page); err != nil {
+		applogger.ErrorLogger.Printf("CreatePage: Failed to create page for book %d: %v", bookID, err)
 		return nil, err
 	}
 
@@ -457,6 +491,7 @@ func (s *adminService) CreatePage(ctx context.Context, bookID uint, req *domain.
 func (s *adminService) GetAllPagesForBook(ctx context.Context, bookID uint) ([]domain.PageResponse, error) {
 	pages, err := s.pageRepo.FindAllByBookID(ctx, bookID)
 	if err != nil {
+		applogger.ErrorLogger.Printf("GetAllPagesForBook: Failed to find pages for book %d: %v", bookID, err)
 		return nil, err
 	}
 	var responses []domain.PageResponse
@@ -469,6 +504,7 @@ func (s *adminService) GetAllPagesForBook(ctx context.Context, bookID uint) ([]d
 func (s *adminService) GetPageByID(ctx context.Context, id uint) (*domain.PageResponse, error) {
 	page, err := s.pageRepo.FindByID(ctx, id)
 	if err != nil {
+		applogger.ErrorLogger.Printf("GetPageByID: Failed to find page %d: %v", id, err)
 		return nil, err
 	}
 	if page == nil {
@@ -480,6 +516,7 @@ func (s *adminService) GetPageByID(ctx context.Context, id uint) (*domain.PageRe
 func (s *adminService) UpdatePage(ctx context.Context, id uint, req *domain.UpdatePageRequest) (*domain.PageResponse, error) {
 	page, err := s.pageRepo.FindByID(ctx, id)
 	if err != nil {
+		applogger.ErrorLogger.Printf("UpdatePage: Failed to find page %d: %v", id, err)
 		return nil, err
 	}
 	if page == nil {
@@ -491,6 +528,7 @@ func (s *adminService) UpdatePage(ctx context.Context, id uint, req *domain.Upda
 	page.InstructionText = req.InstructionText
 
 	if err := s.pageRepo.Update(ctx, page); err != nil {
+		applogger.ErrorLogger.Printf("UpdatePage: Failed to update page %d: %v", id, err)
 		return nil, err
 	}
 	// page sudah terisi data `Book` dari FindByID
@@ -498,7 +536,11 @@ func (s *adminService) UpdatePage(ctx context.Context, id uint, req *domain.Upda
 }
 
 func (s *adminService) DeletePage(ctx context.Context, id uint) error {
-	return s.pageRepo.Delete(ctx, id)
+	if err := s.pageRepo.Delete(ctx, id); err != nil {
+		applogger.ErrorLogger.Printf("DeletePage: Failed to delete page %d: %v", id, err)
+		return err
+	}
+	return nil
 }
 
 // --- Interaction Methods ---
@@ -507,6 +549,7 @@ func (s *adminService) CreateInteraction(ctx context.Context, pageID uint, req *
 	// Cek apakah PageID ada
 	page, err := s.pageRepo.FindByID(ctx, pageID)
 	if err != nil {
+		applogger.ErrorLogger.Printf("CreateInteraction: Failed to find page %d: %v", pageID, err)
 		return nil, err
 	}
 	if page == nil {
@@ -519,6 +562,7 @@ func (s *adminService) CreateInteraction(ctx context.Context, pageID uint, req *
 		Config: req.Config,
 	}
 	if err := s.interactionRepo.Create(ctx, interaction); err != nil {
+		applogger.ErrorLogger.Printf("CreateInteraction: Failed to create interaction for page %d: %v", pageID, err)
 		return nil, err
 	}
 
@@ -529,6 +573,7 @@ func (s *adminService) CreateInteraction(ctx context.Context, pageID uint, req *
 func (s *adminService) GetAllInteractionsForPage(ctx context.Context, pageID uint) ([]domain.InteractionResponse, error) {
 	interactions, err := s.interactionRepo.FindAllByPageID(ctx, pageID)
 	if err != nil {
+		applogger.ErrorLogger.Printf("GetAllInteractionsForPage: Failed to find interactions for page %d: %v", pageID, err)
 		return nil, err
 	}
 	var responses []domain.InteractionResponse
@@ -541,6 +586,7 @@ func (s *adminService) GetAllInteractionsForPage(ctx context.Context, pageID uin
 func (s *adminService) GetInteractionByID(ctx context.Context, id uint) (*domain.InteractionResponse, error) {
 	interaction, err := s.interactionRepo.FindByID(ctx, id)
 	if err != nil {
+		applogger.ErrorLogger.Printf("GetInteractionByID: Failed to find interaction %d: %v", id, err)
 		return nil, err
 	}
 	if interaction == nil {
@@ -552,6 +598,7 @@ func (s *adminService) GetInteractionByID(ctx context.Context, id uint) (*domain
 func (s *adminService) UpdateInteraction(ctx context.Context, id uint, req *domain.UpdateInteractionRequest) (*domain.InteractionResponse, error) {
 	interaction, err := s.interactionRepo.FindByID(ctx, id)
 	if err != nil {
+		applogger.ErrorLogger.Printf("UpdateInteraction: Failed to find interaction %d: %v", id, err)
 		return nil, err
 	}
 	if interaction == nil {
@@ -562,6 +609,7 @@ func (s *adminService) UpdateInteraction(ctx context.Context, id uint, req *doma
 	interaction.Config = req.Config
 
 	if err := s.interactionRepo.Update(ctx, interaction); err != nil {
+		applogger.ErrorLogger.Printf("UpdateInteraction: Failed to update interaction %d: %v", id, err)
 		return nil, err
 	}
 	// interaction sudah terisi data `Page.Book` dari FindByID
@@ -569,5 +617,9 @@ func (s *adminService) UpdateInteraction(ctx context.Context, id uint, req *doma
 }
 
 func (s *adminService) DeleteInteraction(ctx context.Context, id uint) error {
-	return s.interactionRepo.Delete(ctx, id)
+	if err := s.interactionRepo.Delete(ctx, id); err != nil {
+		applogger.ErrorLogger.Printf("DeleteInteraction: Failed to delete interaction %d: %v", id, err)
+		return err
+	}
+	return nil
 }

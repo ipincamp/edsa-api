@@ -8,6 +8,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/ipincamp/go-edsa-api/internal/domain"
+	"github.com/ipincamp/go-edsa-api/internal/pkg/applogger"
 	"github.com/ipincamp/go-edsa-api/internal/usecase"
 )
 
@@ -54,7 +55,7 @@ func (s *activityLoggerService) Log(ctx context.Context, logData domain.Activity
 		// Log berhasil masuk antrian
 	default:
 		// Channel penuh, log dijatuhkan (dropped)
-		log.Printf("WARNING: Activity log channel is full. Dropping log for action: %s", logData.Action)
+		applogger.ErrorLogger.Printf("WARNING: Activity log channel is full. Dropping log for action: %s", logData.Action)
 	}
 }
 
@@ -112,7 +113,7 @@ func (s *activityLoggerService) commitBatch(batch []domain.ActivityLog) {
 	defer cancel()
 
 	if err := s.repo.CreateBatch(ctx, batch); err != nil {
-		log.Printf("ERROR: Failed to create activity log batch: %v", err)
+		applogger.ErrorLogger.Printf("Failed to create activity log batch: %v", err)
 		// Di aplikasi production, simpan log yang gagal
 		// ke file untuk diproses ulang
 	}

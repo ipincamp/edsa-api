@@ -9,6 +9,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/ipincamp/go-edsa-api/internal/domain"
+	"github.com/ipincamp/go-edsa-api/internal/pkg/applogger"
 	"github.com/ipincamp/go-edsa-api/internal/usecase"
 )
 
@@ -41,12 +42,14 @@ func (s *appService) GetBooksWithProgress(ctx context.Context, userID uuid.UUID)
 	// 1. Ambil semua buku
 	books, err := s.bookRepo.FindAll(ctx)
 	if err != nil {
+		applogger.ErrorLogger.Printf("GetBooksWithProgress: Failed to FindAll books: %v", err)
 		return nil, err
 	}
 
 	// 2. Ambil semua progres user
 	progresses, err := s.progressRepo.FindAllByUserID(ctx, userID)
 	if err != nil {
+		applogger.ErrorLogger.Printf("GetBooksWithProgress: Failed to FindAllByUserID progress for user %s: %v", userID, err)
 		return nil, err
 	}
 
@@ -185,8 +188,8 @@ func (s *appService) CompleteBookProgress(ctx context.Context, userID uuid.UUID,
 	// 2. Buka buku berikutnya
 	currentBook, err := s.bookRepo.FindByID(ctx, req.BookID)
 	if err != nil {
-		log.Printf("Warning: could not find current book (ID: %d) to unlock next: %v", req.BookID, err)
-		return nil // Selesaikan progres, tapi gagal buka buku baru
+		applogger.ErrorLogger.Printf("CompleteBookProgress: could not find current book (ID: %d) to unlock next: %v", req.BookID, err) // <-- MODIFIKASI
+		return nil                                                                                                                     // Selesaikan progres, tapi gagal buka buku baru
 	}
 	if currentBook == nil {
 		return nil // Buku tidak ada
@@ -194,7 +197,7 @@ func (s *appService) CompleteBookProgress(ctx context.Context, userID uuid.UUID,
 
 	nextBook, err := s.bookRepo.FindByOrder(ctx, currentBook.BookOrder+1)
 	if err != nil {
-		log.Printf("Warning: db error finding next book (Order: %d): %v", currentBook.BookOrder+1, err)
+		applogger.ErrorLogger.Printf("CompleteBookProgress: db error finding next book (Order: %d): %v", currentBook.BookOrder+1, err) // <-- MODIFIKASI
 		return nil
 	}
 	if nextBook == nil {

@@ -8,6 +8,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/ipincamp/go-edsa-api/internal/config"
 	"github.com/ipincamp/go-edsa-api/internal/domain"
+	"github.com/ipincamp/go-edsa-api/internal/pkg/applogger"
 	"github.com/ipincamp/go-edsa-api/internal/usecase"
 )
 
@@ -42,6 +43,7 @@ func (s *userService) Register(ctx context.Context, req *domain.RegisterRequest)
 	// 1. Cek apakah email sudah ada
 	existingUser, err := s.userRepo.FindByEmail(ctx, req.Email)
 	if err != nil {
+		applogger.ErrorLogger.Printf("Register: database error checking email %s: %v", req.Email, err)
 		return nil, errors.New("database error")
 	}
 	if existingUser != nil {
@@ -51,12 +53,14 @@ func (s *userService) Register(ctx context.Context, req *domain.RegisterRequest)
 	// 2. Hash password
 	hashedPassword, err := s.passSvc.Hash(req.Password)
 	if err != nil {
+		applogger.ErrorLogger.Printf("Register: failed to hash password: %v", err)
 		return nil, errors.New("failed to hash password")
 	}
 
 	// 3. Dapatkan role default (public)
 	defaultRole, err := s.roleRepo.FindByName(ctx, domain.RoleNamePublic)
 	if err != nil {
+		applogger.ErrorLogger.Printf("Register: database error fetching role %s: %v", domain.RoleNamePublic, err)
 		return nil, errors.New("database error while fetching role")
 	}
 	if defaultRole == nil {
@@ -73,6 +77,7 @@ func (s *userService) Register(ctx context.Context, req *domain.RegisterRequest)
 
 	// 5. Simpan ke database
 	if err := s.userRepo.Create(ctx, user); err != nil {
+		applogger.ErrorLogger.Printf("Register: failed to create user %s: %v", user.Email, err)
 		return nil, errors.New("failed to create user")
 	}
 
@@ -83,6 +88,7 @@ func (s *userService) Register(ctx context.Context, req *domain.RegisterRequest)
 	accessTTL := time.Duration(s.cfg.Security.AccessTokenTTLMin) * time.Minute
 	accessToken, err := s.tokenSvc.CreateToken(user, sessionID, accessTTL)
 	if err != nil {
+		applogger.ErrorLogger.Printf("Register: failed to create access token for %s: %v", user.Email, err)
 		return nil, errors.New("failed to create access token")
 	}
 
@@ -90,6 +96,7 @@ func (s *userService) Register(ctx context.Context, req *domain.RegisterRequest)
 	refreshTTL := time.Duration(s.cfg.Security.RefreshTokenTTLMin) * time.Minute
 	refreshToken, err := s.tokenSvc.CreateToken(user, sessionID, refreshTTL)
 	if err != nil {
+		applogger.ErrorLogger.Printf("Register: failed to create refresh token for %s: %v", user.Email, err)
 		return nil, errors.New("failed to create refresh token")
 	}
 
@@ -119,6 +126,7 @@ func (s *userService) Login(ctx context.Context, req *domain.LoginRequest) (*dom
 	// 1. Cari user berdasarkan email
 	user, err := s.userRepo.FindByEmail(ctx, req.Email)
 	if err != nil {
+		applogger.ErrorLogger.Printf("Login: database error checking email %s: %v", req.Email, err)
 		return nil, errors.New("database error")
 	}
 	if user == nil {
@@ -145,6 +153,7 @@ func (s *userService) Login(ctx context.Context, req *domain.LoginRequest) (*dom
 	accessTTL := time.Duration(s.cfg.Security.AccessTokenTTLMin) * time.Minute
 	accessToken, err := s.tokenSvc.CreateToken(user, sessionID, accessTTL)
 	if err != nil {
+		applogger.ErrorLogger.Printf("Login: failed to create access token for %s: %v", user.Email, err)
 		return nil, errors.New("failed to create access token")
 	}
 
@@ -152,6 +161,7 @@ func (s *userService) Login(ctx context.Context, req *domain.LoginRequest) (*dom
 	refreshTTL := time.Duration(s.cfg.Security.RefreshTokenTTLMin) * time.Minute
 	refreshToken, err := s.tokenSvc.CreateToken(user, sessionID, refreshTTL)
 	if err != nil {
+		applogger.ErrorLogger.Printf("Login: failed to create refresh token for %s: %v", user.Email, err)
 		return nil, errors.New("failed to create refresh token")
 	}
 
@@ -180,6 +190,7 @@ func (s *userService) RefreshToken(ctx context.Context, req *domain.RefreshToken
 	// 2. Dapatkan data user
 	user, err := s.userRepo.FindByID(ctx, userID)
 	if err != nil || user == nil {
+		applogger.ErrorLogger.Printf("RefreshToken: user not found for token with UserID %s: %v", userID, err)
 		return nil, errors.New("user not found for this token")
 	}
 

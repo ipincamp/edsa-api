@@ -11,6 +11,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/ipincamp/go-edsa-api/internal/config"
 	"github.com/ipincamp/go-edsa-api/internal/domain"
+	"github.com/ipincamp/go-edsa-api/internal/pkg/applogger"
 	"github.com/ipincamp/go-edsa-api/internal/usecase"
 )
 
@@ -84,6 +85,7 @@ func (s *mediaService) UploadFile(ctx context.Context, file *multipart.FileHeade
 	// 2. Simpan file fisik, dapatkan path relatif (cth: "uploads/uuid.png")
 	filePath, err := s.storageSvc.Upload(file, assetID)
 	if err != nil {
+		applogger.ErrorLogger.Printf("UploadFile: Failed to upload to storage: %v", err)
 		return nil, err
 	}
 
@@ -109,9 +111,11 @@ func (s *mediaService) UploadFile(ctx context.Context, file *multipart.FileHeade
 
 	// 6. Simpan metadata ke database
 	if err := s.mediaRepo.Create(ctx, asset); err != nil {
+		applogger.ErrorLogger.Printf("UploadFile: Failed to create media asset in DB: %v", err)
 		// Jika simpan DB gagal, hapus file fisik yang sudah terlanjur di-upload.
 		if delErr := s.storageSvc.Delete(filePath); delErr != nil {
 			// Ini adalah skenario terburuk: DB gagal, Hapus file juga gagal.
+			applogger.ErrorLogger.Printf("UploadFile: CRITICAL! DB insert failed AND physical file delete failed for %s: %v", filePath, delErr)
 		}
 		// Kembalikan error database yang asli
 		return nil, err

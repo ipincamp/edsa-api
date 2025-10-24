@@ -12,6 +12,7 @@ import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/ipincamp/go-edsa-api/internal/config"
 	"github.com/ipincamp/go-edsa-api/internal/delivery/http"
+	"github.com/ipincamp/go-edsa-api/internal/pkg/applogger"
 	"github.com/ipincamp/go-edsa-api/internal/pkg/database"
 	"github.com/ipincamp/go-edsa-api/internal/pkg/utils"
 	"github.com/ipincamp/go-edsa-api/internal/pkg/validator"
@@ -29,6 +30,9 @@ import (
 )
 
 func main() {
+	// 0. Init Error Logger
+	applogger.InitErrorLogger()
+
 	// 1. Load Config
 	config.LoadConfig()
 	cfg := config.AppConfig
