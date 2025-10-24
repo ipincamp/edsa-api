@@ -2,6 +2,7 @@ package media
 
 import (
 	"context"
+	"errors"
 	"mime/multipart"
 	"path"
 	"path/filepath"
@@ -124,4 +125,32 @@ func (s *mediaService) UploadFile(ctx context.Context, file *multipart.FileHeade
 
 	// 7. Kembalikan respons DTO
 	return toMediaAssetResponse(asset), nil
+}
+
+func (s *mediaService) DeleteFile(ctx context.Context, assetID uuid.UUID, deleterID *uuid.UUID) error {
+	// 1. Ambil data aset untuk mendapatkan FilePath
+	asset, err := s.mediaRepo.FindByID(ctx, assetID)
+	if err != nil {
+		applogger.ErrorLogger.Printf("DeleteFile: Failed to find media asset %s: %v", assetID, err)
+		return err
+	}
+	if asset == nil {
+		return errors.New("media asset not found")
+	}
+
+	// 2. Hapus file fisik dari storage
+	if err := s.storageSvc.Delete(asset.FilePath); err != nil {
+		// Log error ini tapi jangan hentikan proses.
+		// Kita tetap ingin menandai di DB bahwa file ini "dihapus"
+		// meskipun file fisiknya gagal dihapus.
+		applogger.ErrorLogger.Printf("DeleteFile: CRITICAL! Failed to delete physical file %s: %v", asset.FilePath, err)
+	}
+
+	// 3. Soft delete data di database
+	if err := s.mediaRepo.SoftDelete(ctx, assetID, deleterID); err != nil {
+		applogger.ErrorLogger.Printf("DeleteFile: Failed to soft delete media asset %s in DB: %v", assetID, err)
+		return err
+	}
+
+	return nil
 }

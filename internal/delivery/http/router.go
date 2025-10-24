@@ -30,7 +30,7 @@ func SetupRoutes(
 	// Health check
 	app.Get("/health", func(c *fiber.Ctx) error {
 		return c.SendString("OK")
-	})
+	}) // PASSED
 
 	// Grup API v1
 	api := app.Group("/api/v1")
@@ -138,7 +138,7 @@ func SetupRoutes(
 	dashboard.Use(middleware.TeacherMiddleware(userRepo))
 
 	// Rute Laporan Aktivitas
-	dashboard.Get("/students/:studentId/activity", dashboardHandler.GetStudentActivity)
+	dashboard.Get("/students/:studentId/activity", dashboardHandler.GetStudentActivity) // PASSED
 	// TODO: Rute dashboard lainnya
 
 	// --- Rute Media ---
@@ -148,7 +148,8 @@ func SetupRoutes(
 	media.Use(middleware.AuthMiddleware(tokenSvc, blacklistSvc))
 
 	// Rute Upload File
-	media.Post("/upload", mediaHandler.UploadFile)
+	media.Post("/upload", mediaHandler.UploadFile) // PASSED
+	media.Delete("/:id", mediaHandler.DeleteFile)  // PASSED
 
 	// TODO: Rute manajemen penugasan (Assign/Unassign)
 	// TODO: Rute untuk Speaking
@@ -161,5 +162,5 @@ func SetupRoutes(
 			"Resource Not Found",
 			"Route '"+c.Path()+"' not found on this server",
 		)
-	})
+	}) // PASSED
 }

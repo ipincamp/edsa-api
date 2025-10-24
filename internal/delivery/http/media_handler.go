@@ -78,3 +78,41 @@ func (h *MediaHandler) UploadFile(c *fiber.Ctx) error {
 
 	return utils.SendSuccess(c, fiber.StatusCreated, "File uploaded successfully", asset)
 }
+
+// DeleteFile menangani 'DELETE /media/:id'
+func (h *MediaHandler) DeleteFile(c *fiber.Ctx) error {
+	// 1. Ambil asset ID dari URL
+	assetIdStr := c.Params("id")
+	assetID, err := uuid.Parse(assetIdStr)
+	if err != nil {
+		return utils.SendSimpleError(c, fiber.StatusBadRequest, "Invalid asset ID format", err.Error())
+	}
+
+	// 2. Ambil ID penghapus (deleter) dan sesi dari token
+	deleterID, ok := c.Locals("userID").(uuid.UUID)
+	var deleterIDPtr *uuid.UUID
+	if ok {
+		deleterIDPtr = &deleterID
+	}
+
+	sessionID, _ := c.Locals("sessionID").(uuid.UUID)
+
+	// 3. Panggil usecase
+	if err := h.mediaService.DeleteFile(c.Context(), assetID, deleterIDPtr); err != nil {
+		return utils.SendSimpleError(c, fiber.StatusNotFound, err.Error(), err.Error())
+	}
+
+	// 4. Log aktivitas (Solusi 2)
+	details, _ := json.Marshal(map[string]interface{}{
+		"asset_id": assetID,
+	})
+
+	h.loggerService.Log(c.Context(), domain.ActivityLog{
+		UserID:    deleterID, // Gunakan UUID asli, bukan pointer
+		SessionID: sessionID,
+		Action:    domain.ActionMediaDelete,
+		Details:   details,
+	})
+
+	return utils.SendSuccess(c, fiber.StatusOK, "File deleted successfully", nil)
+}

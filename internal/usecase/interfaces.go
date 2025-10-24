@@ -115,6 +115,8 @@ type ActivityLogRepository interface {
 // MediaAssetRepository mendefinisikan kontrak untuk data aset media
 type MediaAssetRepository interface {
 	Create(ctx context.Context, asset *domain.MediaAsset) error
+	FindByID(ctx context.Context, id uuid.UUID) (*domain.MediaAsset, error)
+	SoftDelete(ctx context.Context, assetID uuid.UUID, deleterID *uuid.UUID) error
 }
 
 // --- Services ---
@@ -218,6 +220,7 @@ type FileStorageService interface {
 // MediaService mendefinisikan logika bisnis untuk manajemen media
 type MediaService interface {
 	UploadFile(ctx context.Context, file *multipart.FileHeader, ownerID, ownerType string, uploaderID *uuid.UUID) (*domain.MediaAssetResponse, error)
+	DeleteFile(ctx context.Context, assetID uuid.UUID, deleterID *uuid.UUID) error
 }
 
 // SessionBlacklistService mendefinisikan kontrak untuk blacklist sesi
