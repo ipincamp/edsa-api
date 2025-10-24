@@ -5,6 +5,7 @@ import (
 	"github.com/gofiber/fiber/v2/middleware/logger"
 	"github.com/ipincamp/go-edsa-api/internal/config"
 	"github.com/ipincamp/go-edsa-api/internal/delivery/http/middleware"
+	"github.com/ipincamp/go-edsa-api/internal/pkg/utils"
 	"github.com/ipincamp/go-edsa-api/internal/usecase"
 )
 
@@ -151,4 +152,14 @@ func SetupRoutes(
 
 	// TODO: Rute manajemen penugasan (Assign/Unassign)
 	// TODO: Rute untuk Speaking
+
+	// Handle 404 - Not Found
+	app.Use(func(c *fiber.Ctx) error {
+		return utils.SendSimpleError(
+			c,
+			fiber.StatusNotFound,
+			"Resource Not Found",
+			"Route '"+c.Path()+"' not found on this server",
+		)
+	})
 }
