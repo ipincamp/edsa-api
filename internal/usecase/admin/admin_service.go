@@ -481,6 +481,19 @@ func (s *adminService) UpdateBook(ctx context.Context, id uint, req *domain.Upda
 }
 
 func (s *adminService) DeleteBook(ctx context.Context, id uint) error {
+	// 1. Cek dulu apakah buku ada (dan belum di-soft-delete)
+	existingBook, err := s.bookRepo.FindByID(ctx, id)
+	if err != nil {
+		// Ini adalah error database, bukan "not found"
+		applogger.ErrorLogger.Printf("DeleteBook: Failed to check book %d: %v", id, err)
+		return err
+	}
+	if existingBook == nil {
+		// Buku tidak ditemukan, atau sudah di-soft-delete sebelumnya
+		return errors.New("book not found or already deleted")
+	}
+
+	// 2. Jika ada, baru hapus
 	if err := s.bookRepo.Delete(ctx, id); err != nil {
 		applogger.ErrorLogger.Printf("DeleteBook: Failed to delete book %d: %v", id, err)
 		return err

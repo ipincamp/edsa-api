@@ -357,6 +357,12 @@ func (h *AdminHandler) DeleteBook(c *fiber.Ctx) error {
 	}
 
 	if err := h.adminService.DeleteBook(c.Context(), id); err != nil {
+		// Cek apakah errornya adalah "not found" yang spesifik dari service untuk memberikan 404
+		if err.Error() == "book not found or already deleted" {
+			return utils.SendSimpleError(c, fiber.StatusNotFound, err.Error(), err.Error())
+		}
+
+		// Error lain (misal DB connection) tetap 500
 		return utils.SendSimpleError(c, fiber.StatusInternalServerError, err.Error(), err.Error())
 	}
 	return utils.SendSuccess(c, fiber.StatusOK, "Book deleted successfully", nil)
