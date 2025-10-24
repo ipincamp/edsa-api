@@ -82,6 +82,8 @@ func main() {
 	activityLogRepositoryGORM := gorm.NewActivityLogRepository(db)
 	// Repo Media
 	mediaAssetRepositoryGORM := gorm.NewMediaAssetRepository(db)
+	// Repo Pengaturan Buku Grup
+	groupBookSettingRepositoryGORM := gorm.NewGroupBookSettingRepository(db)
 
 	// 6. Init Usecases
 	loggerService := logger.NewActivityLoggerService(activityLogRepositoryGORM)
@@ -113,6 +115,9 @@ func main() {
 	dashboardService := dashboard.NewDashboardService(
 		activityLogRepositoryGORM,
 		userRepositoryGORM,
+		groupRepositoryGORM,
+		bookRepositoryGORM,
+		groupBookSettingRepositoryGORM,
 	)
 	mediaService := media.NewMediaService(
 		fileStorageService,

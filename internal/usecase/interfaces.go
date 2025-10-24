@@ -119,6 +119,11 @@ type MediaAssetRepository interface {
 	SoftDelete(ctx context.Context, assetID uuid.UUID, deleterID *uuid.UUID) error
 }
 
+// GroupBookSettingRepository mendefinisikan kontrak untuk pengaturan buku grup
+type GroupBookSettingRepository interface {
+	Upsert(ctx context.Context, setting *domain.GroupBookSetting) error
+}
+
 // --- Services ---
 
 // UserService mendefinisikan logika bisnis untuk pengguna
@@ -208,6 +213,7 @@ type ActivityLoggerService interface {
 // Mendefinisikan logika bisnis untuk Dashboard Guru
 type DashboardService interface {
 	GetStudentActivity(ctx context.Context, studentID uuid.UUID, filters *domain.ActivityLogQuery) (*domain.PaginatedDTO, error)
+	UnlockBookForGroup(ctx context.Context, groupID uint, bookID uint) error
 	// TODO: Tambahkan method dashboard lainnya
 }
 

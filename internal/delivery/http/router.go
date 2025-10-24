@@ -139,6 +139,9 @@ func SetupRoutes(
 
 	// Rute Laporan Aktivitas
 	dashboard.Get("/students/:studentId/activity", dashboardHandler.GetStudentActivity) // PASSED
+
+	// Rute Manajemen Buku Grup
+	dashboard.Post("/groups/:groupId/books/:bookId/unlock", dashboardHandler.UnlockBookForGroup)
 	// TODO: Rute dashboard lainnya
 
 	// --- Rute Media ---

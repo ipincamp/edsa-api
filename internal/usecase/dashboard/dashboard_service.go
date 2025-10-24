@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"math"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/ipincamp/go-edsa-api/internal/domain"
@@ -12,17 +13,26 @@ import (
 )
 
 type dashboardService struct {
-	activityLogRepo usecase.ActivityLogRepository
-	userRepo        usecase.UserRepository
+	activityLogRepo      usecase.ActivityLogRepository
+	userRepo             usecase.UserRepository
+	groupRepo            usecase.GroupRepository
+	bookRepo             usecase.BookRepository
+	groupBookSettingRepo usecase.GroupBookSettingRepository
 }
 
 func NewDashboardService(
 	activityLogRepo usecase.ActivityLogRepository,
 	userRepo usecase.UserRepository,
+	groupRepo usecase.GroupRepository,
+	bookRepo usecase.BookRepository,
+	groupBookSettingRepo usecase.GroupBookSettingRepository,
 ) usecase.DashboardService {
 	return &dashboardService{
-		activityLogRepo: activityLogRepo,
-		userRepo:        userRepo,
+		activityLogRepo:      activityLogRepo,
+		userRepo:             userRepo,
+		groupRepo:            groupRepo,
+		bookRepo:             bookRepo,
+		groupBookSettingRepo: groupBookSettingRepo,
 	}
 }
 
@@ -89,4 +99,42 @@ func (s *dashboardService) GetStudentActivity(ctx context.Context, studentID uui
 			TotalData: paginatedResult.TotalData,
 		},
 	}, nil
+}
+
+func (s *dashboardService) UnlockBookForGroup(ctx context.Context, groupID uint, bookID uint) error {
+	// 1. Validasi apakah groupID ada
+	group, err := s.groupRepo.FindByID(ctx, groupID)
+	if err != nil {
+		applogger.ErrorLogger.Printf("UnlockBookForGroup: DB error checking group %d: %v", groupID, err)
+		return errors.New("database error checking group")
+	}
+	if group == nil {
+		return errors.New("group not found")
+	}
+
+	// 2. Validasi apakah bookID ada
+	book, err := s.bookRepo.FindByID(ctx, bookID)
+	if err != nil {
+		applogger.ErrorLogger.Printf("UnlockBookForGroup: DB error checking book %d: %v", bookID, err)
+		return errors.New("database error checking book")
+	}
+	if book == nil {
+		return errors.New("book not found")
+	}
+
+	// 3. Buat entitas domain untuk di-upsert
+	setting := &domain.GroupBookSetting{
+		GroupID:    groupID,
+		BookID:     bookID,
+		IsUnlocked: true,
+		UpdatedAt:  time.Now(), // Mapper akan menggunakannya
+	}
+
+	// 4. Panggil repository untuk upsert
+	if err := s.groupBookSettingRepo.Upsert(ctx, setting); err != nil {
+		applogger.ErrorLogger.Printf("UnlockBookForGroup: Failed to upsert setting for group %d and book %d: %v", groupID, bookID, err)
+		return errors.New("failed to update book setting")
+	}
+
+	return nil
 }
