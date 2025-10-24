@@ -88,3 +88,9 @@ func (r *userRepositoryGORM) FindByID(ctx context.Context, id uuid.UUID) (*domai
 	domainUser.Role = *role // Set role dari cache
 	return domainUser, nil
 }
+
+func (r *userRepositoryGORM) Update(ctx context.Context, user *domain.User) error {
+	gormUser := UserFromDomain(user)
+	// Save akan memperbarui semua kolom, termasuk password yang diubah
+	return r.db.WithContext(ctx).Save(gormUser).Error
+}

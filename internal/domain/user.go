@@ -40,6 +40,12 @@ type RefreshTokenRequest struct {
 	RefreshToken string `json:"refresh_token" validate:"required"`
 }
 
+// ChangePasswordRequest adalah DTO untuk mengubah password.
+type ChangePasswordRequest struct {
+	CurrentPassword string `json:"current_password" validate:"required"`
+	NewPassword     string `json:"new_password" validate:"required,min=8"`
+}
+
 // UserResponse adalah DTO untuk data pengguna yang aman dikirim ke klien.
 type UserResponse struct {
 	ID       uuid.UUID `json:"id"`

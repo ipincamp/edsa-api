@@ -265,3 +265,46 @@ func (s *userService) GetUserByID(ctx context.Context, id uuid.UUID) (*domain.Us
 		RoleName: user.Role.Name,
 	}, nil
 }
+
+func (s *userService) ChangePassword(ctx context.Context, userID uuid.UUID, req *domain.ChangePasswordRequest) error {
+	// 1. Ambil user
+	user, err := s.userRepo.FindByID(ctx, userID)
+	if err != nil {
+		applogger.ErrorLogger.Printf("ChangePassword: DB error checking user %s: %v", userID, err)
+		return errors.New("database error")
+	}
+	if user == nil {
+		return errors.New("user not found")
+	}
+
+	// 2. Validasi password saat ini
+	match, err := s.passSvc.Compare(req.CurrentPassword, user.Password)
+	if err != nil {
+		applogger.ErrorLogger.Printf("ChangePassword: Error comparing password for user %s: %v", userID, err)
+		return errors.New("password comparison failed")
+	}
+	if !match {
+		return errors.New("invalid current password")
+	}
+
+	// 3. Hash password baru
+	hashedPassword, err := s.passSvc.Hash(req.NewPassword)
+	if err != nil {
+		applogger.ErrorLogger.Printf("ChangePassword: failed to hash new password for user %s: %v", userID, err)
+		return errors.New("failed to hash new password")
+	}
+
+	// 4. Update password di struct domain
+	user.Password = hashedPassword
+
+	// 5. Simpan ke database
+	if err := s.userRepo.Update(ctx, user); err != nil {
+		applogger.ErrorLogger.Printf("ChangePassword: failed to update user %s in DB: %v", userID, err)
+		return errors.New("failed to save new password")
+	}
+
+	// TODO: Sebaiknya, semua sesi lain di-blacklist setelah ganti password
+	// (Ini di luar scope, tapi penting untuk keamanan)
+
+	return nil
+}
