@@ -9,16 +9,16 @@ import (
 
 // User adalah entitas domain inti untuk pengguna
 type User struct {
-	ID       uuid.UUID
-	Name     string
-	Email    string
-	Password string
-	RoleID   uint
-	Role     Role
-	// ProfilePictureURL string
-	CreatedAt time.Time
-	UpdatedAt time.Time
-	DeletedAt gorm.DeletedAt
+	ID                uuid.UUID
+	Name              string
+	Email             string
+	Password          string
+	RoleID            uint
+	Role              Role
+	ProfilePictureURL string
+	CreatedAt         time.Time
+	UpdatedAt         time.Time
+	DeletedAt         gorm.DeletedAt
 }
 
 // --- Data Transfer Objects (DTOs) ---
@@ -55,12 +55,12 @@ type UpdateDetailsRequest struct {
 
 // UserResponse adalah DTO untuk data pengguna yang aman dikirim ke klien.
 type UserResponse struct {
-	ID       uuid.UUID `json:"id"`
-	Name     string    `json:"name"`
-	Email    string    `json:"email"`
-	RoleName string    `json:"role"`
-	JoinedAt time.Time `json:"joined_at"`
-	// ProfilePictureURL string    `json:"profile_picture_url,omitempty"`
+	ID                uuid.UUID `json:"id"`
+	Name              string    `json:"name"`
+	Email             string    `json:"email"`
+	RoleName          string    `json:"role"`
+	JoinedAt          time.Time `json:"joined_at"`
+	ProfilePictureURL string    `json:"profile_picture_url,omitempty"`
 }
 
 // TokenResponse adalah DTO untuk token autentikasi.

@@ -21,6 +21,7 @@ func GetAllMigrations() []*gormigrate.Migration {
 		CreateMediaAssetsTable(),
 		AddAuditToMediaAssets(),
 		CreateGroupBookSettingsTable(),
+		AddProfilePictureUrlToUsersTable(),
 		// AnotherMigration(),
 	}
 }

@@ -45,12 +45,12 @@ func NewUserService(
 // --- Helper Mapper ---
 func toUserResponse(user *domain.User) *domain.UserResponse {
 	return &domain.UserResponse{
-		ID:       user.ID,
-		Name:     user.Name,
-		Email:    user.Email,
-		RoleName: user.Role.Name,
-		JoinedAt: user.CreatedAt,
-		// ProfilePictureURL: user.ProfilePictureURL,
+		ID:                user.ID,
+		Name:              user.Name,
+		Email:             user.Email,
+		RoleName:          user.Role.Name,
+		JoinedAt:          user.CreatedAt,
+		ProfilePictureURL: user.ProfilePictureURL,
 	}
 }
 

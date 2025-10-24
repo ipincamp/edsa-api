@@ -7,14 +7,15 @@ import "github.com/ipincamp/go-edsa-api/internal/domain"
 // Map GORM model ke Domain entity
 func (u *UserGORM) ToDomain() *domain.User {
 	domainUser := &domain.User{
-		ID:        u.ID,
-		Name:      u.Name,
-		Email:     u.Email,
-		Password:  u.Password,
-		RoleID:    u.RoleID,
-		CreatedAt: u.CreatedAt,
-		UpdatedAt: u.UpdatedAt,
-		DeletedAt: u.DeletedAt,
+		ID:                u.ID,
+		Name:              u.Name,
+		Email:             u.Email,
+		Password:          u.Password,
+		ProfilePictureURL: u.ProfilePictureURL,
+		RoleID:            u.RoleID,
+		CreatedAt:         u.CreatedAt,
+		UpdatedAt:         u.UpdatedAt,
+		DeletedAt:         u.DeletedAt,
 	}
 
 	// Penting: mapping untuk role jika di-preload
@@ -27,14 +28,15 @@ func (u *UserGORM) ToDomain() *domain.User {
 // Map Domain entity ke GORM model
 func UserFromDomain(u *domain.User) *UserGORM {
 	return &UserGORM{
-		ID:        u.ID,
-		Name:      u.Name,
-		Email:     u.Email,
-		Password:  u.Password,
-		RoleID:    u.RoleID,
-		CreatedAt: u.CreatedAt,
-		UpdatedAt: u.UpdatedAt,
-		DeletedAt: u.DeletedAt,
+		ID:                u.ID,
+		Name:              u.Name,
+		Email:             u.Email,
+		Password:          u.Password,
+		ProfilePictureURL: u.ProfilePictureURL,
+		RoleID:            u.RoleID,
+		CreatedAt:         u.CreatedAt,
+		UpdatedAt:         u.UpdatedAt,
+		DeletedAt:         u.DeletedAt,
 	}
 }
 
