@@ -2,6 +2,7 @@ package gorm
 
 import (
 	"context"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/ipincamp/go-edsa-api/internal/domain"
@@ -62,4 +63,63 @@ func (r *activityLogRepositoryGORM) FindAllByUserID(ctx context.Context, userID 
 		domainLogs = append(domainLogs, *l.ToDomain())
 	}
 	return domainLogs, nil
+}
+
+func (r *activityLogRepositoryGORM) FindPaginatedByUserID(ctx context.Context, userID uuid.UUID, filters *domain.ActivityLogQuery) (*domain.PaginatedActivityLogs, error) {
+	var gormLogs []ActivityLogGORM
+	var totalData int64
+
+	// 1. Buat query dasar
+	query := r.db.WithContext(ctx).Model(&ActivityLogGORM{}).Where("user_id = ?", userID)
+
+	// 2. Terapkan filter tanggal (inklusif)
+	if filters.StartDate != "" {
+		// Parsing YYYY-MM-DD
+		start, err := time.Parse("2006-01-02", filters.StartDate)
+		if err == nil {
+			// Mengambil data dari awal hari (00:00:00)
+			query = query.Where("timestamp_start >= ?", start)
+		}
+	}
+	if filters.EndDate != "" {
+		// Parsing YYYY-MM-DD
+		end, err := time.Parse("2006-01-02", filters.EndDate)
+		if err == nil {
+			// Mengambil data sampai akhir hari (23:59:59)
+			query = query.Where("timestamp_start <= ?", end.Add(24*time.Hour-time.Nanosecond))
+		}
+	}
+
+	// 3. Dapatkan total data (sebelum limit/offset)
+	if err := query.Count(&totalData).Error; err != nil {
+		return nil, err
+	}
+
+	if totalData == 0 {
+		return &domain.PaginatedActivityLogs{
+			Logs:      []domain.ActivityLog{},
+			TotalData: 0,
+		}, nil
+	}
+
+	// 4. Hitung offset dan terapkan limit/offset
+	offset := (filters.Page - 1) * filters.Limit
+	if err := query.
+		Order("timestamp_start desc").
+		Limit(filters.Limit).
+		Offset(offset).
+		Find(&gormLogs).Error; err != nil {
+		return nil, err
+	}
+
+	// 5. Konversi GORM ke Domain
+	domainLogs := make([]domain.ActivityLog, len(gormLogs))
+	for i, l := range gormLogs {
+		domainLogs[i] = *l.ToDomain()
+	}
+
+	return &domain.PaginatedActivityLogs{
+		Logs:      domainLogs,
+		TotalData: totalData,
+	}, nil
 }

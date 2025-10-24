@@ -108,6 +108,7 @@ type ActivityLogRepository interface {
 	Create(ctx context.Context, log *domain.ActivityLog) error
 	CreateBatch(ctx context.Context, logs []domain.ActivityLog) error
 	FindAllByUserID(ctx context.Context, userID uuid.UUID) ([]domain.ActivityLog, error)
+	FindPaginatedByUserID(ctx context.Context, userID uuid.UUID, filters *domain.ActivityLogQuery) (*domain.PaginatedActivityLogs, error)
 }
 
 // MediaAssetRepository mendefinisikan kontrak untuk data aset media
@@ -203,7 +204,7 @@ type ActivityLoggerService interface {
 
 // Mendefinisikan logika bisnis untuk Dashboard Guru
 type DashboardService interface {
-	GetStudentActivity(ctx context.Context, studentID uuid.UUID) ([]domain.ActivityLogResponse, error)
+	GetStudentActivity(ctx context.Context, studentID uuid.UUID, filters *domain.ActivityLogQuery) (*domain.PaginatedActivityLogDTO, error)
 	// TODO: Tambahkan method dashboard lainnya
 }
 
