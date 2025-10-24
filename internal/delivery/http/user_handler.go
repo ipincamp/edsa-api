@@ -92,7 +92,8 @@ func (h *UserHandler) Logout(c *fiber.Ctx) error {
 	// Ambil session ID dari middleware
 	sessionID, ok := c.Locals("sessionID").(uuid.UUID)
 	if !ok {
-		sessionID = uuid.Nil // Fallback
+		// Jika sessionID tidak ada, ini adalah error krusial untuk logout
+		return utils.SendSimpleError(c, fiber.StatusUnauthorized, "Invalid token", "Invalid session ID in token")
 	}
 
 	// Panggil Usecase

@@ -17,6 +17,7 @@ func SetupRoutes(
 	mediaHandler *MediaHandler,
 	tokenSvc usecase.TokenService,
 	userRepo usecase.UserRepository,
+	blacklistSvc usecase.SessionBlacklistService,
 	cfg *config.Config,
 ) {
 	app.Use(logger.New())
@@ -37,21 +38,25 @@ func SetupRoutes(
 
 	// Rute Auth (tidak dilindungi)
 	auth := api.Group("/auth")
-	auth.Post("/register", userHandler.Register)                                  // PASSED
-	auth.Post("/login", userHandler.Login)                                        // PASSED
-	auth.Post("/refresh", userHandler.RefreshToken)                               // PASSED
-	auth.Post("/logout", middleware.AuthMiddleware(tokenSvc), userHandler.Logout) // PASSED
+	auth.Post("/register", userHandler.Register)    // PASSED
+	auth.Post("/login", userHandler.Login)          // PASSED
+	auth.Post("/refresh", userHandler.RefreshToken) // PASSED
+	auth.Post(
+		"/logout",
+		middleware.AuthMiddleware(tokenSvc, blacklistSvc),
+		userHandler.Logout,
+	) // PASSED
 
 	// Rute User (dilindungi)
 	protected := api.Group("/users")
-	protected.Use(middleware.AuthMiddleware(tokenSvc))
+	protected.Use(middleware.AuthMiddleware(tokenSvc, blacklistSvc))
 	protected.Get("/me", userHandler.GetMe) // PASSED
 
 	// --- Rute Administrasi ---
 
 	// Rute Admin (dilindungi & hanya untuk admin)
 	admin := api.Group("/admin")
-	admin.Use(middleware.AuthMiddleware(tokenSvc))
+	admin.Use(middleware.AuthMiddleware(tokenSvc, blacklistSvc))
 	admin.Use(middleware.AdminMiddleware(userRepo))
 
 	// Rute Subjects
@@ -112,7 +117,7 @@ func SetupRoutes(
 
 	// Rute Aplikasi (Siswa & Guru)
 	appRoutes := api.Group("/app")
-	appRoutes.Use(middleware.AuthMiddleware(tokenSvc))
+	appRoutes.Use(middleware.AuthMiddleware(tokenSvc, blacklistSvc))
 
 	// Rute Modul "Read"
 	appRoutes.Get("/books", appHandler.GetBooksWithProgress)
@@ -128,7 +133,7 @@ func SetupRoutes(
 
 	// Rute Dashboard Guru
 	dashboard := api.Group("/dashboard")
-	dashboard.Use(middleware.AuthMiddleware(tokenSvc))
+	dashboard.Use(middleware.AuthMiddleware(tokenSvc, blacklistSvc))
 	dashboard.Use(middleware.TeacherMiddleware(userRepo))
 
 	// Rute Laporan Aktivitas
@@ -139,7 +144,7 @@ func SetupRoutes(
 
 	// Rute Media
 	media := api.Group("/media")
-	media.Use(middleware.AuthMiddleware(tokenSvc))
+	media.Use(middleware.AuthMiddleware(tokenSvc, blacklistSvc))
 
 	// Rute Upload File
 	media.Post("/upload", mediaHandler.UploadFile)

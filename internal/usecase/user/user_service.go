@@ -13,12 +13,13 @@ import (
 )
 
 type userService struct {
-	userRepo usecase.UserRepository
-	roleRepo usecase.RoleRepository
-	passSvc  usecase.PasswordService
-	tokenSvc usecase.TokenService
-	cfg      *config.Config
-	logger   usecase.ActivityLoggerService
+	userRepo     usecase.UserRepository
+	roleRepo     usecase.RoleRepository
+	passSvc      usecase.PasswordService
+	tokenSvc     usecase.TokenService
+	cfg          *config.Config
+	logger       usecase.ActivityLoggerService
+	blacklistSvc usecase.SessionBlacklistService
 }
 
 func NewUserService(
@@ -28,14 +29,16 @@ func NewUserService(
 	tokenSvc usecase.TokenService,
 	cfg *config.Config,
 	logger usecase.ActivityLoggerService,
+	blacklistSvc usecase.SessionBlacklistService,
 ) usecase.UserService {
 	return &userService{
-		userRepo: userRepo,
-		roleRepo: roleRepo,
-		passSvc:  passSvc,
-		tokenSvc: tokenSvc,
-		cfg:      cfg,
-		logger:   logger,
+		userRepo:     userRepo,
+		roleRepo:     roleRepo,
+		passSvc:      passSvc,
+		tokenSvc:     tokenSvc,
+		cfg:          cfg,
+		logger:       logger,
+		blacklistSvc: blacklistSvc,
 	}
 }
 
@@ -187,21 +190,30 @@ func (s *userService) RefreshToken(ctx context.Context, req *domain.RefreshToken
 		return nil, errors.New("invalid or expired refresh token")
 	}
 
-	// 2. Dapatkan data user
+	// 2. Cek apakah sesi sudah di-blacklist (logout)
+	isBlacklisted, err := s.blacklistSvc.IsSessionBlacklisted(ctx, sessionID)
+	if err != nil {
+		return nil, errors.New("session check error")
+	}
+	if isBlacklisted {
+		return nil, errors.New("session has been logged out")
+	}
+
+	// 3. Dapatkan data user
 	user, err := s.userRepo.FindByID(ctx, userID)
 	if err != nil || user == nil {
 		applogger.ErrorLogger.Printf("RefreshToken: user not found for token with UserID %s: %v", userID, err)
 		return nil, errors.New("user not found for this token")
 	}
 
-	// 3. Buat Access Token baru (menggunakan sessionID dari refresh token lama)
+	// 4. Buat Access Token baru
 	accessTTL := time.Duration(s.cfg.Security.AccessTokenTTLMin) * time.Minute
 	accessToken, err := s.tokenSvc.CreateToken(user, sessionID, accessTTL)
 	if err != nil {
 		return nil, errors.New("failed to create new access token")
 	}
 
-	// 4. Buat Refresh Token baru (rotasi token, tapi pakai sessionID lama)
+	// 5. Buat Refresh Token baru
 	refreshTTL := time.Duration(s.cfg.Security.RefreshTokenTTLMin) * time.Minute
 	refreshToken, err := s.tokenSvc.CreateToken(user, sessionID, refreshTTL)
 	if err != nil {
@@ -216,11 +228,16 @@ func (s *userService) RefreshToken(ctx context.Context, req *domain.RefreshToken
 }
 
 func (s *userService) Logout(ctx context.Context, userID uuid.UUID, sessionID uuid.UUID) error {
-	// Karena Paseto stateless, "logout" di sisi server berarti mencatat aktivitas.
-	// Klien bertanggung jawab untuk menghapus token.
-	// Jika ada blocklist (cth: Redis), token bisa ditambahkan di sini.
+	// 1. Tambahkan SESSION ID ke blacklist
+	duration := time.Duration(s.cfg.Security.BlacklistTTLHour) * time.Hour
+	// Gunakan sessionID, bukan tokenString
+	if err := s.blacklistSvc.BlacklistSession(ctx, sessionID, duration); err != nil {
+		applogger.ErrorLogger.Printf("Logout: failed to blacklist session %s for user %s: %v", sessionID, userID, err)
+		// Ini adalah error kritis, kita harus mengembalikannya
+		return errors.New("failed to invalidate session")
+	}
 
-	// Log aktivitas logout
+	// 2. Log aktivitas logout
 	s.logger.Log(ctx, domain.ActivityLog{
 		UserID:    userID,
 		Action:    domain.ActionLogout,

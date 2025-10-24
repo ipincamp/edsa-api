@@ -85,13 +85,15 @@ func main() {
 
 	// 6. Init Usecases
 	loggerService := logger.NewActivityLoggerService(activityLogRepositoryGORM)
+	sessionBlacklistService := cache.NewSessionBlacklistCACHE()
 	userService := user.NewUserService(
 		userRepositoryGORM,
-		roleRepositoryCACHE, // Inject cache repo ke UserService
+		roleRepositoryCACHE,
 		passwordService,
 		tokenService,
 		cfg,
 		loggerService,
+		sessionBlacklistService,
 	)
 	adminService := admin.NewAdminService(
 		subjectRepositoryGORM,
@@ -153,6 +155,7 @@ func main() {
 		mediaHandler,
 		tokenService,
 		userRepositoryGORM,
+		sessionBlacklistService,
 		cfg,
 	)
 

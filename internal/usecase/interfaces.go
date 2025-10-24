@@ -218,8 +218,8 @@ type MediaService interface {
 	UploadFile(ctx context.Context, file *multipart.FileHeader, ownerID, ownerType string) (*domain.MediaAssetResponse, error)
 }
 
-// TokenBlacklistService mendefinisikan kontrak untuk blacklist token
-type TokenBlacklistService interface {
-	BlacklistToken(ctx context.Context, tokenString string, duration time.Duration) error
-	IsTokenBlacklisted(ctx context.Context, tokenString string) (bool, error)
+// SessionBlacklistService mendefinisikan kontrak untuk blacklist sesi
+type SessionBlacklistService interface {
+	BlacklistSession(ctx context.Context, sessionID uuid.UUID, duration time.Duration) error
+	IsSessionBlacklisted(ctx context.Context, sessionID uuid.UUID) (bool, error)
 }
