@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"time"
 
 	"github.com/ipincamp/go-edsa-api/internal/domain"
 	"github.com/ipincamp/go-edsa-api/internal/usecase"
@@ -213,4 +214,67 @@ func (r *bookRepositoryGORM) UpdateBookWithOrderShift(ctx context.Context, book 
 		// log.Printf("[DEBUG] Successfully updated book ID %d to order %d", book.ID, newOrder)
 		return nil // Commit transaction
 	})
+}
+
+func (r *bookRepositoryGORM) FindPaginated(ctx context.Context, filters *domain.BookQuery) (*domain.PaginatedBooks, error) {
+	var gormBooks []BookGORM
+	var totalData int64
+
+	// 1. Buat query dasar
+	query := r.db.WithContext(ctx).Model(&BookGORM{})
+
+	// 2. Terapkan filter
+	if filters.ID > 0 {
+		query = query.Where("id = ?", filters.ID)
+	}
+	if filters.BookOrder > 0 {
+		query = query.Where("book_order = ?", filters.BookOrder)
+	}
+	if filters.StartDate != "" {
+		start, err := time.Parse("2006-01-02", filters.StartDate)
+		if err == nil {
+			// Mengambil data dari awal hari (00:00:00)
+			query = query.Where("created_at >= ?", start)
+		}
+	}
+	if filters.EndDate != "" {
+		end, err := time.Parse("2006-01-02", filters.EndDate)
+		if err == nil {
+			// Mengambil data sampai akhir hari (23:59:59)
+			query = query.Where("created_at <= ?", end.Add(24*time.Hour-time.Nanosecond))
+		}
+	}
+
+	// 3. Dapatkan total data (sebelum limit/offset)
+	if err := query.Count(&totalData).Error; err != nil {
+		return nil, err
+	}
+
+	if totalData == 0 {
+		return &domain.PaginatedBooks{
+			Books:     []domain.Book{},
+			TotalData: 0,
+		}, nil
+	}
+
+	// 4. Hitung offset dan terapkan limit/offset
+	offset := (filters.Page - 1) * filters.Limit
+	if err := query.
+		Order("book_order asc, title asc"). // Menggunakan order dari FindAll
+		Limit(filters.Limit).
+		Offset(offset).
+		Find(&gormBooks).Error; err != nil {
+		return nil, err
+	}
+
+	// 5. Konversi GORM ke Domain
+	domainBooks := make([]domain.Book, len(gormBooks))
+	for i, b := range gormBooks {
+		domainBooks[i] = *b.ToDomain()
+	}
+
+	return &domain.PaginatedBooks{
+		Books:     domainBooks,
+		TotalData: totalData,
+	}, nil
 }

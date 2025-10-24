@@ -62,6 +62,7 @@ type BookRepository interface {
 	FindByOrder(ctx context.Context, order int) (*domain.Book, error)
 	CreateBookWithOrderShift(ctx context.Context, book *domain.Book) error
 	UpdateBookWithOrderShift(ctx context.Context, book *domain.Book, newOrder int) error
+	FindPaginated(ctx context.Context, filters *domain.BookQuery) (*domain.PaginatedBooks, error)
 }
 
 // PageRepository mendefinisikan kontrak untuk data halaman
@@ -164,7 +165,7 @@ type AdminService interface {
 
 	// Book
 	CreateBook(ctx context.Context, req *domain.CreateBookRequest) (*domain.BookResponse, error)
-	GetAllBooks(ctx context.Context) ([]domain.BookResponse, error)
+	GetAllBooks(ctx context.Context, filters *domain.BookQuery) (*domain.PaginatedDTO, error)
 	GetBookByID(ctx context.Context, id uint) (*domain.BookResponse, error)
 	UpdateBook(ctx context.Context, id uint, req *domain.UpdateBookRequest) (*domain.BookResponse, error)
 	DeleteBook(ctx context.Context, id uint) error
@@ -204,7 +205,7 @@ type ActivityLoggerService interface {
 
 // Mendefinisikan logika bisnis untuk Dashboard Guru
 type DashboardService interface {
-	GetStudentActivity(ctx context.Context, studentID uuid.UUID, filters *domain.ActivityLogQuery) (*domain.PaginatedActivityLogDTO, error)
+	GetStudentActivity(ctx context.Context, studentID uuid.UUID, filters *domain.ActivityLogQuery) (*domain.PaginatedDTO, error)
 	// TODO: Tambahkan method dashboard lainnya
 }
 

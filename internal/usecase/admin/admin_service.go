@@ -3,6 +3,7 @@ package admin
 import (
 	"context"
 	"errors"
+	"math"
 
 	"github.com/ipincamp/go-edsa-api/internal/domain"
 	"github.com/ipincamp/go-edsa-api/internal/pkg/applogger"
@@ -373,17 +374,44 @@ func (s *adminService) CreateBook(ctx context.Context, req *domain.CreateBookReq
 	return toBookResponse(book), nil
 }
 
-func (s *adminService) GetAllBooks(ctx context.Context) ([]domain.BookResponse, error) {
-	books, err := s.bookRepo.FindAll(ctx)
+func (s *adminService) GetAllBooks(ctx context.Context, filters *domain.BookQuery) (*domain.PaginatedDTO, error) {
+	// 1. Set default paginasi
+	if filters.Page <= 0 {
+		filters.Page = 1
+	}
+	if filters.Limit <= 0 {
+		filters.Limit = 10 // Default limit
+	}
+
+	// 2. Ambil data paginasi dari repo
+	paginatedResult, err := s.bookRepo.FindPaginated(ctx, filters)
 	if err != nil {
-		applogger.ErrorLogger.Printf("GetAllBooks: Failed to find all books: %v", err)
+		applogger.ErrorLogger.Printf("GetAllBooks: Failed to find paginated books: %v", err)
 		return nil, err
 	}
+
+	// 3. Map ke DTO Response
 	var responses []domain.BookResponse
-	for _, b := range books {
+	for _, b := range paginatedResult.Books {
 		responses = append(responses, *toBookResponse(&b))
 	}
-	return responses, nil
+
+	// 4. Hitung metadata paginasi
+	totalPage := int64(math.Ceil(float64(paginatedResult.TotalData) / float64(filters.Limit)))
+	if totalPage == 0 && paginatedResult.TotalData > 0 {
+		totalPage = 1
+	}
+
+	// 5. Buat DTO respons paginasi
+	return &domain.PaginatedDTO{
+		List: responses,
+		Meta: domain.PaginationMetaDTO{
+			Page:      filters.Page,
+			Limit:     filters.Limit,
+			TotalPage: totalPage,
+			TotalData: paginatedResult.TotalData,
+		},
+	}, nil
 }
 
 func (s *adminService) GetBookByID(ctx context.Context, id uint) (*domain.BookResponse, error) {

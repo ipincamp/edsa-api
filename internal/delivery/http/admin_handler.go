@@ -281,11 +281,39 @@ func (h *AdminHandler) CreateBook(c *fiber.Ctx) error {
 }
 
 func (h *AdminHandler) GetAllBooks(c *fiber.Ctx) error {
-	books, err := h.adminService.GetAllBooks(c.Context())
+	// 1. Ambil filter paginasi dari query params
+	// Konversi "0" jika tidak ada, agar bisa diabaikan oleh service/repo
+	id, _ := strconv.Atoi(c.Query("id", "0"))
+	bookOrder, _ := strconv.Atoi(c.Query("book_order", "0"))
+	page, _ := strconv.Atoi(c.Query("page", "1"))
+	limit, _ := strconv.Atoi(c.Query("limit", "10"))
+	startDate := c.Query("start_date")
+	endDate := c.Query("end_date") // Menambahkan end_date
+
+	filters := &domain.BookQuery{
+		ID:        uint(id),
+		BookOrder: bookOrder,
+		Page:      page,
+		Limit:     limit,
+		StartDate: startDate,
+		EndDate:   endDate,
+	}
+
+	// 2. Panggil Usecase
+	paginatedData, err := h.adminService.GetAllBooks(c.Context(), filters)
 	if err != nil {
 		return utils.SendSimpleError(c, fiber.StatusInternalServerError, err.Error(), err.Error())
 	}
-	return utils.SendSuccess(c, fiber.StatusOK, "Books retrieved successfully", books)
+
+	// 3. Kembalikan menggunakan format SendPagination
+	meta := utils.PaginationMeta{
+		Page:      paginatedData.Meta.Page,
+		Limit:     paginatedData.Meta.Limit,
+		TotalPage: paginatedData.Meta.TotalPage,
+		TotalData: paginatedData.Meta.TotalData,
+	}
+
+	return utils.SendPagination(c, "Books retrieved successfully", paginatedData.List, meta)
 }
 
 func (h *AdminHandler) GetBookByID(c *fiber.Ctx) error {

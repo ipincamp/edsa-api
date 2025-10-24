@@ -58,19 +58,3 @@ type PaginatedActivityLogs struct {
 	Logs      []ActivityLog
 	TotalData int64
 }
-
-// PaginatedActivityLogDTO adalah DTO untuk respons paginasi
-// Strukturnya mencerminkan utils.PaginationData
-type PaginatedActivityLogDTO struct {
-	List interface{}       `json:"list"`
-	Meta PaginationMetaDTO `json:"meta"`
-}
-
-// PaginationMetaDTO adalah DTO untuk metadata paginasi
-// Strukturnya mencerminkan utils.PaginationMeta
-type PaginationMetaDTO struct {
-	Page      int   `json:"page"`
-	Limit     int   `json:"limit"`
-	TotalPage int64 `json:"total_page"`
-	TotalData int64 `json:"total_data"`
-}

@@ -41,7 +41,7 @@ func toActivityLogResponse(l *domain.ActivityLog) *domain.ActivityLogResponse {
 
 // --- Methods ---
 
-func (s *dashboardService) GetStudentActivity(ctx context.Context, studentID uuid.UUID, filters *domain.ActivityLogQuery) (*domain.PaginatedActivityLogDTO, error) {
+func (s *dashboardService) GetStudentActivity(ctx context.Context, studentID uuid.UUID, filters *domain.ActivityLogQuery) (*domain.PaginatedDTO, error) {
 	// 1. Validasi apakah studentID ada
 	student, err := s.userRepo.FindByID(ctx, studentID)
 	if err != nil {
@@ -80,7 +80,7 @@ func (s *dashboardService) GetStudentActivity(ctx context.Context, studentID uui
 	}
 
 	// 6. Buat DTO respons paginasi
-	return &domain.PaginatedActivityLogDTO{
+	return &domain.PaginatedDTO{
 		List: responses,
 		Meta: domain.PaginationMetaDTO{
 			Page:      filters.Page,
