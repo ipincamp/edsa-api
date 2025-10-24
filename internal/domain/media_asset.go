@@ -9,17 +9,19 @@ import (
 
 // MediaAsset adalah entitas domain inti untuk aset media
 type MediaAsset struct {
-	ID        uuid.UUID
-	FileName  string
-	FilePath  string
-	PublicURL string
-	MimeType  string
-	FileSize  int64
-	OwnerID   string
-	OwnerType string
-	CreatedAt time.Time
-	UpdatedAt time.Time
-	DeletedAt gorm.DeletedAt
+	ID               uuid.UUID
+	FileName         string
+	FilePath         string
+	PublicURL        string
+	MimeType         string
+	FileSize         int64
+	OwnerID          string
+	OwnerType        string
+	UploadedByUserID *uuid.UUID
+	DeletedByUserID  *uuid.UUID
+	CreatedAt        time.Time
+	UpdatedAt        time.Time
+	DeletedAt        gorm.DeletedAt
 }
 
 // --- Data Transfer Objects (DTOs) ---

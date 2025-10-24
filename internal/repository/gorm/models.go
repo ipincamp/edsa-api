@@ -220,17 +220,21 @@ func (ActivityLogGORM) TableName() string {
 
 // MediaAssetGORM adalah representasi tabel 'media_assets' di database
 type MediaAssetGORM struct {
-	ID        uuid.UUID `gorm:"type:uuid;primarykey"`
-	FileName  string    `gorm:"type:varchar(255);not null"`
-	FilePath  string    `gorm:"type:varchar(255);not null"`
-	PublicURL string    `gorm:"type:varchar(255);not null"`
-	MimeType  string    `gorm:"type:varchar(100)"`
-	FileSize  int64     `gorm:"not null"`
-	OwnerID   string    `gorm:"type:varchar(255);index"`
-	OwnerType string    `gorm:"type:varchar(100);index"`
-	CreatedAt time.Time
-	UpdatedAt time.Time
-	DeletedAt gorm.DeletedAt `gorm:"index"`
+	ID               uuid.UUID  `gorm:"type:uuid;primarykey"`
+	FileName         string     `gorm:"type:varchar(255);not null"`
+	FilePath         string     `gorm:"type:varchar(255);not null"`
+	PublicURL        string     `gorm:"type:varchar(255);not null"`
+	MimeType         string     `gorm:"type:varchar(100)"`
+	FileSize         int64      `gorm:"not null"`
+	OwnerID          string     `gorm:"type:varchar(255);index"`
+	OwnerType        string     `gorm:"type:varchar(100);index"`
+	UploadedByUserID *uuid.UUID `gorm:"type:uuid;index"`
+	UploadedByUser   UserGORM   `gorm:"foreignKey:UploadedByUserID"`
+	DeletedByUserID  *uuid.UUID `gorm:"type:uuid;index"`
+	DeletedByUser    UserGORM   `gorm:"foreignKey:DeletedByUserID"`
+	CreatedAt        time.Time
+	UpdatedAt        time.Time
+	DeletedAt        gorm.DeletedAt `gorm:"index"`
 }
 
 func (MediaAssetGORM) TableName() string {
