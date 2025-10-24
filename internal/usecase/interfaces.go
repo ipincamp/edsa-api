@@ -217,3 +217,9 @@ type FileStorageService interface {
 type MediaService interface {
 	UploadFile(ctx context.Context, file *multipart.FileHeader, ownerID, ownerType string) (*domain.MediaAssetResponse, error)
 }
+
+// TokenBlacklistService mendefinisikan kontrak untuk blacklist token
+type TokenBlacklistService interface {
+	BlacklistToken(ctx context.Context, tokenString string, duration time.Duration) error
+	IsTokenBlacklisted(ctx context.Context, tokenString string) (bool, error)
+}

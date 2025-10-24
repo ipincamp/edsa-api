@@ -41,6 +41,7 @@ type Security struct {
 	PasetoSymmetricKey string
 	AccessTokenTTLMin  int
 	RefreshTokenTTLMin int
+	BlacklistTTLHour   int
 }
 
 // Seeder is a struct to hold seeder configuration
@@ -90,6 +91,7 @@ func LoadConfig() {
 			PasetoSymmetricKey: getEnv("PASETO_SYMMETRIC_KEY", ""),
 			AccessTokenTTLMin:  getEnvAsInt("ACCESS_TOKEN_TTL_MIN", 15),
 			RefreshTokenTTLMin: getEnvAsInt("REFRESH_TOKEN_TTL_MIN", 43200),
+			BlacklistTTLHour:   getEnvAsInt("BLACKLIST_TTL_HOUR", 1),
 		},
 		Seeder: Seeder{
 			AdminName:     getEnv("ADMIN_NAME", "Admin Edsa"),
