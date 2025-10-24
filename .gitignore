@@ -34,9 +34,6 @@ go.work.sum
 # .idea/
 .vscode/
 
-# Public uploads
-/public/uploads/
-
 # Logs
 !logs/
 *.log

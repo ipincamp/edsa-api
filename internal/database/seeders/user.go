@@ -26,6 +26,10 @@ func UserAdminSeeder(db *gorm.DB) error {
 	adminPassword := adminCfg.AdminPassword
 	adminName := adminCfg.AdminName
 
+	// Ambil URL avatar default
+	baseURL := config.AppConfig.Storage.StoragePublicBaseURL
+	defaultAvatarURL := baseURL + "/public/uploads/avatar.png"
+
 	// 3. Cek dulu agar email unik
 	var existing repo.UserGORM
 	if db.Where("email = ?", adminEmail).First(&existing).Error == nil {
@@ -42,10 +46,11 @@ func UserAdminSeeder(db *gorm.DB) error {
 
 	// 5. Buat user admin baru dari config (tidak pakai factory)
 	user := &repo.UserGORM{
-		Name:     adminName,
-		Email:    adminEmail,
-		Password: hashedPassword,
-		RoleID:   userRole.ID,
+		Name:              adminName,
+		Email:             adminEmail,
+		Password:          hashedPassword,
+		RoleID:            userRole.ID,
+		ProfilePictureURL: defaultAvatarURL,
 	}
 
 	// 6. Simpan ke database

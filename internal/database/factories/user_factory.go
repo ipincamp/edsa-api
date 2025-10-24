@@ -4,6 +4,7 @@ import (
 	"log"
 
 	"github.com/go-faker/faker/v4"
+	"github.com/ipincamp/go-edsa-api/internal/config"
 	"github.com/ipincamp/go-edsa-api/internal/repository/gorm"
 	"github.com/ipincamp/go-edsa-api/internal/service/argon2id"
 )
@@ -15,10 +16,14 @@ func UserFactory(roleID uint) *gorm.UserGORM {
 		log.Fatalf("Failed to hash password for factory: %v", err)
 	}
 
+	baseURL := config.AppConfig.Storage.StoragePublicBaseURL
+	defaultAvatarURL := baseURL + "/public/uploads/avatar.png"
+
 	return &gorm.UserGORM{
-		Name:     faker.Name(),
-		Email:    faker.Email(),
-		Password: hashedPassword,
-		RoleID:   roleID,
+		Name:              faker.Name(),
+		Email:             faker.Email(),
+		Password:          hashedPassword,
+		RoleID:            roleID,
+		ProfilePictureURL: defaultAvatarURL,
 	}
 }
