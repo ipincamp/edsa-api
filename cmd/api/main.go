@@ -125,7 +125,7 @@ func main() {
 	adminHandler := http.NewAdminHandler(adminService, validate)
 	appHandler := http.NewAppHandler(appService, validate)
 	dashboardHandler := http.NewDashboardHandler(dashboardService, validate)
-	mediaHandler := http.NewMediaHandler(mediaService, validate)
+	mediaHandler := http.NewMediaHandler(mediaService, validate, loggerService)
 
 	// 8. Init Fiber App
 	app := fiber.New(fiber.Config{

@@ -16,6 +16,8 @@ const (
 	ActionStartBook    = "START_BOOK"
 	ActionCompleteBook = "COMPLETE_BOOK"
 	ActionCompleteGame = "COMPLETE_GAME"
+	ActionMediaUpload  = "MEDIA_UPLOAD"
+	ActionMediaDelete  = "MEDIA_DELETE"
 )
 
 // ActivityLog adalah entitas domain inti untuk log aktivitas pengguna

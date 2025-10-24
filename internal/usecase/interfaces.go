@@ -217,7 +217,7 @@ type FileStorageService interface {
 
 // MediaService mendefinisikan logika bisnis untuk manajemen media
 type MediaService interface {
-	UploadFile(ctx context.Context, file *multipart.FileHeader, ownerID, ownerType string) (*domain.MediaAssetResponse, error)
+	UploadFile(ctx context.Context, file *multipart.FileHeader, ownerID, ownerType string, uploaderID *uuid.UUID) (*domain.MediaAssetResponse, error)
 }
 
 // SessionBlacklistService mendefinisikan kontrak untuk blacklist sesi

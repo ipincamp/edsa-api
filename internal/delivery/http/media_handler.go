@@ -1,24 +1,31 @@
 package http
 
 import (
+	"encoding/json"
+
 	"github.com/gofiber/fiber/v2"
+	"github.com/google/uuid"
+	"github.com/ipincamp/go-edsa-api/internal/domain"
 	"github.com/ipincamp/go-edsa-api/internal/pkg/utils"
 	"github.com/ipincamp/go-edsa-api/internal/pkg/validator"
 	"github.com/ipincamp/go-edsa-api/internal/usecase"
 )
 
 type MediaHandler struct {
-	mediaService usecase.MediaService
-	validate     *validator.GoPlaygroundValidator
+	mediaService  usecase.MediaService
+	validate      *validator.GoPlaygroundValidator
+	loggerService usecase.ActivityLoggerService
 }
 
 func NewMediaHandler(
 	ms usecase.MediaService,
 	v *validator.GoPlaygroundValidator,
+	logger usecase.ActivityLoggerService,
 ) *MediaHandler {
 	return &MediaHandler{
-		mediaService: ms,
-		validate:     v,
+		mediaService:  ms,
+		validate:      v,
+		loggerService: logger,
 	}
 }
 
@@ -42,11 +49,32 @@ func (h *MediaHandler) UploadFile(c *fiber.Ctx) error {
 		return utils.SendSimpleError(c, fiber.StatusBadRequest, "Missing owner_type", "Field 'owner_type' is required")
 	}
 
+	uploaderID, ok := c.Locals("userID").(uuid.UUID)
+	var uploaderIDPtr *uuid.UUID
+	if ok {
+		uploaderIDPtr = &uploaderID
+	}
+
+	sessionID, _ := c.Locals("sessionID").(uuid.UUID)
+
 	// 3. Panggil usecase
-	asset, err := h.mediaService.UploadFile(c.Context(), file, ownerID, ownerType)
+	asset, err := h.mediaService.UploadFile(c.Context(), file, ownerID, ownerType, uploaderIDPtr)
 	if err != nil {
 		return utils.SendSimpleError(c, fiber.StatusInternalServerError, err.Error(), err.Error())
 	}
+
+	details, _ := json.Marshal(map[string]interface{}{
+		"asset_id":   asset.ID,
+		"file_name":  asset.FileName,
+		"owner_id":   ownerID,
+		"owner_type": ownerType,
+	})
+	h.loggerService.Log(c.Context(), domain.ActivityLog{
+		UserID:    uploaderID, // Gunakan UUID asli, bukan pointer
+		SessionID: sessionID,
+		Action:    domain.ActionMediaUpload,
+		Details:   details,
+	})
 
 	return utils.SendSuccess(c, fiber.StatusCreated, "File uploaded successfully", asset)
 }

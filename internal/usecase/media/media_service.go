@@ -78,7 +78,7 @@ func slugifyFilename(originalFilename string) string {
 
 // --- Methods ---
 
-func (s *mediaService) UploadFile(ctx context.Context, file *multipart.FileHeader, ownerID, ownerType string) (*domain.MediaAssetResponse, error) {
+func (s *mediaService) UploadFile(ctx context.Context, file *multipart.FileHeader, ownerID, ownerType string, uploaderID *uuid.UUID) (*domain.MediaAssetResponse, error) {
 	// 1. Buat UUID di sini
 	assetID := uuid.New()
 
@@ -99,14 +99,15 @@ func (s *mediaService) UploadFile(ctx context.Context, file *multipart.FileHeade
 
 	// 5. Buat entitas domain
 	asset := &domain.MediaAsset{
-		ID:        assetID,
-		FileName:  cleanFileName,
-		FilePath:  filePath,  // "uploads/uuid.png"
-		PublicURL: publicURL, // "http://localhost:8080/public/uploads/uuid.png"
-		MimeType:  file.Header.Get("Content-Type"),
-		FileSize:  file.Size,
-		OwnerID:   ownerID,
-		OwnerType: ownerType,
+		ID:               assetID,
+		FileName:         cleanFileName,
+		FilePath:         filePath,  // "uploads/uuid.png"
+		PublicURL:        publicURL, // "http://localhost:8080/public/uploads/uuid.png"
+		MimeType:         file.Header.Get("Content-Type"),
+		FileSize:         file.Size,
+		OwnerID:          ownerID,
+		OwnerType:        ownerType,
+		UploadedByUserID: uploaderID,
 	}
 
 	// 6. Simpan metadata ke database
