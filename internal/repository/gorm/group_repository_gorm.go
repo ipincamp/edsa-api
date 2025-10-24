@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 
+	"github.com/google/uuid"
 	"github.com/ipincamp/go-edsa-api/internal/domain"
 	"github.com/ipincamp/go-edsa-api/internal/usecase"
 	"gorm.io/gorm"
@@ -59,4 +60,21 @@ func (r *groupRepositoryGORM) Update(ctx context.Context, group *domain.Group) e
 
 func (r *groupRepositoryGORM) Delete(ctx context.Context, id uint) error {
 	return r.db.WithContext(ctx).Delete(&GroupGORM{}, id).Error
+}
+
+func (r *groupRepositoryGORM) FindGroupsByUserID(ctx context.Context, userID uuid.UUID) ([]domain.Group, error) {
+	var gormGroups []GroupGORM
+	// Cari grup yang memiliki user dengan ID yang cocok di tabel relasi user_groups
+	if err := r.db.WithContext(ctx).
+		Joins("JOIN user_groups on user_groups.group_id = groups.id").
+		Where("user_groups.user_id = ?", userID).
+		Find(&gormGroups).Error; err != nil {
+		return nil, err
+	}
+
+	var domainGroups []domain.Group
+	for _, g := range gormGroups {
+		domainGroups = append(domainGroups, *g.ToDomain())
+	}
+	return domainGroups, nil
 }

@@ -31,3 +31,19 @@ func (r *groupBookSettingRepositoryGORM) Upsert(ctx context.Context, setting *do
 		}).
 		Create(gormSetting).Error
 }
+
+// FindSettingsByGroupIDs mengambil semua pengaturan buku untuk daftar ID grup
+func (r *groupBookSettingRepositoryGORM) FindSettingsByGroupIDs(ctx context.Context, groupIDs []uint) ([]domain.GroupBookSetting, error) {
+	var gormSettings []GroupBookSettingGORM
+	if err := r.db.WithContext(ctx).
+		Where("group_id IN ?", groupIDs).
+		Find(&gormSettings).Error; err != nil {
+		return nil, err
+	}
+
+	var domainSettings []domain.GroupBookSetting
+	for _, s := range gormSettings {
+		domainSettings = append(domainSettings, *s.ToDomain())
+	}
+	return domainSettings, nil
+}

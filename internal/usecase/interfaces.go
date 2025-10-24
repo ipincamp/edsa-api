@@ -50,6 +50,7 @@ type GroupRepository interface {
 	FindByID(ctx context.Context, id uint) (*domain.Group, error)
 	Update(ctx context.Context, group *domain.Group) error
 	Delete(ctx context.Context, id uint) error
+	FindGroupsByUserID(ctx context.Context, userID uuid.UUID) ([]domain.Group, error)
 }
 
 // BookRepository mendefinisikan kontrak untuk data buku
@@ -122,6 +123,7 @@ type MediaAssetRepository interface {
 // GroupBookSettingRepository mendefinisikan kontrak untuk pengaturan buku grup
 type GroupBookSettingRepository interface {
 	Upsert(ctx context.Context, setting *domain.GroupBookSetting) error
+	FindSettingsByGroupIDs(ctx context.Context, groupIDs []uint) ([]domain.GroupBookSetting, error)
 }
 
 // --- Services ---

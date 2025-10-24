@@ -111,6 +111,9 @@ func main() {
 		gameRepositoryGORM,
 		userGameScoreRepositoryGORM,
 		loggerService,
+		userRepositoryGORM,
+		groupRepositoryGORM,
+		groupBookSettingRepositoryGORM,
 	)
 	dashboardService := dashboard.NewDashboardService(
 		activityLogRepositoryGORM,
