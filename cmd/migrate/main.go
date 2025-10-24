@@ -17,6 +17,7 @@ func dropAllTables(db *gorm.DB) error {
 	// List tabel berdasarkan file models.go dan migrations
 	// Urutkan dari tabel yang memiliki foreign key ke tabel yang direferensikan
 	tables := []string{
+		"group_book_settings",
 		"media_assets",
 		"activity_logs",
 		"user_game_scores",
