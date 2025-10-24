@@ -49,6 +49,8 @@ func toUserResponse(user *domain.User) *domain.UserResponse {
 		Name:     user.Name,
 		Email:    user.Email,
 		RoleName: user.Role.Name,
+		JoinedAt: user.CreatedAt,
+		// ProfilePictureURL: user.ProfilePictureURL,
 	}
 }
 
@@ -86,6 +88,7 @@ func (s *userService) Register(ctx context.Context, req *domain.RegisterRequest)
 		Email:    req.Email,
 		Password: hashedPassword,
 		RoleID:   defaultRole.ID,
+		// ProfilePictureURL akan default ke string kosong
 	}
 
 	// 5. Simpan ke database
@@ -94,6 +97,8 @@ func (s *userService) Register(ctx context.Context, req *domain.RegisterRequest)
 		return nil, errors.New("failed to create user")
 	}
 	user.Role = *defaultRole
+	// Ambil CreatedAt yang di-generate DB (meskipun mapper di bawah akan menggunakannya)
+	// user.CreatedAt = ... (userRepo.Create seharusnya meng-update ID, kita asumsikan CreatedAt juga)
 
 	// 6. Buat Session ID baru
 	sessionID := uuid.New()
@@ -123,12 +128,7 @@ func (s *userService) Register(ctx context.Context, req *domain.RegisterRequest)
 
 	// 8. Kembalikan respons
 	return &domain.AuthResponse{
-		User: domain.UserResponse{
-			ID:       user.ID,
-			Name:     user.Name,
-			Email:    user.Email,
-			RoleName: user.Role.Name,
-		},
+		User: *toUserResponse(user),
 		Token: domain.TokenResponse{
 			AccessToken:  accessToken,
 			RefreshToken: refreshToken,
@@ -181,12 +181,7 @@ func (s *userService) Login(ctx context.Context, req *domain.LoginRequest) (*dom
 
 	// 7. Kembalikan respons
 	return &domain.AuthResponse{
-		User: domain.UserResponse{
-			ID:       user.ID,
-			Name:     user.Name,
-			Email:    user.Email,
-			RoleName: user.Role.Name,
-		},
+		User: *toUserResponse(user),
 		Token: domain.TokenResponse{
 			AccessToken:  accessToken,
 			RefreshToken: refreshToken,

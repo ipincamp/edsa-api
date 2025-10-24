@@ -9,12 +9,13 @@ import (
 
 // User adalah entitas domain inti untuk pengguna
 type User struct {
-	ID        uuid.UUID
-	Name      string
-	Email     string
-	Password  string
-	RoleID    uint
-	Role      Role
+	ID       uuid.UUID
+	Name     string
+	Email    string
+	Password string
+	RoleID   uint
+	Role     Role
+	// ProfilePictureURL string
 	CreatedAt time.Time
 	UpdatedAt time.Time
 	DeletedAt gorm.DeletedAt
@@ -58,6 +59,8 @@ type UserResponse struct {
 	Name     string    `json:"name"`
 	Email    string    `json:"email"`
 	RoleName string    `json:"role"`
+	JoinedAt time.Time `json:"joined_at"`
+	// ProfilePictureURL string    `json:"profile_picture_url,omitempty"`
 }
 
 // TokenResponse adalah DTO untuk token autentikasi.
