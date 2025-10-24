@@ -373,33 +373,37 @@ func ActivityLogFromDomain(l *domain.ActivityLog) *ActivityLogGORM {
 // Map GORM model ke Domain entity
 func (m *MediaAssetGORM) ToDomain() *domain.MediaAsset {
 	return &domain.MediaAsset{
-		ID:        m.ID,
-		FileName:  m.FileName,
-		FilePath:  m.FilePath,
-		PublicURL: m.PublicURL,
-		MimeType:  m.MimeType,
-		FileSize:  m.FileSize,
-		OwnerID:   m.OwnerID,
-		OwnerType: m.OwnerType,
-		CreatedAt: m.CreatedAt,
-		UpdatedAt: m.UpdatedAt,
-		DeletedAt: m.DeletedAt,
+		ID:               m.ID,
+		FileName:         m.FileName,
+		FilePath:         m.FilePath,
+		PublicURL:        m.PublicURL,
+		MimeType:         m.MimeType,
+		FileSize:         m.FileSize,
+		OwnerID:          m.OwnerID,
+		OwnerType:        m.OwnerType,
+		CreatedAt:        m.CreatedAt,
+		UpdatedAt:        m.UpdatedAt,
+		DeletedAt:        m.DeletedAt,
+		UploadedByUserID: m.UploadedByUserID,
+		DeletedByUserID:  m.DeletedByUserID,
 	}
 }
 
 // Map Domain entity ke GORM model
 func MediaAssetFromDomain(m *domain.MediaAsset) *MediaAssetGORM {
 	return &MediaAssetGORM{
-		ID:        m.ID,
-		FileName:  m.FileName,
-		FilePath:  m.FilePath,
-		PublicURL: m.PublicURL,
-		MimeType:  m.MimeType,
-		FileSize:  m.FileSize,
-		OwnerID:   m.OwnerID,
-		OwnerType: m.OwnerType,
-		CreatedAt: m.CreatedAt,
-		UpdatedAt: m.UpdatedAt,
-		DeletedAt: m.DeletedAt,
+		ID:               m.ID,
+		FileName:         m.FileName,
+		FilePath:         m.FilePath,
+		PublicURL:        m.PublicURL,
+		MimeType:         m.MimeType,
+		FileSize:         m.FileSize,
+		OwnerID:          m.OwnerID,
+		OwnerType:        m.OwnerType,
+		CreatedAt:        m.CreatedAt,
+		UpdatedAt:        m.UpdatedAt,
+		DeletedAt:        m.DeletedAt,
+		UploadedByUserID: m.UploadedByUserID,
+		DeletedByUserID:  m.DeletedByUserID,
 	}
 }
