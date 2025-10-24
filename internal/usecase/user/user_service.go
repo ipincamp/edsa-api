@@ -42,6 +42,16 @@ func NewUserService(
 	}
 }
 
+// --- Helper Mapper ---
+func toUserResponse(user *domain.User) *domain.UserResponse {
+	return &domain.UserResponse{
+		ID:       user.ID,
+		Name:     user.Name,
+		Email:    user.Email,
+		RoleName: user.Role.Name,
+	}
+}
+
 func (s *userService) Register(ctx context.Context, req *domain.RegisterRequest) (*domain.AuthResponse, error) {
 	// 1. Cek apakah email sudah ada
 	existingUser, err := s.userRepo.FindByEmail(ctx, req.Email)
@@ -258,12 +268,7 @@ func (s *userService) GetUserByID(ctx context.Context, id uuid.UUID) (*domain.Us
 	}
 
 	// 2. Kembalikan respons
-	return &domain.UserResponse{
-		ID:       user.ID,
-		Name:     user.Name,
-		Email:    user.Email,
-		RoleName: user.Role.Name,
-	}, nil
+	return toUserResponse(user), nil
 }
 
 func (s *userService) ChangePassword(ctx context.Context, userID uuid.UUID, req *domain.ChangePasswordRequest) error {
@@ -307,4 +312,38 @@ func (s *userService) ChangePassword(ctx context.Context, userID uuid.UUID, req 
 	// (Ini di luar scope, tapi penting untuk keamanan)
 
 	return nil
+}
+
+func (s *userService) UpdateUserDetails(ctx context.Context, userID uuid.UUID, req *domain.UpdateDetailsRequest) (*domain.UserResponse, error) {
+	// 1. Ambil user
+	user, err := s.userRepo.FindByID(ctx, userID)
+	if err != nil {
+		applogger.ErrorLogger.Printf("UpdateUserDetails: DB error checking user %s: %v", userID, err)
+		return nil, errors.New("database error")
+	}
+	if user == nil {
+		return nil, errors.New("user not found")
+	}
+
+	// 2. Validasi password (konfirmasi identitas)
+	match, err := s.passSvc.Compare(req.Password, user.Password)
+	if err != nil {
+		applogger.ErrorLogger.Printf("UpdateUserDetails: Error comparing password for user %s: %v", userID, err)
+		return nil, errors.New("password comparison failed")
+	}
+	if !match {
+		return nil, errors.New("invalid password confirmation")
+	}
+
+	// 3. Update nama di struct domain
+	user.Name = req.Name
+
+	// 4. Simpan ke database
+	if err := s.userRepo.Update(ctx, user); err != nil {
+		applogger.ErrorLogger.Printf("UpdateUserDetails: failed to update user %s in DB: %v", userID, err)
+		return nil, errors.New("failed to save user details")
+	}
+
+	// 5. Kembalikan respons DTO
+	return toUserResponse(user), nil
 }

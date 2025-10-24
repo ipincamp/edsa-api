@@ -150,3 +150,36 @@ func (h *UserHandler) ChangePassword(c *fiber.Ctx) error {
 	// 4. Kembalikan sukses
 	return utils.SendSuccess(c, fiber.StatusOK, "Password changed successfully", nil)
 }
+
+func (h *UserHandler) UpdateUserDetails(c *fiber.Ctx) error {
+	// 1. Ambil user ID dari middleware
+	userID, ok := c.Locals("userID").(uuid.UUID)
+	if !ok || userID == uuid.Nil {
+		return utils.SendSimpleError(c, fiber.StatusUnauthorized, "Invalid token", "Invalid user ID in token")
+	}
+
+	var req domain.UpdateDetailsRequest
+
+	// 2. Parse & Validasi
+	if err := c.BodyParser(&req); err != nil {
+		return utils.SendSimpleError(c, fiber.StatusBadRequest, "Invalid request body", err.Error())
+	}
+	if errs := h.validate.ValidateStruct(req); len(errs) > 0 {
+		return utils.SendValidationErrors(c, errs)
+	}
+
+	// 3. Panggil Usecase
+	updatedUser, err := h.userService.UpdateUserDetails(c.Context(), userID, &req)
+	if err != nil {
+		if err.Error() == "invalid password confirmation" {
+			return utils.SendSimpleError(c, fiber.StatusUnauthorized, err.Error(), err.Error())
+		}
+		if err.Error() == "user not found" {
+			return utils.SendSimpleError(c, fiber.StatusNotFound, err.Error(), err.Error())
+		}
+		return utils.SendSimpleError(c, fiber.StatusInternalServerError, err.Error(), err.Error())
+	}
+
+	// 4. Kembalikan sukses dengan data user yang diperbarui
+	return utils.SendSuccess(c, fiber.StatusOK, "User details updated successfully", updatedUser)
+}

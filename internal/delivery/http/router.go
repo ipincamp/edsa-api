@@ -53,6 +53,7 @@ func SetupRoutes(
 	protected.Use(middleware.AuthMiddleware(tokenSvc, blacklistSvc))
 	protected.Get("/me", userHandler.GetMe) // PASSED
 	protected.Patch("/me/password", userHandler.ChangePassword)
+	protected.Patch("/me/details", userHandler.UpdateUserDetails)
 
 	// --- Rute Administrasi ---
 

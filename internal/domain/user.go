@@ -46,6 +46,12 @@ type ChangePasswordRequest struct {
 	NewPassword     string `json:"new_password" validate:"required,min=8"`
 }
 
+// UpdateDetailsRequest adalah DTO untuk mengubah nama (memerlukan konfirmasi password).
+type UpdateDetailsRequest struct {
+	Name     string `json:"name" validate:"required,min=3,max=100"`
+	Password string `json:"password" validate:"required"` // Untuk konfirmasi
+}
+
 // UserResponse adalah DTO untuk data pengguna yang aman dikirim ke klien.
 type UserResponse struct {
 	ID       uuid.UUID `json:"id"`

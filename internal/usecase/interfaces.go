@@ -137,6 +137,7 @@ type UserService interface {
 	RefreshToken(ctx context.Context, req *domain.RefreshTokenRequest) (*domain.TokenResponse, error)
 	Logout(ctx context.Context, userID uuid.UUID, sessionID uuid.UUID) error
 	ChangePassword(ctx context.Context, userID uuid.UUID, req *domain.ChangePasswordRequest) error
+	UpdateUserDetails(ctx context.Context, userID uuid.UUID, req *domain.UpdateDetailsRequest) (*domain.UserResponse, error)
 }
 
 // PasswordService mendefinisikan kontrak untuk hashing password
