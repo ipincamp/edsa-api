@@ -29,7 +29,7 @@ type UserGORM struct {
 	Password  string      `gorm:"type:varchar(255);not null"`
 	RoleID    uint        `gorm:"not null"`
 	Role      RoleGORM    `gorm:"foreignKey:RoleID"`
-	Groups    []GroupGORM `gorm:"many2many:user_groups;"` // Relasi many-to-many
+	Groups    []GroupGORM `gorm:"many2many:user_groups;joinForeignKey:user_id;joinReferences:group_id"` // Relasi many-to-many
 	CreatedAt time.Time
 	UpdatedAt time.Time
 	DeletedAt gorm.DeletedAt `gorm:"index"`
@@ -75,7 +75,7 @@ type GroupGORM struct {
 	Name      string     `gorm:"type:varchar(255);not null"`
 	ClassID   uint       `gorm:"not null"`
 	Class     ClassGORM  `gorm:"foreignKey:ClassID"`
-	Users     []UserGORM `gorm:"many2many:user_groups;"` // Relasi many-to-many
+	Users     []UserGORM `gorm:"many2many:user_groups;joinForeignKey:group_id;joinReferences:user_id"` // Relasi many-to-many
 	CreatedAt time.Time
 	UpdatedAt time.Time
 	DeletedAt gorm.DeletedAt `gorm:"index"`
