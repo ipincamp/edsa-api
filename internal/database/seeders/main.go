@@ -38,9 +38,12 @@ func RunAllSeeders(db *gorm.DB) error {
 		if err := UserPublicSeeder(db); err != nil {
 			return err
 		}
+		if err := ClassGroupSeeder(db); err != nil {
+			return err
+		}
 		// Panggil seeder lain di sini
 	} else {
-		log.Println("Production environment detected. Only Role and Admin seeders were run.")
+		log.Println("Production environment detected. Only Role, Admin, Book, and Game seeders were run.")
 	}
 
 	return nil
