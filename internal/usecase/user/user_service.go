@@ -83,6 +83,7 @@ func (s *userService) Register(ctx context.Context, req *domain.RegisterRequest)
 		applogger.ErrorLogger.Printf("Register: failed to create user %s: %v", user.Email, err)
 		return nil, errors.New("failed to create user")
 	}
+	user.Role = *defaultRole
 
 	// 6. Buat Session ID baru
 	sessionID := uuid.New()
@@ -113,10 +114,10 @@ func (s *userService) Register(ctx context.Context, req *domain.RegisterRequest)
 	// 8. Kembalikan respons
 	return &domain.AuthResponse{
 		User: domain.UserResponse{
-			ID:     user.ID,
-			Name:   user.Name,
-			Email:  user.Email,
-			RoleID: user.RoleID,
+			ID:       user.ID,
+			Name:     user.Name,
+			Email:    user.Email,
+			RoleName: user.Role.Name,
 		},
 		Token: domain.TokenResponse{
 			AccessToken:  accessToken,
@@ -171,10 +172,10 @@ func (s *userService) Login(ctx context.Context, req *domain.LoginRequest) (*dom
 	// 7. Kembalikan respons
 	return &domain.AuthResponse{
 		User: domain.UserResponse{
-			ID:     user.ID,
-			Name:   user.Name,
-			Email:  user.Email,
-			RoleID: user.RoleID,
+			ID:       user.ID,
+			Name:     user.Name,
+			Email:    user.Email,
+			RoleName: user.Role.Name,
 		},
 		Token: domain.TokenResponse{
 			AccessToken:  accessToken,
@@ -258,9 +259,9 @@ func (s *userService) GetUserByID(ctx context.Context, id uuid.UUID) (*domain.Us
 
 	// 2. Kembalikan respons
 	return &domain.UserResponse{
-		ID:     user.ID,
-		Name:   user.Name,
-		Email:  user.Email,
-		RoleID: user.RoleID,
+		ID:       user.ID,
+		Name:     user.Name,
+		Email:    user.Email,
+		RoleName: user.Role.Name,
 	}, nil
 }

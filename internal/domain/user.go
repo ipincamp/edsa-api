@@ -42,10 +42,10 @@ type RefreshTokenRequest struct {
 
 // UserResponse adalah DTO untuk data pengguna yang aman dikirim ke klien.
 type UserResponse struct {
-	ID     uuid.UUID `json:"id"`
-	Name   string    `json:"name"`
-	Email  string    `json:"email"`
-	RoleID uint      `json:"role_id"`
+	ID       uuid.UUID `json:"id"`
+	Name     string    `json:"name"`
+	Email    string    `json:"email"`
+	RoleName string    `json:"role"`
 }
 
 // TokenResponse adalah DTO untuk token autentikasi.

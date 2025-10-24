@@ -22,6 +22,7 @@ type PasetoPayload struct {
 	UserID    string `json:"user_id"`
 	Email     string `json:"email"`
 	SessionID string `json:"session_id"`
+	RoleName  string `json:"role_name"`
 }
 
 func NewPasetoService(symmetricKeyBase64 string) (usecase.TokenService, error) {
@@ -49,9 +50,10 @@ func (s *pasetoService) CreateToken(user *domain.User, sessionID uuid.UUID, dura
 		UserID:    user.ID.String(),
 		Email:     user.Email,
 		SessionID: sessionID.String(),
+		RoleName:  user.Role.Name,
 	}
 
-	// Token berlaku selama 24 jam
+	// Atur waktu terbit dan kedaluwarsa
 	now := time.Now()
 	exp := now.Add(duration)
 
