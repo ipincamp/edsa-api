@@ -31,6 +31,8 @@ type UserGORM struct {
 	RoleID            uint        `gorm:"not null"`
 	Role              RoleGORM    `gorm:"foreignKey:RoleID"`
 	Groups            []GroupGORM `gorm:"many2many:user_groups;joinForeignKey:user_id;joinReferences:group_id"` // Relasi many-to-many
+	EmailVerifiedAt   *time.Time  `gorm:"index"`
+	IsActive          bool        `gorm:"default:true;not null;index"`
 	CreatedAt         time.Time
 	UpdatedAt         time.Time
 	DeletedAt         gorm.DeletedAt `gorm:"index"`
@@ -116,16 +118,18 @@ func (BookGORM) TableName() string {
 
 // PageGORM adalah representasi tabel 'pages' di database
 type PageGORM struct {
-	ID              uint              `gorm:"primarykey"`
-	BookID          uint              `gorm:"not null;index"`
-	Book            BookGORM          `gorm:"foreignKey:BookID"`
-	PageNumber      int               `gorm:"not null;index"`
-	NarrativeText   string            `gorm:"type:text"`
-	InstructionText string            `gorm:"type:text"`
-	Interactions    []InteractionGORM `gorm:"foreignKey:PageID"` // Relasi one-to-many
-	CreatedAt       time.Time
-	UpdatedAt       time.Time
-	DeletedAt       gorm.DeletedAt `gorm:"index"`
+	ID                uint              `gorm:"primarykey"`
+	BookID            uint              `gorm:"not null;index"`
+	Book              BookGORM          `gorm:"foreignKey:BookID"`
+	PageNumber        int               `gorm:"not null;index"`
+	Interactions      []InteractionGORM `gorm:"foreignKey:PageID"` // Relasi one-to-many
+	Narration_ID      string            `gorm:"type:text"`
+	Narration_EN      string            `gorm:"type:text"`
+	AudioNarrationURL string            `gorm:"type:varchar(255)"`
+	IsPostActivity    bool              `gorm:"default:false;not null;index"`
+	CreatedAt         time.Time
+	UpdatedAt         time.Time
+	DeletedAt         gorm.DeletedAt `gorm:"index"`
 }
 
 func (PageGORM) TableName() string {
@@ -156,9 +160,10 @@ type UserBookProgressGORM struct {
 	BookID               uint      `gorm:"not null;uniqueIndex:idx_user_book"`
 	Book                 BookGORM  `gorm:"foreignKey:BookID"`
 	Status               string    `gorm:"type:varchar(50);default:'locked'"`
-	HighestScore         int       `gorm:"default:0"`
+	HighestScore         float64   `gorm:"type:decimal(5,2);default:0"`
 	LastPageID           uint      `gorm:"default:0"`
 	CurrentSessionPoints int       `gorm:"default:0"`
+	Rating               int       `gorm:"default:0;index"`
 	CreatedAt            time.Time
 	UpdatedAt            time.Time
 	DeletedAt            gorm.DeletedAt `gorm:"index"`
@@ -257,4 +262,49 @@ type GroupBookSettingGORM struct {
 
 func (GroupBookSettingGORM) TableName() string {
 	return "group_book_settings"
+}
+
+// UserInteractionAttemptGORM adalah representasi tabel 'user_interaction_attempts'
+type UserInteractionAttemptGORM struct {
+	ID              uint            `gorm:"primarykey"`
+	UserID          uuid.UUID       `gorm:"type:uuid;not null;index"`
+	User            UserGORM        `gorm:"foreignKey:UserID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE"`
+	InteractionID   uint            `gorm:"not null;index"`
+	Interaction     InteractionGORM `gorm:"foreignKey:InteractionID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE"`
+	Timestamp       time.Time       `gorm:"not null"`
+	UserAnswer      json.RawMessage `gorm:"type:jsonb"`
+	IsCorrect       bool            `gorm:"default:false"`
+	ScoreAwarded    float64         `gorm:"type:decimal(5,2);default:0"`
+	DurationSeconds int             `gorm:"default:0"`
+	CreatedAt       time.Time
+	UpdatedAt       time.Time
+	DeletedAt       gorm.DeletedAt `gorm:"index"`
+}
+
+func (UserInteractionAttemptGORM) TableName() string {
+	return "user_interaction_attempts"
+}
+
+// ApprovalRequestGORM adalah representasi tabel 'approval_requests'
+type ApprovalRequestGORM struct {
+	ID uint `gorm:"primarykey"`
+
+	UserID uuid.UUID `gorm:"type:uuid;not null;index"`
+	User   UserGORM  `gorm:"foreignKey:UserID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE"`
+
+	RequestType string `gorm:"type:varchar(100);not null;index"`
+	Status      string `gorm:"type:varchar(50);default:'pending';not null;index"`
+	Reason      string `gorm:"type:text"`
+
+	ReviewerID *uuid.UUID `gorm:"type:uuid;index"`
+	Reviewer   UserGORM   `gorm:"foreignKey:ReviewerID;constraint:OnUpdate:CASCADE,OnDelete:RESTRICT"`
+
+	ReviewTimestamp *time.Time
+	CreatedAt       time.Time
+	UpdatedAt       time.Time
+	DeletedAt       gorm.DeletedAt `gorm:"index"`
+}
+
+func (ApprovalRequestGORM) TableName() string {
+	return "approval_requests"
 }

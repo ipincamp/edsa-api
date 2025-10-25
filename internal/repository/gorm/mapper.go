@@ -1,6 +1,9 @@
 package gorm
 
-import "github.com/ipincamp/go-edsa-api/internal/domain"
+import (
+	"github.com/google/uuid"
+	"github.com/ipincamp/go-edsa-api/internal/domain"
+)
 
 // --- User Mappers ---
 
@@ -13,6 +16,8 @@ func (u *UserGORM) ToDomain() *domain.User {
 		Password:          u.Password,
 		ProfilePictureURL: u.ProfilePictureURL,
 		RoleID:            u.RoleID,
+		EmailVerifiedAt:   u.EmailVerifiedAt,
+		IsActive:          u.IsActive,
 		CreatedAt:         u.CreatedAt,
 		UpdatedAt:         u.UpdatedAt,
 		DeletedAt:         u.DeletedAt,
@@ -34,6 +39,8 @@ func UserFromDomain(u *domain.User) *UserGORM {
 		Password:          u.Password,
 		ProfilePictureURL: u.ProfilePictureURL,
 		RoleID:            u.RoleID,
+		EmailVerifiedAt:   u.EmailVerifiedAt,
+		IsActive:          u.IsActive,
 		CreatedAt:         u.CreatedAt,
 		UpdatedAt:         u.UpdatedAt,
 		DeletedAt:         u.DeletedAt,
@@ -185,14 +192,16 @@ func BookFromDomain(b *domain.Book) *BookGORM {
 // Map GORM model ke Domain entity
 func (p *PageGORM) ToDomain() *domain.Page {
 	domainPage := &domain.Page{
-		ID:              p.ID,
-		BookID:          p.BookID,
-		PageNumber:      p.PageNumber,
-		NarrativeText:   p.NarrativeText,
-		InstructionText: p.InstructionText,
-		CreatedAt:       p.CreatedAt,
-		UpdatedAt:       p.UpdatedAt,
-		DeletedAt:       p.DeletedAt,
+		ID:                p.ID,
+		BookID:            p.BookID,
+		PageNumber:        p.PageNumber,
+		Narration_ID:      p.Narration_ID,
+		Narration_EN:      p.Narration_EN,
+		AudioNarrationURL: p.AudioNarrationURL,
+		IsPostActivity:    p.IsPostActivity,
+		CreatedAt:         p.CreatedAt,
+		UpdatedAt:         p.UpdatedAt,
+		DeletedAt:         p.DeletedAt,
 	}
 	if p.Book.ID != 0 {
 		domainPage.Book = *p.Book.ToDomain()
@@ -203,14 +212,16 @@ func (p *PageGORM) ToDomain() *domain.Page {
 // Map Domain entity ke GORM model
 func PageFromDomain(p *domain.Page) *PageGORM {
 	return &PageGORM{
-		ID:              p.ID,
-		BookID:          p.BookID,
-		PageNumber:      p.PageNumber,
-		NarrativeText:   p.NarrativeText,
-		InstructionText: p.InstructionText,
-		CreatedAt:       p.CreatedAt,
-		UpdatedAt:       p.UpdatedAt,
-		DeletedAt:       p.DeletedAt,
+		ID:                p.ID,
+		BookID:            p.BookID,
+		PageNumber:        p.PageNumber,
+		Narration_ID:      p.Narration_ID,
+		Narration_EN:      p.Narration_EN,
+		AudioNarrationURL: p.AudioNarrationURL,
+		IsPostActivity:    p.IsPostActivity,
+		CreatedAt:         p.CreatedAt,
+		UpdatedAt:         p.UpdatedAt,
+		DeletedAt:         p.DeletedAt,
 	}
 }
 
@@ -258,6 +269,7 @@ func (p *UserBookProgressGORM) ToDomain() *domain.UserBookProgress {
 		HighestScore:         p.HighestScore,
 		LastPageID:           p.LastPageID,
 		CurrentSessionPoints: p.CurrentSessionPoints,
+		Rating:               p.Rating,
 		CreatedAt:            p.CreatedAt,
 		UpdatedAt:            p.UpdatedAt,
 		DeletedAt:            p.DeletedAt,
@@ -274,6 +286,7 @@ func UserBookProgressFromDomain(p *domain.UserBookProgress) *UserBookProgressGOR
 		HighestScore:         p.HighestScore,
 		LastPageID:           p.LastPageID,
 		CurrentSessionPoints: p.CurrentSessionPoints,
+		Rating:               p.Rating,
 		CreatedAt:            p.CreatedAt,
 		UpdatedAt:            p.UpdatedAt,
 		DeletedAt:            p.DeletedAt,
@@ -442,5 +455,89 @@ func GroupBookSettingFromDomain(s *domain.GroupBookSetting) *GroupBookSettingGOR
 		CreatedAt:  s.CreatedAt,
 		UpdatedAt:  s.UpdatedAt,
 		DeletedAt:  s.DeletedAt,
+	}
+}
+
+// --- UserInteractionAttempt Mappers ---
+
+// Map GORM model ke Domain entity
+func (a *UserInteractionAttemptGORM) ToDomain() *domain.UserInteractionAttempt {
+	domainAttempt := &domain.UserInteractionAttempt{
+		ID:              a.ID,
+		UserID:          a.UserID,
+		InteractionID:   a.InteractionID,
+		Timestamp:       a.Timestamp,
+		UserAnswer:      a.UserAnswer,
+		IsCorrect:       a.IsCorrect,
+		ScoreAwarded:    a.ScoreAwarded,
+		DurationSeconds: a.DurationSeconds,
+		CreatedAt:       a.CreatedAt,
+		UpdatedAt:       a.UpdatedAt,
+		DeletedAt:       a.DeletedAt,
+	}
+	if a.User.ID != uuid.Nil {
+		domainAttempt.User = *a.User.ToDomain()
+	}
+	if a.Interaction.ID != 0 {
+		domainAttempt.Interaction = *a.Interaction.ToDomain()
+	}
+	return domainAttempt
+}
+
+// Map Domain entity ke GORM model
+func UserInteractionAttemptFromDomain(a *domain.UserInteractionAttempt) *UserInteractionAttemptGORM {
+	return &UserInteractionAttemptGORM{
+		ID:              a.ID,
+		UserID:          a.UserID,
+		InteractionID:   a.InteractionID,
+		Timestamp:       a.Timestamp,
+		UserAnswer:      a.UserAnswer,
+		IsCorrect:       a.IsCorrect,
+		ScoreAwarded:    a.ScoreAwarded,
+		DurationSeconds: a.DurationSeconds,
+		CreatedAt:       a.CreatedAt,
+		UpdatedAt:       a.UpdatedAt,
+		DeletedAt:       a.DeletedAt,
+	}
+}
+
+// --- ApprovalRequest Mappers ---
+
+// Map GORM model ke Domain entity
+func (r *ApprovalRequestGORM) ToDomain() *domain.ApprovalRequest {
+	domainRequest := &domain.ApprovalRequest{
+		ID:              r.ID,
+		UserID:          r.UserID,
+		RequestType:     r.RequestType,
+		Status:          r.Status,
+		Reason:          r.Reason,
+		ReviewerID:      r.ReviewerID,
+		ReviewTimestamp: r.ReviewTimestamp,
+		CreatedAt:       r.CreatedAt,
+		UpdatedAt:       r.UpdatedAt,
+		DeletedAt:       r.DeletedAt,
+	}
+	if r.User.ID != uuid.Nil {
+		domainRequest.User = *r.User.ToDomain()
+	}
+	if r.Reviewer.ID != uuid.Nil {
+		domainRequest.Reviewer = *r.Reviewer.ToDomain()
+	}
+	return domainRequest
+}
+
+// Map Domain entity ke GORM model
+func ApprovalRequestFromDomain(r *domain.ApprovalRequest) *ApprovalRequestGORM {
+	return &ApprovalRequestGORM{
+		ID:              r.ID,
+		UserID:          r.UserID,
+		RequestType:     r.RequestType,
+		Status:          r.Status,
+		Reason:          r.Reason,
+		ReviewerID:      r.ReviewerID,
+		ReviewTimestamp: r.ReviewTimestamp,
+		CreatedAt:       r.CreatedAt,
+		UpdatedAt:       r.UpdatedAt,
+		DeletedAt:       r.DeletedAt,
 	}
 }

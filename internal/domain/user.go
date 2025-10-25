@@ -16,6 +16,8 @@ type User struct {
 	RoleID            uint
 	Role              Role
 	ProfilePictureURL string
+	EmailVerifiedAt   *time.Time
+	IsActive          bool
 	CreatedAt         time.Time
 	UpdatedAt         time.Time
 	DeletedAt         gorm.DeletedAt
@@ -83,6 +85,8 @@ type UserResponse struct {
 	JoinedAt          time.Time `json:"joined_at"`
 	ProfilePictureURL string    `json:"profile_picture_url,omitempty"`
 	OverallScore      int       `json:"overall_score,omitempty"`
+	IsActive          bool      `json:"is_active,omitempty"`
+	EmailVerified     bool      `json:"email_verified"`
 }
 
 // TokenResponse adalah DTO untuk token autentikasi.

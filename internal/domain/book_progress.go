@@ -20,9 +20,10 @@ type UserBookProgress struct {
 	UserID               uuid.UUID
 	BookID               uint
 	Status               string
-	HighestScore         int
+	HighestScore         float64
 	LastPageID           uint
 	CurrentSessionPoints int
+	Rating               int
 	CreatedAt            time.Time
 	UpdatedAt            time.Time
 	DeletedAt            gorm.DeletedAt
@@ -48,7 +49,7 @@ type UpdateProgressRequest struct {
 
 // CompleteProgressRequest adalah DTO untuk 'POST /progress/complete'
 type CompleteProgressRequest struct {
-	BookID     uint `json:"book_id" validate:"required"`
-	FinalScore int  `json:"final_score" validate:"number,min=0,max=100"`
-	DurationMs int  `json:"duration_ms"` // Durasi dalam milidetik
+	BookID     uint    `json:"book_id" validate:"required"`
+	FinalScore float64 `json:"final_score" validate:"number,min=0,max=100"`
+	DurationMs int     `json:"duration_ms"` // Durasi dalam milidetik
 }
