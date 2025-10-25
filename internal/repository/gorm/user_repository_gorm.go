@@ -94,3 +94,7 @@ func (r *userRepositoryGORM) Update(ctx context.Context, user *domain.User) erro
 	// Save akan memperbarui semua kolom, termasuk password yang diubah
 	return r.db.WithContext(ctx).Save(gormUser).Error
 }
+
+func (r *userRepositoryGORM) Delete(ctx context.Context, id uuid.UUID) error {
+	return r.db.WithContext(ctx).Delete(&UserGORM{}, id).Error
+}

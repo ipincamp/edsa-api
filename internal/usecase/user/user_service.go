@@ -2,6 +2,7 @@ package user
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"time"
 
@@ -345,4 +346,53 @@ func (s *userService) UpdateUserDetails(ctx context.Context, userID uuid.UUID, r
 
 	// 5. Kembalikan respons DTO
 	return toUserResponse(user), nil
+}
+
+func (s *userService) DeleteUser(ctx context.Context, userID uuid.UUID, sessionID uuid.UUID, req *domain.DeleteAccountRequest) error {
+	// 1. Ambil user
+	user, err := s.userRepo.FindByID(ctx, userID)
+	if err != nil {
+		applogger.ErrorLogger.Printf("DeleteUser: DB error checking user %s: %v", userID, err)
+		return errors.New("database error")
+	}
+	if user == nil {
+		return errors.New("user not found")
+	}
+
+	// 2. Validasi password saat ini
+	match, err := s.passSvc.Compare(req.CurrentPassword, user.Password)
+	if err != nil {
+		applogger.ErrorLogger.Printf("DeleteUser: Error comparing password for user %s: %v", userID, err)
+		return errors.New("password comparison failed")
+	}
+	if !match {
+		return errors.New("invalid current password")
+	}
+
+	// 3. Log aktivitas SEBELUM menghapus
+	details, _ := json.Marshal(map[string]interface{}{
+		"reason": req.DeletionReason,
+	})
+	s.logger.Log(ctx, domain.ActivityLog{
+		UserID:    userID,
+		Action:    domain.ActionDeleteAccount,
+		SessionID: sessionID,
+		Details:   details,
+	})
+
+	// 4. Hapus user dari database
+	// DB constraint (OnDelete:CASCADE) akan menangani data terkait
+	if err := s.userRepo.Delete(ctx, userID); err != nil {
+		applogger.ErrorLogger.Printf("DeleteUser: failed to delete user %s from DB: %v", userID, err)
+		return errors.New("failed to delete user")
+	}
+
+	// 5. Blacklist sesi ini
+	duration := time.Duration(s.cfg.Security.BlacklistTTLHour) * time.Hour
+	if err := s.blacklistSvc.BlacklistSession(ctx, sessionID, duration); err != nil {
+		applogger.ErrorLogger.Printf("DeleteUser: failed to blacklist session %s post-deletion: %v", sessionID, err)
+		// Jangan kembalikan error, karena penghapusan user sudah berhasil
+	}
+
+	return nil
 }

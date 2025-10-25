@@ -67,6 +67,7 @@ func SetupRoutes(
 	protected.Get("/me", userHandler.GetMe) // PASSED
 	protected.Patch("/me/password", userHandler.ChangePassword)
 	protected.Patch("/me/details", userHandler.UpdateUserDetails)
+	protected.Delete("/me", userHandler.DeleteMe)
 
 	// --- Rute Administrasi ---
 
