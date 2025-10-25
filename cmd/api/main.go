@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v2/middleware/cors"
 	"github.com/ipincamp/go-edsa-api/internal/config"
 	"github.com/ipincamp/go-edsa-api/internal/delivery/http"
 	"github.com/ipincamp/go-edsa-api/internal/pkg/applogger"
@@ -155,6 +156,18 @@ func main() {
 			return utils.SendSimpleError(c, code, message, err.Error())
 		},
 	})
+
+	// Setup CORS Middleware
+	app.Use(cors.New(cors.Config{
+		// Izinkan origin frontend Anda
+		AllowOrigins: cfg.Security.CorsAllowedOrigins,
+		// Izinkan header yang diperlukan frontend (termasuk Authorization)
+		AllowHeaders: "Origin, Content-Type, Accept, Authorization",
+		// Izinkan metode HTTP yang digunakan
+		AllowMethods: "GET, POST, PATCH, DELETE, OPTIONS",
+		// Izinkan pengiriman kredensial (seperti cookie atau header Authorization)
+		AllowCredentials: true,
+	}))
 
 	// 9. Setup Routes
 	http.SetupRoutes(

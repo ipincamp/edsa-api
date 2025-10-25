@@ -44,6 +44,7 @@ type Security struct {
 	AccessTokenTTLMin  int
 	RefreshTokenTTLMin int
 	BlacklistTTLHour   int
+	CorsAllowedOrigins string
 }
 
 // Seeder is a struct to hold seeder configuration
@@ -104,6 +105,7 @@ func LoadConfig() {
 			AccessTokenTTLMin:  getEnvAsInt("ACCESS_TOKEN_TTL_MIN", 15),
 			RefreshTokenTTLMin: getEnvAsInt("REFRESH_TOKEN_TTL_MIN", 43200),
 			BlacklistTTLHour:   getEnvAsInt("BLACKLIST_TTL_HOUR", 1),
+			CorsAllowedOrigins: getEnv("CORS_ALLOWED_ORIGINS", "http://localhost:5000"),
 		},
 		Seeder: Seeder{
 			AdminName:     getEnv("ADMIN_NAME", "Admin Edsa"),
