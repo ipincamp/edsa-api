@@ -134,6 +134,10 @@ type GroupBookSettingRepository interface {
 type UserService interface {
 	Register(ctx context.Context, req *domain.RegisterRequest) (*domain.AuthResponse, error)
 	Login(ctx context.Context, req *domain.LoginRequest) (*domain.AuthResponse, error)
+	SendVerificationEmail(ctx context.Context, email string) error
+	VerifyEmail(ctx context.Context, token string) error
+	SendPasswordResetEmail(ctx context.Context, email string) error
+	ResetPassword(ctx context.Context, req *domain.ResetPasswordRequest) error
 	GetUserByID(ctx context.Context, id uuid.UUID) (*domain.UserResponse, error)
 	RefreshToken(ctx context.Context, req *domain.RefreshTokenRequest) (*domain.TokenResponse, error)
 	Logout(ctx context.Context, userID uuid.UUID, sessionID uuid.UUID) error

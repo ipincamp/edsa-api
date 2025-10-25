@@ -247,3 +247,97 @@ func (h *UserHandler) DeleteAccount(c *fiber.Ctx) error {
 	// 5. Sukses
 	return utils.SendSuccess(c, fiber.StatusOK, "Account deleted successfully", nil)
 }
+
+// ResendVerification menangani 'POST /auth/resend-verification'
+func (h *UserHandler) ResendVerification(c *fiber.Ctx) error {
+	var req domain.ResendVerificationRequest
+	if err := c.BodyParser(&req); err != nil {
+		return utils.SendSimpleError(c, fiber.StatusBadRequest, "Invalid request body", err.Error())
+	}
+	if errs := h.validate.ValidateStruct(req); len(errs) > 0 {
+		return utils.SendValidationErrors(c, errs)
+	}
+
+	err := h.userService.SendVerificationEmail(c.Context(), req.Email)
+	if err != nil {
+		// Handle error spesifik
+		if err.Error() == "email already verified" {
+			return utils.SendSimpleError(c, fiber.StatusBadRequest, err.Error(), err.Error())
+		}
+		// Jangan ekspos error "user not found"
+		if err.Error() == "user not found" {
+			return utils.SendSuccess(c, fiber.StatusOK, "If your email is registered and not verified, a verification link has been sent.", nil)
+		}
+		// Error internal lainnya
+		return utils.SendSimpleError(c, fiber.StatusInternalServerError, err.Error(), err.Error())
+	}
+
+	return utils.SendSuccess(c, fiber.StatusOK, "Verification email sent successfully.", nil)
+}
+
+// VerifyEmail menangani 'POST /auth/verify-email'
+func (h *UserHandler) VerifyEmail(c *fiber.Ctx) error {
+	var req domain.VerifyEmailRequest
+	if err := c.BodyParser(&req); err != nil {
+		return utils.SendSimpleError(c, fiber.StatusBadRequest, "Invalid request body", err.Error())
+	}
+	if errs := h.validate.ValidateStruct(req); len(errs) > 0 {
+		return utils.SendValidationErrors(c, errs)
+	}
+
+	err := h.userService.VerifyEmail(c.Context(), req.Token)
+	if err != nil {
+		if strings.Contains(err.Error(), "invalid or expired token") {
+			return utils.SendSimpleError(c, fiber.StatusUnauthorized, err.Error(), err.Error())
+		}
+		if err.Error() == "email already verified" {
+			return utils.SendSimpleError(c, fiber.StatusBadRequest, err.Error(), err.Error())
+		}
+		if err.Error() == "user associated with token not found" {
+			return utils.SendSimpleError(c, fiber.StatusNotFound, err.Error(), err.Error())
+		}
+		return utils.SendSimpleError(c, fiber.StatusInternalServerError, err.Error(), err.Error())
+	}
+
+	return utils.SendSuccess(c, fiber.StatusOK, "Email verified successfully.", nil)
+}
+
+// ForgotPassword menangani 'POST /auth/forgot-password'
+func (h *UserHandler) ForgotPassword(c *fiber.Ctx) error {
+	var req domain.ForgotPasswordRequest
+	if err := c.BodyParser(&req); err != nil {
+		return utils.SendSimpleError(c, fiber.StatusBadRequest, "Invalid request body", err.Error())
+	}
+	if errs := h.validate.ValidateStruct(req); len(errs) > 0 {
+		return utils.SendValidationErrors(c, errs)
+	}
+
+	// Panggil usecase. Jangan ekspos error internal ke user.
+	_ = h.userService.SendPasswordResetEmail(c.Context(), req.Email)
+	// Selalu kembalikan respons sukses untuk mencegah email enumeration
+	return utils.SendSuccess(c, fiber.StatusOK, "If your email is registered, a password reset link has been sent.", nil)
+}
+
+// ResetPassword menangani 'POST /auth/reset-password'
+func (h *UserHandler) ResetPassword(c *fiber.Ctx) error {
+	var req domain.ResetPasswordRequest
+	if err := c.BodyParser(&req); err != nil {
+		return utils.SendSimpleError(c, fiber.StatusBadRequest, "Invalid request body", err.Error())
+	}
+	if errs := h.validate.ValidateStruct(req); len(errs) > 0 {
+		return utils.SendValidationErrors(c, errs)
+	}
+
+	err := h.userService.ResetPassword(c.Context(), &req)
+	if err != nil {
+		if strings.Contains(err.Error(), "invalid or expired token") {
+			return utils.SendSimpleError(c, fiber.StatusUnauthorized, err.Error(), err.Error())
+		}
+		if strings.Contains(err.Error(), "not found or inactive") {
+			return utils.SendSimpleError(c, fiber.StatusNotFound, err.Error(), err.Error())
+		}
+		return utils.SendSimpleError(c, fiber.StatusInternalServerError, err.Error(), err.Error())
+	}
+
+	return utils.SendSuccess(c, fiber.StatusOK, "Password reset successfully.", nil)
+}

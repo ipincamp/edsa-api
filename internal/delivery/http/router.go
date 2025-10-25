@@ -60,14 +60,18 @@ func SetupRoutes(
 		middleware.AuthMiddleware(tokenSvc, blacklistSvc),
 		userHandler.Logout,
 	) // PASSED
+	auth.Post("/resend-verification", userHandler.ResendVerification) // PASSED
+	auth.Post("/verify-email", userHandler.VerifyEmail)               // PASSED
+	auth.Post("/forgot-password", userHandler.ForgotPassword)         // PASSED
+	auth.Post("/reset-password", userHandler.ResetPassword)           // PASSED
 
 	// Rute User (dilindungi)
 	protected := api.Group("/users")
 	protected.Use(middleware.AuthMiddleware(tokenSvc, blacklistSvc))
-	protected.Get("/me", userHandler.GetMe) // PASSED
-	protected.Patch("/me/password", userHandler.ChangePassword)
-	protected.Patch("/me/details", userHandler.UpdateUserDetails)
-	protected.Delete("/me", userHandler.DeleteAccount)
+	protected.Get("/me", userHandler.GetMe)                       // PASSED
+	protected.Patch("/me/password", userHandler.ChangePassword)   // PASSED
+	protected.Patch("/me/details", userHandler.UpdateUserDetails) // PASSED
+	protected.Delete("/me", userHandler.DeleteAccount)            // PASSED
 
 	// --- Rute Administrasi ---
 
@@ -137,14 +141,14 @@ func SetupRoutes(
 	appRoutes.Use(middleware.AuthMiddleware(tokenSvc, blacklistSvc))
 
 	// Rute Modul "Read"
-	appRoutes.Get("/books", appHandler.GetBooksWithProgress)
-	appRoutes.Get("/books/:bookId/restore", appHandler.GetProgressToRestore)
-	appRoutes.Post("/progress/update", appHandler.UpdatePageProgress)
-	appRoutes.Post("/progress/complete", appHandler.CompleteBookProgress)
+	appRoutes.Get("/books", appHandler.GetBooksWithProgress)                 // PASSED
+	appRoutes.Get("/books/:bookId/restore", appHandler.GetProgressToRestore) // PASSED
+	appRoutes.Post("/progress/update", appHandler.UpdatePageProgress)        // PASSED
+	appRoutes.Post("/progress/complete", appHandler.CompleteBookProgress)    // PASSED
 
 	// Rute Modul "Game"
-	appRoutes.Get("/games", appHandler.GetAllGames)
-	appRoutes.Post("/games/:gameId/score", appHandler.SubmitGameScore)
+	appRoutes.Get("/games", appHandler.GetAllGames)                    // PASSED
+	appRoutes.Post("/games/:gameId/score", appHandler.SubmitGameScore) // PASSED
 
 	// Rute Aktivitas Pengguna
 	appRoutes.Get("/activity", appHandler.GetMyActivity) // PASSED

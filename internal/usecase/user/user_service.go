@@ -208,6 +208,164 @@ func (s *userService) Login(ctx context.Context, req *domain.LoginRequest) (*dom
 	}, nil
 }
 
+func (s *userService) SendVerificationEmail(ctx context.Context, email string) error {
+	// 1. Cari user berdasarkan email
+	user, err := s.userRepo.FindByEmail(ctx, email)
+	if err != nil {
+		applogger.ErrorLogger.Printf("SendVerificationEmail: DB error finding user %s: %v", email, err)
+		return errors.New("database error")
+	}
+	if user == nil {
+		return errors.New("user not found")
+	}
+	if user.EmailVerifiedAt != nil {
+		return errors.New("email already verified")
+	}
+
+	// 2. Buat token verifikasi (misalnya, berlaku 1 jam)
+	verificationToken, err := s.tokenSvc.CreateToken(user, uuid.New(), 1*time.Hour) // Sesi ID tidak terlalu relevan di sini
+	if err != nil {
+		applogger.ErrorLogger.Printf("SendVerificationEmail: Failed to create verification token for %s: %v", email, err)
+		return errors.New("failed to create verification token")
+	}
+
+	// 3. Buat link verifikasi (sesuaikan dengan rute frontend Anda)
+	frontendURL := s.cfg.App.FrontendURL
+	verificationLink := fmt.Sprintf("%s/verify-email?token=%s", frontendURL, verificationToken)
+
+	// 4. Kirim email
+	subject := "Verifikasi Alamat Email Anda - EDSA"
+	body := fmt.Sprintf(
+		"Halo %s,<br><br>"+
+			"Terima kasih telah mendaftar. Silakan klik tautan di bawah ini untuk memverifikasi alamat email Anda:<br><br>"+
+			"<a href=\"%s\" style=\"background-color: #4CAF50; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;\">Verifikasi Email</a><br><br>"+
+			"Tautan ini berlaku selama 1 jam.<br><br>"+
+			"Jika Anda tidak mendaftar, abaikan email ini.<br><br>"+
+			"Terima kasih,<br>Tim EDSA",
+		user.Name, verificationLink,
+	)
+
+	if err := s.emailSvc.SendEmail(ctx, user.Email, subject, body); err != nil {
+		applogger.ErrorLogger.Printf("SendVerificationEmail: Failed to send email to %s: %v", user.Email, err)
+		return errors.New("failed to send verification email")
+	}
+
+	return nil
+}
+
+func (s *userService) VerifyEmail(ctx context.Context, token string) error {
+	// 1. Validasi token
+	userID, _, err := s.tokenSvc.ValidateToken(token)
+	if err != nil {
+		return fmt.Errorf("invalid or expired token: %w", err)
+	}
+
+	// 2. Cari user
+	user, err := s.userRepo.FindByID(ctx, userID)
+	if err != nil {
+		applogger.ErrorLogger.Printf("VerifyEmail: DB error finding user %s: %v", userID, err)
+		return errors.New("database error")
+	}
+	if user == nil {
+		return errors.New("user associated with token not found")
+	}
+	if user.EmailVerifiedAt != nil {
+		return errors.New("email already verified")
+	}
+
+	// 3. Update status verifikasi
+	now := time.Now()
+	user.EmailVerifiedAt = &now
+
+	if err := s.userRepo.Update(ctx, user); err != nil {
+		applogger.ErrorLogger.Printf("VerifyEmail: Failed to update user %s: %v", userID, err)
+		return errors.New("failed to update verification status")
+	}
+
+	return nil
+}
+
+func (s *userService) SendPasswordResetEmail(ctx context.Context, email string) error {
+	// 1. Cari user berdasarkan email
+	user, err := s.userRepo.FindByEmail(ctx, email)
+	if err != nil {
+		applogger.ErrorLogger.Printf("SendPasswordResetEmail: DB error finding user %s: %v", email, err)
+		return errors.New("database error")
+	}
+	// Jangan beri tahu jika email tidak ada (untuk keamanan)
+	if user == nil || user.DeletedAt.Valid || !user.IsActive {
+		applogger.ErrorLogger.Printf("SendPasswordResetEmail: Attempt to reset password for non-existent, inactive or deleted user: %s", email)
+		return nil // Kembalikan nil agar attacker tidak tahu email mana yang terdaftar/aktif
+	}
+
+	// 2. Buat token reset password (misalnya, berlaku 15 menit)
+	resetToken, err := s.tokenSvc.CreateToken(user, uuid.New(), 15*time.Minute) // Sesi ID tidak relevan
+	if err != nil {
+		applogger.ErrorLogger.Printf("SendPasswordResetEmail: Failed to create reset token for %s: %v", email, err)
+		return errors.New("failed to create reset token")
+	}
+
+	// 3. Buat link reset (sesuaikan dengan rute frontend Anda)
+	frontendURL := s.cfg.App.FrontendURL
+	resetLink := fmt.Sprintf("%s/reset-password?token=%s", frontendURL, resetToken)
+
+	// 4. Kirim email
+	subject := "Reset Password Akun EDSA Anda"
+	body := fmt.Sprintf(
+		"Halo %s,<br><br>"+
+			"Kami menerima permintaan untuk mereset password akun Anda. Silakan klik tautan di bawah ini:<br><br>"+
+			"<a href=\"%s\" style=\"background-color: #2196F3; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;\">Reset Password</a><br><br>"+
+			"Tautan ini hanya berlaku selama <strong>15 menit</strong>.<br><br>"+
+			"Jika Anda tidak meminta reset password, abaikan email ini.<br><br>"+
+			"Terima kasih,<br>Tim EDSA",
+		user.Name, resetLink,
+	)
+
+	if err := s.emailSvc.SendEmail(ctx, user.Email, subject, body); err != nil {
+		applogger.ErrorLogger.Printf("SendPasswordResetEmail: Failed to send email to %s: %v", user.Email, err)
+		return errors.New("failed to send password reset email")
+	}
+
+	return nil
+}
+
+func (s *userService) ResetPassword(ctx context.Context, req *domain.ResetPasswordRequest) error {
+	// 1. Validasi token reset
+	userID, _, err := s.tokenSvc.ValidateToken(req.Token)
+	if err != nil {
+		return fmt.Errorf("invalid or expired token: %w", err)
+	}
+
+	// 2. Cari user
+	user, err := s.userRepo.FindByID(ctx, userID)
+	if err != nil {
+		applogger.ErrorLogger.Printf("ResetPassword: DB error finding user %s: %v", userID, err)
+		return errors.New("database error")
+	}
+	// Pastikan user masih ada dan aktif
+	if user == nil || user.DeletedAt.Valid || !user.IsActive {
+		return errors.New("user associated with token not found or inactive")
+	}
+
+	// 3. Hash password baru
+	hashedPassword, err := s.passSvc.Hash(req.NewPassword)
+	if err != nil {
+		applogger.ErrorLogger.Printf("ResetPassword: Failed to hash new password for user %s: %v", userID, err)
+		return errors.New("failed to hash new password")
+	}
+
+	// 4. Update password user
+	user.Password = hashedPassword
+	if err := s.userRepo.Update(ctx, user); err != nil {
+		applogger.ErrorLogger.Printf("ResetPassword: Failed to update password for user %s: %v", userID, err)
+		return errors.New("failed to update password")
+	}
+
+	// TODO: Idealnya, blacklist semua sesi aktif user ini setelah reset password
+
+	return nil
+}
+
 func (s *userService) RefreshToken(ctx context.Context, req *domain.RefreshTokenRequest) (*domain.TokenResponse, error) {
 	// 1. Validasi refresh token
 	userID, sessionID, err := s.tokenSvc.ValidateToken(req.RefreshToken)

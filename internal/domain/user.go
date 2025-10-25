@@ -76,6 +76,27 @@ type ConfirmDeletionRequest struct {
 	CurrentPassword   string `json:"current_password" validate:"required"`
 }
 
+// VerifyEmailRequest adalah DTO untuk 'POST /auth/verify-email'
+type VerifyEmailRequest struct {
+	Token string `json:"token" validate:"required"`
+}
+
+// ResendVerificationRequest adalah DTO untuk 'POST /auth/resend-verification'
+type ResendVerificationRequest struct {
+	Email string `json:"email" validate:"required,email"`
+}
+
+// ForgotPasswordRequest adalah DTO untuk 'POST /auth/forgot-password'
+type ForgotPasswordRequest struct {
+	Email string `json:"email" validate:"required,email"`
+}
+
+// ResetPasswordRequest adalah DTO untuk 'POST /auth/reset-password'
+type ResetPasswordRequest struct {
+	Token       string `json:"token" validate:"required"`
+	NewPassword string `json:"new_password" validate:"required,min=8"`
+}
+
 // UserResponse adalah DTO untuk data pengguna yang aman dikirim ke klien.
 type UserResponse struct {
 	ID                uuid.UUID `json:"id"`
