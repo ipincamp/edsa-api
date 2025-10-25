@@ -25,11 +25,16 @@ func NewUserRepository(db *gorm.DB, roleRepo usecase.RoleRepository) usecase.Use
 
 func (r *userRepositoryGORM) Create(ctx context.Context, user *domain.User) error {
 	gormUser := UserFromDomain(user)
+
 	result := r.db.WithContext(ctx).Create(gormUser)
 	if result.Error != nil {
 		return result.Error
 	}
+
 	user.ID = gormUser.ID
+	user.CreatedAt = gormUser.CreatedAt
+	user.UpdatedAt = gormUser.UpdatedAt
+
 	return nil
 }
 
