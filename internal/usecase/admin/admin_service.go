@@ -84,11 +84,14 @@ func toBookResponse(b *domain.Book) *domain.BookResponse {
 
 func toPageResponse(p *domain.Page) *domain.PageResponse {
 	resp := &domain.PageResponse{
-		ID:              p.ID,
-		BookID:          p.BookID,
-		PageNumber:      p.PageNumber,
-		NarrativeText:   p.NarrativeText,
-		InstructionText: p.InstructionText,
+		ID:                p.ID,
+		BookID:            p.BookID,
+		PageNumber:        p.PageNumber,
+		InstructionText:   p.InstructionText,
+		Narration_ID:      p.Narration_ID,
+		Narration_EN:      p.Narration_EN,
+		AudioNarrationURL: p.AudioNarrationURL,
+		IsPostActivity:    p.IsPostActivity,
 	}
 	if p.Book.ID != 0 {
 		resp.Book = *toBookResponse(&p.Book)
@@ -515,10 +518,13 @@ func (s *adminService) CreatePage(ctx context.Context, bookID uint, req *domain.
 	}
 
 	page := &domain.Page{
-		BookID:          bookID,
-		PageNumber:      req.PageNumber,
-		NarrativeText:   req.NarrativeText,
-		InstructionText: req.InstructionText,
+		BookID:            bookID,
+		PageNumber:        req.PageNumber,
+		InstructionText:   req.InstructionText,
+		Narration_ID:      req.Narration_ID,
+		Narration_EN:      req.Narration_EN,
+		AudioNarrationURL: req.AudioNarrationURL,
+		IsPostActivity:    req.IsPostActivity,
 	}
 	if err := s.pageRepo.Create(ctx, page); err != nil {
 		applogger.ErrorLogger.Printf("CreatePage: Failed to create page for book %d: %v", bookID, err)
@@ -565,8 +571,11 @@ func (s *adminService) UpdatePage(ctx context.Context, id uint, req *domain.Upda
 	}
 
 	page.PageNumber = req.PageNumber
-	page.NarrativeText = req.NarrativeText
 	page.InstructionText = req.InstructionText
+	page.Narration_ID = req.Narration_ID
+	page.Narration_EN = req.Narration_EN
+	page.AudioNarrationURL = req.AudioNarrationURL
+	page.IsPostActivity = req.IsPostActivity
 
 	if err := s.pageRepo.Update(ctx, page); err != nil {
 		applogger.ErrorLogger.Printf("UpdatePage: Failed to update page %d: %v", id, err)

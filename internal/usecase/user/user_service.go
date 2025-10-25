@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"math"
 	"time"
 
 	"github.com/google/uuid"
@@ -59,6 +60,9 @@ func toUserResponse(user *domain.User) *domain.UserResponse {
 		RoleName:          user.Role.Name,
 		JoinedAt:          user.CreatedAt,
 		ProfilePictureURL: user.ProfilePictureURL,
+		IsActive:          user.IsActive,
+		EmailVerified:     user.EmailVerifiedAt != nil,
+		// OverallScore dihitung terpisah
 	}
 }
 
@@ -284,7 +288,7 @@ func (s *userService) GetUserByID(ctx context.Context, id uuid.UUID) (*domain.Us
 		applogger.ErrorLogger.Printf("GetUserByID: Failed to fetch progresses for user %s: %v", id, err)
 	}
 
-	totalScore := 0
+	var totalScore float64 = 0.0
 	completedCount := 0
 	for _, p := range progresses {
 		if p.Status == domain.BookProgressStatusCompleted {
@@ -295,12 +299,16 @@ func (s *userService) GetUserByID(ctx context.Context, id uuid.UUID) (*domain.Us
 
 	overallScore := 0
 	if completedCount > 0 {
-		overallScore = totalScore / completedCount // Pembagian integer
+		// Lakukan pembagian float, lalu bulatkan ke integer terdekat
+		overallScore = int(math.Round(totalScore / float64(completedCount)))
 	}
 
 	userResponse.OverallScore = overallScore // Tambahkan skor ke DTO
 
-	// 4. Kembalikan respons
+	// 4. Set EmailVerified di respons DTO
+	userResponse.EmailVerified = user.EmailVerifiedAt != nil // Jika EmailVerifiedAt tidak NULL, berarti sudah terverifikasi
+
+	// 5. Kembalikan respons
 	return userResponse, nil
 }
 

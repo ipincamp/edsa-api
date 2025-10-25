@@ -23,14 +23,14 @@ type Book struct {
 
 // BookResponse adalah DTO untuk respons
 type BookResponse struct {
-	ID            uint   `json:"id"`
-	Title         string `json:"title"`
-	Description   string `json:"description"`
-	CoverImageURL string `json:"cover_image_url"`
-	Theme         string `json:"theme"`
-	BookOrder     int    `json:"book_order"`
-	Status        string `json:"status,omitempty"`
-	HighestScore  int    `json:"highest_score,omitempty"`
+	ID            uint    `json:"id"`
+	Title         string  `json:"title"`
+	Description   string  `json:"description"`
+	CoverImageURL string  `json:"cover_image_url"`
+	Theme         string  `json:"theme"`
+	BookOrder     int     `json:"book_order"`
+	Status        string  `json:"status,omitempty"`
+	HighestScore  float64 `json:"highest_score,omitempty"`
 }
 
 // CreateBookRequest adalah DTO untuk membuat buku baru
