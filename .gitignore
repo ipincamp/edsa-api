@@ -37,3 +37,11 @@ go.work.sum
 # Logs
 !logs/
 *.log
+
+# File kompresi statis yang dibuat oleh Fiber
+*.fiber.gz
+
+# Abaikan semua yang ada di dalam public/uploads/
+# Ini akan mengabaikan file yang di-upload oleh pengguna
+public/uploads/*
+!public/uploads/avatar*.png

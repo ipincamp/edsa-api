@@ -1,6 +1,8 @@
 package http
 
 import (
+	"time"
+
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/logger"
 	"github.com/ipincamp/go-edsa-api/internal/config"
@@ -25,11 +27,22 @@ func SetupRoutes(
 
 	// Static files untuk media (gambar, video, dsb.)
 	// Cth: GET /public/uploads/file.png akan disajikan dari ./public/uploads/file.png
-	app.Static(cfg.Storage.StoragePublicURL, cfg.Storage.StoragePath)
+	app.Static(cfg.Storage.StoragePublicURL, cfg.Storage.StoragePath, fiber.Static{
+		CacheDuration: 365 * 24 * time.Hour,
+		Compress:      true, // Mengaktifkan kompresi gzip/brotli
+		ByteRange:     true, // Mengizinkan browser me-resume download
+	}) // PASSED
 
 	// Health check
 	app.Get("/health", func(c *fiber.Ctx) error {
 		return c.SendString("OK")
+	}) // PASSED
+
+	// Favicon
+	app.Static("/favicon.ico", cfg.Storage.StoragePath+"/favicon.svg", fiber.Static{
+		CacheDuration: 365 * 24 * time.Hour,
+		Compress:      true,
+		ByteRange:     true,
 	}) // PASSED
 
 	// Grup API v1
