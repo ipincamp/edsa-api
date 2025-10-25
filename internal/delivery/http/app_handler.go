@@ -187,12 +187,14 @@ func (h *AppHandler) GetMyActivity(c *fiber.Ctx) error {
 	limit, _ := strconv.Atoi(c.Query("limit", "10"))
 	startDate := c.Query("start_date")
 	endDate := c.Query("end_date")
+	bookID, _ := strconv.Atoi(c.Query("book_id", "0"))
 
 	filters := &domain.ActivityLogQuery{
 		Page:      page,
 		Limit:     limit,
 		StartDate: startDate,
 		EndDate:   endDate,
+		BookID:    uint(bookID),
 	}
 
 	// 3. Panggil Usecase (dari dashboardService)

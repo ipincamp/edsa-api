@@ -226,12 +226,13 @@ func (s *appService) UpdatePageProgress(ctx context.Context, userID uuid.UUID, s
 
 	// Catatan: Fungsi ini sendiri tidak me-log, jadi hanya perlu menerima parameter
 	// Jika Anda *ingin* me-log setiap pindah halaman, tambahkan panggilannya di sini:
-	// s.logger.Log(ctx, domain.ActivityLog{
-	// 	UserID:    userID,
-	// 	Action:    "PAGE_VIEW", // (Contoh, perlu konstanta baru)
-	// 	SessionID: sessionID,
-	// 	Details:   json.Marshal(map[string]interface{}{"book_id": req.BookID, "page_id": req.PageID}),
-	// })
+	details, _ := json.Marshal(map[string]interface{}{"book_id": req.BookID, "page_id": req.PageID})
+	s.logger.Log(ctx, domain.ActivityLog{
+		UserID:    userID,
+		Action:    domain.ActionPageView,
+		SessionID: sessionID,
+		Details:   details,
+	})
 
 	// 3. Simpan
 	return s.progressRepo.Update(ctx, progress)

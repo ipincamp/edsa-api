@@ -2,6 +2,7 @@ package gorm
 
 import (
 	"context"
+	"strconv"
 	"time"
 
 	"github.com/google/uuid"
@@ -88,6 +89,10 @@ func (r *activityLogRepositoryGORM) FindPaginatedByUserID(ctx context.Context, u
 			// Mengambil data sampai akhir hari (23:59:59)
 			query = query.Where("timestamp_start <= ?", end.Add(24*time.Hour-time.Nanosecond))
 		}
+	}
+	if filters.BookID > 0 {
+		// Filter berdasarkan field 'book_id' di dalam kolom JSON 'details'
+		query = query.Where("details->>'book_id' = ?", strconv.FormatUint(uint64(filters.BookID), 10))
 	}
 
 	// 3. Dapatkan total data (sebelum limit/offset)

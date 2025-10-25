@@ -19,6 +19,7 @@ const (
 	ActionMediaUpload   = "MEDIA_UPLOAD"
 	ActionMediaDelete   = "MEDIA_DELETE"
 	ActionDeleteAccount = "DELETE_ACCOUNT"
+	ActionPageView      = "PAGE_VIEW"
 )
 
 // ActivityLog adalah entitas domain inti untuk log aktivitas pengguna
@@ -54,6 +55,7 @@ type ActivityLogQuery struct {
 	Limit     int
 	StartDate string // ISO 8601 Format (YYYY-MM-DD)
 	EndDate   string // ISO 8601 Format (YYYY-MM-DD)
+	BookID    uint
 }
 
 // PaginatedActivityLogs adalah struct internal untuk membawa hasil dari repo
