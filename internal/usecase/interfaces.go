@@ -24,6 +24,7 @@ type UserRepository interface {
 	FindByEmail(ctx context.Context, email string) (*domain.User, error)
 	FindByID(ctx context.Context, id uuid.UUID) (*domain.User, error)
 	Update(ctx context.Context, user *domain.User) error
+	Delete(ctx context.Context, id uuid.UUID) error
 }
 
 // SubjectRepository mendefinisikan kontrak untuk data mata pelajaran
@@ -138,6 +139,7 @@ type UserService interface {
 	Logout(ctx context.Context, userID uuid.UUID, sessionID uuid.UUID) error
 	ChangePassword(ctx context.Context, userID uuid.UUID, req *domain.ChangePasswordRequest) error
 	UpdateUserDetails(ctx context.Context, userID uuid.UUID, req *domain.UpdateDetailsRequest) (*domain.UserResponse, error)
+	DeleteUser(ctx context.Context, userID uuid.UUID, sessionID uuid.UUID, req *domain.DeleteAccountRequest) error
 }
 
 // PasswordService mendefinisikan kontrak untuk hashing password

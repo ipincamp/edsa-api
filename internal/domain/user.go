@@ -53,6 +53,12 @@ type UpdateDetailsRequest struct {
 	Password string `json:"password" validate:"required"` // Untuk konfirmasi
 }
 
+// DeleteAccountRequest adalah DTO untuk penghapusan akun.
+type DeleteAccountRequest struct {
+	CurrentPassword string `json:"current_password" validate:"required"`
+	DeletionReason  string `json:"deletion_reason" validate:"omitempty,max=255"`
+}
+
 // UserResponse adalah DTO untuk data pengguna yang aman dikirim ke klien.
 type UserResponse struct {
 	ID                uuid.UUID `json:"id"`
