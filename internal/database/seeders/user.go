@@ -3,6 +3,7 @@ package seeders
 import (
 	"fmt"
 	"log"
+	"path"
 
 	"github.com/ipincamp/go-edsa-api/internal/config"
 	"github.com/ipincamp/go-edsa-api/internal/database/factories"
@@ -20,15 +21,15 @@ func UserAdminSeeder(db *gorm.DB) error {
 		return fmt.Errorf("failed to find 'admin' role. Did you run SeedRoles? Error: %w", err)
 	}
 
-	// 2. Ambil kredensial admin dari config (menggunakan global AppConfig)
+	// 2. Ambil kredensial admin dari config
 	adminCfg := config.AppConfig.Seeder
 	adminEmail := adminCfg.AdminEmail
 	adminPassword := adminCfg.AdminPassword
 	adminName := adminCfg.AdminName
 
-	// Ambil URL avatar default
+	// Ambil URL avatar spesifik untuk admin
 	baseURL := config.AppConfig.Storage.StoragePublicBaseURL
-	defaultAvatarURL := baseURL + "/public/uploads/avatar.png"
+	defaultAvatarURL := baseURL + path.Join("/public/uploads", "avatar4.png")
 
 	// 3. Cek dulu agar email unik
 	var existing repo.UserGORM
@@ -44,7 +45,7 @@ func UserAdminSeeder(db *gorm.DB) error {
 		return fmt.Errorf("failed to hash admin password for seeder: %w", err)
 	}
 
-	// 5. Buat user admin baru dari config (tidak pakai factory)
+	// 5. Buat user admin baru dari config
 	user := &repo.UserGORM{
 		Name:              adminName,
 		Email:             adminEmail,
@@ -64,7 +65,6 @@ func UserAdminSeeder(db *gorm.DB) error {
 func UserTeacherSeeder(db *gorm.DB) error {
 	log.Println("Seeding teachers...")
 
-	// 1. Dapatkan ID role "teacher" dari database
 	var userRole repo.RoleGORM
 	if err := db.Where("name = ?", "teacher").First(&userRole).Error; err != nil {
 		return fmt.Errorf("failed to find 'teacher' role. Did you run SeedRoles? Error: %w", err)
@@ -72,10 +72,8 @@ func UserTeacherSeeder(db *gorm.DB) error {
 
 	count := 3
 	for i := 0; i < count; i++ {
-		// 2. Kirim userRole.ID ke factory
-		user := factories.UserFactory(userRole.ID)
+		user := factories.UserFactory(userRole.ID, "avatar3.png")
 
-		// Cek dulu agar email unik
 		var existing repo.UserGORM
 		if db.Where("email = ?", user.Email).First(&existing).Error == nil {
 			log.Printf("User with email %s already exists, skipping.\n", user.Email)
@@ -93,7 +91,6 @@ func UserTeacherSeeder(db *gorm.DB) error {
 func UserStudentSeeder(db *gorm.DB) error {
 	log.Println("Seeding students...")
 
-	// 1. Dapatkan ID role "student" dari database
 	var userRole repo.RoleGORM
 	if err := db.Where("name = ?", "student").First(&userRole).Error; err != nil {
 		return fmt.Errorf("failed to find 'student' role. Did you run SeedRoles? Error: %w", err)
@@ -101,10 +98,8 @@ func UserStudentSeeder(db *gorm.DB) error {
 
 	count := 5
 	for i := 0; i < count; i++ {
-		// 2. Kirim userRole.ID ke factory
-		user := factories.UserFactory(userRole.ID)
+		user := factories.UserFactory(userRole.ID, "avatar2.png")
 
-		// Cek dulu agar email unik
 		var existing repo.UserGORM
 		if db.Where("email = ?", user.Email).First(&existing).Error == nil {
 			log.Printf("User with email %s already exists, skipping.\n", user.Email)
@@ -122,7 +117,6 @@ func UserStudentSeeder(db *gorm.DB) error {
 func UserPublicSeeder(db *gorm.DB) error {
 	log.Println("Seeding public users...")
 
-	// 1. Dapatkan ID role "public" dari database
 	var userRole repo.RoleGORM
 	if err := db.Where("name = ?", "public").First(&userRole).Error; err != nil {
 		return fmt.Errorf("failed to find 'public' role. Did you run SeedRoles? Error: %w", err)
@@ -130,10 +124,8 @@ func UserPublicSeeder(db *gorm.DB) error {
 
 	count := 2
 	for i := 0; i < count; i++ {
-		// 2. Kirim userRole.ID ke factory
-		user := factories.UserFactory(userRole.ID)
+		user := factories.UserFactory(userRole.ID, "avatar1.png")
 
-		// Cek dulu agar email unik
 		var existing repo.UserGORM
 		if db.Where("email = ?", user.Email).First(&existing).Error == nil {
 			log.Printf("User with email %s already exists, skipping.\n", user.Email)

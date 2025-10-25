@@ -2,6 +2,7 @@ package factories
 
 import (
 	"log"
+	"path"
 
 	"github.com/go-faker/faker/v4"
 	"github.com/ipincamp/go-edsa-api/internal/config"
@@ -9,7 +10,7 @@ import (
 	"github.com/ipincamp/go-edsa-api/internal/service/argon2id"
 )
 
-func UserFactory(roleID uint) *gorm.UserGORM {
+func UserFactory(roleID uint, avatarFileName string) *gorm.UserGORM {
 	passSvc := argon2id.NewPasswordService()
 	hashedPassword, err := passSvc.Hash("password")
 	if err != nil {
@@ -17,7 +18,7 @@ func UserFactory(roleID uint) *gorm.UserGORM {
 	}
 
 	baseURL := config.AppConfig.Storage.StoragePublicBaseURL
-	defaultAvatarURL := baseURL + "/public/uploads/avatar.png"
+	defaultAvatarURL := baseURL + path.Join("/public/uploads", avatarFileName)
 
 	return &gorm.UserGORM{
 		Name:              faker.Name(),
@@ -27,3 +28,5 @@ func UserFactory(roleID uint) *gorm.UserGORM {
 		ProfilePictureURL: defaultAvatarURL,
 	}
 }
+
+// --- AKHIR PERUBAHAN ---

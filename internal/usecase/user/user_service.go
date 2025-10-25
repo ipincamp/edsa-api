@@ -85,7 +85,7 @@ func (s *userService) Register(ctx context.Context, req *domain.RegisterRequest)
 	// 4. Buat domain user baru
 	// Ambil URL avatar default dari config
 	baseURL := s.cfg.Storage.StoragePublicBaseURL
-	defaultAvatarURL := baseURL + "/public/uploads/avatar.png"
+	defaultAvatarURL := baseURL + "/public/uploads/avatar1.png"
 
 	user := &domain.User{
 		Name:              req.Name,

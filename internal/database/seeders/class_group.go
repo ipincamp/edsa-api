@@ -71,7 +71,7 @@ func ClassGroupSeeder(db *gorm.DB) error {
 
 			// Buat 2 Teacher baru untuk grup ini
 			for j := 0; j < 2; j++ {
-				teacher := factories.UserFactory(teacherRole.ID)
+				teacher := factories.UserFactory(teacherRole.ID, "avatar3.png")
 
 				// Cek email unik (penting!)
 				var existing repo.UserGORM
@@ -88,7 +88,7 @@ func ClassGroupSeeder(db *gorm.DB) error {
 
 			// Buat 40 Student baru untuk grup ini
 			for j := 0; j < 40; j++ {
-				student := factories.UserFactory(studentRole.ID)
+				student := factories.UserFactory(studentRole.ID, "avatar2.png")
 
 				// Cek email unik
 				var existing repo.UserGORM
