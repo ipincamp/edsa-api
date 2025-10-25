@@ -16,13 +16,15 @@ type Config struct {
 	Seeder      Seeder
 	BloomFilter BloomFilter
 	Storage     Storage
+	Email       EmailConfig
 }
 
 // Server is a struct to hold server configuration
 type Server struct {
-	Env  string
-	Port int
-	Host string
+	Env         string
+	Port        int
+	Host        string
+	FrontendURL string
 }
 
 // Database is a struct to hold database configuration
@@ -65,6 +67,15 @@ type Storage struct {
 	StoragePublicBaseURL string
 }
 
+// EmailConfig is a struct to hold email configuration
+type EmailConfig struct {
+	Host        string
+	Port        int
+	User        string
+	Password    string
+	SenderEmail string
+}
+
 var AppConfig *Config
 
 func LoadConfig() {
@@ -74,9 +85,10 @@ func LoadConfig() {
 
 	AppConfig = &Config{
 		App: Server{
-			Env:  getEnv("APP_ENV", "development"),
-			Port: getEnvAsInt("APP_PORT", 8000),
-			Host: getEnv("APP_HOST", "localhost"),
+			Env:         getEnv("APP_ENV", "development"),
+			Port:        getEnvAsInt("APP_PORT", 8000),
+			Host:        getEnv("APP_HOST", "localhost"),
+			FrontendURL: getEnv("FRONTEND_URL", "http://localhost:3000"),
 		},
 		Database: Database{
 			Host:     getEnv("DB_HOST", "localhost"),
@@ -107,6 +119,13 @@ func LoadConfig() {
 			StorageUploadDir:     getEnv("STORAGE_UPLOAD_DIR", "uploads"),
 			StoragePublicURL:     getEnv("STORAGE_PUBLIC_URL", "/public"),
 			StoragePublicBaseURL: getEnv("STORAGE_PUBLIC_BASE_URL", "http://localhost:8000"),
+		},
+		Email: EmailConfig{
+			Host:        getEnv("SMTP_HOST", "smtp.gmail.com"),
+			Port:        getEnvAsInt("SMTP_PORT", 587),
+			User:        getEnv("SMTP_USER", ""),
+			Password:    getEnv("SMTP_PASSWORD", ""),
+			SenderEmail: getEnv("SMTP_SENDER_EMAIL", ""),
 		},
 	}
 	if AppConfig.Security.PasetoSymmetricKey == "" {
