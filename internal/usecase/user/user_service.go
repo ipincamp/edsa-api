@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"time"
 
 	"github.com/google/uuid"
@@ -21,6 +22,7 @@ type userService struct {
 	cfg          *config.Config
 	logger       usecase.ActivityLoggerService
 	blacklistSvc usecase.SessionBlacklistService
+	emailSvc     usecase.EmailService
 }
 
 func NewUserService(
@@ -31,6 +33,7 @@ func NewUserService(
 	cfg *config.Config,
 	logger usecase.ActivityLoggerService,
 	blacklistSvc usecase.SessionBlacklistService,
+	emailSvc usecase.EmailService,
 ) usecase.UserService {
 	return &userService{
 		userRepo:     userRepo,
@@ -40,6 +43,7 @@ func NewUserService(
 		cfg:          cfg,
 		logger:       logger,
 		blacklistSvc: blacklistSvc,
+		emailSvc:     emailSvc,
 	}
 }
 
@@ -348,6 +352,7 @@ func (s *userService) UpdateUserDetails(ctx context.Context, userID uuid.UUID, r
 	return toUserResponse(user), nil
 }
 
+// DEPRECATED: Gunakan ConfirmAccountDeletion dan RequestAccountDeletion
 func (s *userService) DeleteUser(ctx context.Context, userID uuid.UUID, sessionID uuid.UUID, req *domain.DeleteAccountRequest) error {
 	// 1. Ambil user
 	user, err := s.userRepo.FindByID(ctx, userID)
@@ -393,6 +398,101 @@ func (s *userService) DeleteUser(ctx context.Context, userID uuid.UUID, sessionI
 		applogger.ErrorLogger.Printf("DeleteUser: failed to blacklist session %s post-deletion: %v", sessionID, err)
 		// Jangan kembalikan error, karena penghapusan user sudah berhasil
 	}
+
+	return nil
+}
+
+func (s *userService) RequestAccountDeletion(ctx context.Context, userID uuid.UUID) error {
+	// 1. Ambil data user (terutama email)
+	user, err := s.userRepo.FindByID(ctx, userID)
+	if err != nil || user == nil {
+		return errors.New("user not found")
+	}
+
+	// 2. Buat token konfirmasi (Paseto) yang berlaku 5 menit
+	// Kita bisa gunakan sessionID acak karena tidak relevan untuk flow ini
+	deletionToken, err := s.tokenSvc.CreateToken(user, uuid.New(), 5*time.Minute)
+	if err != nil {
+		applogger.ErrorLogger.Printf("RequestAccountDeletion: Failed to create deletion token for %s: %v", userID, err)
+		return errors.New("failed to create confirmation token")
+	}
+
+	// 3. Buat link konfirmasi
+	// Cth: http://localhost:3000/confirm-delete?token=...
+	frontendURL := s.cfg.App.FrontendURL
+	confirmationLink := fmt.Sprintf("%s/confirm-delete?token=%s", frontendURL, deletionToken)
+
+	// 4. Buat body email
+	subject := "Konfirmasi Penghapusan Akun EDSA"
+	body := fmt.Sprintf(
+		"Halo %s,<br><br>"+
+			"Kami menerima permintaan untuk menghapus akun Anda. Untuk mengkonfirmasi, silakan klik tautan di bawah ini:<br><br>"+
+			"<a href=\"%s\" style=\"background-color: #f44336; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;\">Konfirmasi Hapus Akun</a><br><br>"+
+			"Tautan ini hanya berlaku selama <strong>5 menit</strong>.<br><br>"+
+			"Jika Anda tidak meminta penghapusan ini, abaikan saja email ini.<br><br>"+
+			"Terima kasih,<br>Tim EDSA",
+		user.Name, confirmationLink,
+	)
+
+	// 5. Kirim email
+	if err := s.emailSvc.SendEmail(ctx, user.Email, subject, body); err != nil {
+		applogger.ErrorLogger.Printf("RequestAccountDeletion: Failed to send email to %s: %v", user.Email, err)
+		return errors.New("failed to send confirmation email")
+	}
+
+	return nil
+}
+
+func (s *userService) ConfirmAccountDeletion(ctx context.Context, userID uuid.UUID, req *domain.ConfirmDeletionRequest) error {
+	// 1. Ambil data user
+	user, err := s.userRepo.FindByID(ctx, userID)
+	if err != nil || user == nil {
+		return errors.New("user not found")
+	}
+
+	// 2. Validasi Password Saat Ini
+	match, err := s.passSvc.Compare(req.CurrentPassword, user.Password)
+	if err != nil {
+		applogger.ErrorLogger.Printf("ConfirmAccountDeletion: Error comparing password for user %s: %v", userID, err)
+		return errors.New("password comparison failed")
+	}
+	if !match {
+		return errors.New("invalid current password")
+	}
+
+	// 3. Validasi Token Konfirmasi
+	tokenUserID, _, err := s.tokenSvc.ValidateToken(req.ConfirmationToken)
+	if err != nil {
+		// Cth: "token has expired" atau "invalid token"
+		return err
+	}
+
+	// 4. Pastikan token tersebut milik pengguna yang sedang login
+	if tokenUserID != userID {
+		return errors.New("confirmation token does not match authenticated user")
+	}
+
+	// 5. Log aktivitas (termasuk alasannya)
+	details, _ := json.Marshal(map[string]interface{}{
+		"reason": req.DeletionReason,
+	})
+	s.logger.Log(ctx, domain.ActivityLog{
+		UserID:    userID,
+		Action:    domain.ActionDeleteAccount,
+		SessionID: uuid.New(), // Sesi baru untuk tindakan ini
+		Details:   details,
+	})
+
+	// 6. Lakukan Hard Delete
+	if err := s.userRepo.Delete(ctx, userID); err != nil {
+		applogger.ErrorLogger.Printf("ConfirmAccountDeletion: Failed to delete user %s from DB: %v", userID, err)
+		return errors.New("failed to delete account")
+	}
+
+	// TODO: Blacklist semua sesi yang ada untuk user ini?
+	// Saat ini, user repo sudah dihapus, jadi token yang ada tidak akan divalidasi
+	// oleh AuthMiddleware (karena userRepo.FindByID akan gagal).
+	// Jadi, tidak perlu blacklist manual.
 
 	return nil
 }

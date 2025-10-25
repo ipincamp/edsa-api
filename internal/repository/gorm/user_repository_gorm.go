@@ -95,6 +95,15 @@ func (r *userRepositoryGORM) Update(ctx context.Context, user *domain.User) erro
 	return r.db.WithContext(ctx).Save(gormUser).Error
 }
 
-func (r *userRepositoryGORM) Delete(ctx context.Context, id uuid.UUID) error {
-	return r.db.WithContext(ctx).Delete(&UserGORM{}, id).Error
+func (r *userRepositoryGORM) Delete(ctx context.Context, userID uuid.UUID) error {
+	// Unscoped() diperlukan untuk melakukan hard delete (menghapus permanen)
+	// Constraint ON DELETE CASCADE di database akan menangani penghapusan data terkait
+	result := r.db.WithContext(ctx).Unscoped().Delete(&UserGORM{}, userID)
+	if result.Error != nil {
+		return result.Error
+	}
+	if result.RowsAffected == 0 {
+		return errors.New("user not found or already deleted")
+	}
+	return nil
 }

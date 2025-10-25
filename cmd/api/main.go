@@ -19,6 +19,7 @@ import (
 	"github.com/ipincamp/go-edsa-api/internal/repository/cache"
 	"github.com/ipincamp/go-edsa-api/internal/repository/gorm"
 	"github.com/ipincamp/go-edsa-api/internal/service/argon2id"
+	"github.com/ipincamp/go-edsa-api/internal/service/email"
 	"github.com/ipincamp/go-edsa-api/internal/service/paseto"
 	"github.com/ipincamp/go-edsa-api/internal/service/storage"
 	"github.com/ipincamp/go-edsa-api/internal/usecase/admin"
@@ -50,6 +51,7 @@ func main() {
 		log.Fatalf("Failed to init Paseto service: %v", err)
 	}
 	fileStorageService := storage.NewLocalStorageService(cfg)
+	emailService := email.NewSmtpService(cfg)
 
 	// 5. Init Repositories
 	// Buat GORM Role Repo (untuk di-pass ke cache)
@@ -96,6 +98,7 @@ func main() {
 		cfg,
 		loggerService,
 		sessionBlacklistService,
+		emailService,
 	)
 	adminService := admin.NewAdminService(
 		subjectRepositoryGORM,

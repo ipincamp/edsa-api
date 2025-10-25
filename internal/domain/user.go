@@ -54,9 +54,24 @@ type UpdateDetailsRequest struct {
 }
 
 // DeleteAccountRequest adalah DTO untuk penghapusan akun.
+// DEPRECATED: Gunakan DeletionRequest dan ConfirmDeletionRequest
 type DeleteAccountRequest struct {
 	CurrentPassword string `json:"current_password" validate:"required"`
 	DeletionReason  string `json:"deletion_reason" validate:"omitempty,max=255"`
+}
+
+// DeletionRequest adalah DTO untuk handler hapus akun (langkah 1)
+type DeletionRequest struct {
+	ConfirmationToken string `json:"confirmation_token,omitempty"`
+	DeletionReason    string `json:"deletion_reason,omitempty"`
+	CurrentPassword   string `json:"current_password,omitempty"`
+}
+
+// ConfirmDeletionRequest adalah DTO untuk validasi hapus akun (langkah 2)
+type ConfirmDeletionRequest struct {
+	ConfirmationToken string `json:"confirmation_token" validate:"required"`
+	DeletionReason    string `json:"deletion_reason" validate:"required,min=10,max=500"`
+	CurrentPassword   string `json:"current_password" validate:"required"`
 }
 
 // UserResponse adalah DTO untuk data pengguna yang aman dikirim ke klien.

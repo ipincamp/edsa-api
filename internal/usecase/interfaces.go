@@ -139,7 +139,8 @@ type UserService interface {
 	Logout(ctx context.Context, userID uuid.UUID, sessionID uuid.UUID) error
 	ChangePassword(ctx context.Context, userID uuid.UUID, req *domain.ChangePasswordRequest) error
 	UpdateUserDetails(ctx context.Context, userID uuid.UUID, req *domain.UpdateDetailsRequest) (*domain.UserResponse, error)
-	DeleteUser(ctx context.Context, userID uuid.UUID, sessionID uuid.UUID, req *domain.DeleteAccountRequest) error
+	RequestAccountDeletion(ctx context.Context, userID uuid.UUID) error
+	ConfirmAccountDeletion(ctx context.Context, userID uuid.UUID, req *domain.ConfirmDeletionRequest) error
 }
 
 // PasswordService mendefinisikan kontrak untuk hashing password
@@ -240,4 +241,9 @@ type MediaService interface {
 type SessionBlacklistService interface {
 	BlacklistSession(ctx context.Context, sessionID uuid.UUID, duration time.Duration) error
 	IsSessionBlacklisted(ctx context.Context, sessionID uuid.UUID) (bool, error)
+}
+
+// EmailService mendefinisikan kontrak untuk mengirim email
+type EmailService interface {
+	SendEmail(ctx context.Context, to, subject, body string) error
 }

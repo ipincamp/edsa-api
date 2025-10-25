@@ -1,6 +1,8 @@
 package http
 
 import (
+	"strings"
+
 	"github.com/gofiber/fiber/v2"
 	"github.com/google/uuid"
 	"github.com/ipincamp/go-edsa-api/internal/domain"
@@ -184,40 +186,64 @@ func (h *UserHandler) UpdateUserDetails(c *fiber.Ctx) error {
 	return utils.SendSuccess(c, fiber.StatusOK, "User details updated successfully", updatedUser)
 }
 
-func (h *UserHandler) DeleteMe(c *fiber.Ctx) error {
-	// 1. Ambil user ID dari middleware
+// DeleteAccount menangani 'DELETE /api/v1/users/me'
+// Endpoint ini memiliki dua status:
+// 1. Jika 'confirmation_token' tidak ada: Memulai proses, mengirim email.
+// 2. Jika 'confirmation_token' ada: Mengkonfirmasi proses, menghapus akun.
+func (h *UserHandler) DeleteAccount(c *fiber.Ctx) error {
+	// Ambil user ID dari middleware
 	userID, ok := c.Locals("userID").(uuid.UUID)
 	if !ok || userID == uuid.Nil {
 		return utils.SendSimpleError(c, fiber.StatusUnauthorized, "Invalid token", "Invalid user ID in token")
 	}
 
-	// 2. Ambil session ID dari middleware
-	sessionID, ok := c.Locals("sessionID").(uuid.UUID)
-	if !ok {
-		return utils.SendSimpleError(c, fiber.StatusUnauthorized, "Invalid token", "Invalid session ID in token")
-	}
-
-	var req domain.DeleteAccountRequest
-
-	// 3. Parse & Validasi
+	// 1. Coba parse DTO "parsial" (dengan field omitempty)
+	var req domain.DeletionRequest
 	if err := c.BodyParser(&req); err != nil {
 		return utils.SendSimpleError(c, fiber.StatusBadRequest, "Invalid request body", err.Error())
 	}
-	if errs := h.validate.ValidateStruct(req); len(errs) > 0 {
+
+	// 2. Periksa apakah ini langkah pertama (meminta token)
+	if req.ConfirmationToken == "" {
+		if err := h.userService.RequestAccountDeletion(c.Context(), userID); err != nil {
+			// Jika gagal (cth: user tidak ada, email gagal kirim)
+			return utils.SendSimpleError(c, fiber.StatusInternalServerError, err.Error(), err.Error())
+		}
+		// Beri tahu klien bahwa email telah dikirim
+		return utils.SendSimpleError(c,
+			fiber.StatusUnprocessableEntity,
+			"Confirmation required",
+			"A confirmation email has been sent to you. Please provide the token from the email to delete your account.",
+		)
+	}
+
+	// 3. Jika token ada, ini adalah langkah kedua (konfirmasi)
+	// Kita parse ulang body menggunakan DTO "ketat" (dengan validasi "required")
+	var confirmReq domain.ConfirmDeletionRequest
+	if err := c.BodyParser(&confirmReq); err != nil {
+		return utils.SendSimpleError(c, fiber.StatusBadRequest, "Invalid request body", err.Error())
+	}
+	// Lakukan validasi ketat
+	if errs := h.validate.ValidateStruct(confirmReq); len(errs) > 0 {
 		return utils.SendValidationErrors(c, errs)
 	}
 
-	// 4. Panggil Usecase
-	if err := h.userService.DeleteUser(c.Context(), userID, sessionID, &req); err != nil {
+	// 4. Panggil usecase konfirmasi
+	if err := h.userService.ConfirmAccountDeletion(c.Context(), userID, &confirmReq); err != nil {
+		// Tangani error spesifik (cth: password salah, token expired)
 		if err.Error() == "invalid current password" {
 			return utils.SendSimpleError(c, fiber.StatusUnauthorized, err.Error(), err.Error())
 		}
-		if err.Error() == "user not found" {
-			return utils.SendSimpleError(c, fiber.StatusNotFound, err.Error(), err.Error())
+		if err.Error() == "token has expired" || strings.Contains(err.Error(), "invalid token") {
+			return utils.SendSimpleError(c, fiber.StatusUnauthorized, err.Error(), err.Error())
 		}
+		if err.Error() == "confirmation token does not match authenticated user" {
+			return utils.SendSimpleError(c, fiber.StatusForbidden, err.Error(), err.Error())
+		}
+		// Error umum
 		return utils.SendSimpleError(c, fiber.StatusInternalServerError, err.Error(), err.Error())
 	}
 
-	// 5. Kembalikan sukses
+	// 5. Sukses
 	return utils.SendSuccess(c, fiber.StatusOK, "Account deleted successfully", nil)
 }
