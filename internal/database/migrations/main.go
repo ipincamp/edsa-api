@@ -24,6 +24,7 @@ func GetAllMigrations() []*gormigrate.Migration {
 		AddProfilePictureUrlToUsersTable(),
 		CreateUserInteractionAttemptsTable(),
 		CreateApprovalRequestsTable(),
+		AddVerificationToUsersTable(),
 		// AnotherMigration(),
 	}
 }
