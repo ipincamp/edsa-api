@@ -26,6 +26,7 @@ func GetAllMigrations() []*gormigrate.Migration {
 		CreateApprovalRequestsTable(),
 		AddVerificationToUsersTable(),
 		UpdatePagesTableForL10nAndAudio(),
+		UpdateUserBookProgressTable(),
 		// AnotherMigration(),
 	}
 }
