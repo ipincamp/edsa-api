@@ -18,8 +18,10 @@ func CreateApprovalRequestsTable() *gormigrate.Migration {
 		ID uint `gorm:"primarykey"`
 
 		// UserID (FK - yang meminta)
-		UserID *uuid.UUID `gorm:"type:uuid;index"`
-		User   User       `gorm:"foreignKey:UserID;constraint:OnUpdate:CASCADE,OnDelete:SET NULL"`
+		// HARUS ada, tidak boleh NULL.
+		// Jika user dihapus, request ini juga dihapus (CASCADE).
+		UserID uuid.UUID `gorm:"type:uuid;not null;index"`
+		User   User      `gorm:"foreignKey:UserID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE"`
 
 		// RequestType (VARCHAR)
 		RequestType string `gorm:"type:varchar(100);not null;index"` // Cth: "DELETE_ACCOUNT", "REGISTER_USER"
@@ -31,8 +33,10 @@ func CreateApprovalRequestsTable() *gormigrate.Migration {
 		Reason string `gorm:"type:text"` // Alasan dari UserID
 
 		// ReviewerID (FK - admin yang review)
+		// Boleh NULL (jika belum di-assign).
+		// Jika reviewer akan dihapus, database akan MENCEGAH (RESTRICT).
 		ReviewerID *uuid.UUID `gorm:"type:uuid;index"`
-		Reviewer   User       `gorm:"foreignKey:ReviewerID;constraint:OnUpdate:CASCADE,OnDelete:SET NULL"`
+		Reviewer   User       `gorm:"foreignKey:ReviewerID;constraint:OnUpdate:CASCADE,OnDelete:RESTRICT"`
 
 		// Timestamps
 		ReviewTimestamp *time.Time `gorm:"index"` // Kapan direview (bisa NULL)
