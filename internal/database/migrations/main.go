@@ -25,6 +25,7 @@ func GetAllMigrations() []*gormigrate.Migration {
 		CreateUserInteractionAttemptsTable(),
 		CreateApprovalRequestsTable(),
 		AddVerificationToUsersTable(),
+		UpdatePagesTableForL10nAndAudio(),
 		// AnotherMigration(),
 	}
 }
