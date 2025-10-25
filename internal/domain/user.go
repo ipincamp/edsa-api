@@ -82,6 +82,7 @@ type UserResponse struct {
 	RoleName          string    `json:"role"`
 	JoinedAt          time.Time `json:"joined_at"`
 	ProfilePictureURL string    `json:"profile_picture_url,omitempty"`
+	OverallScore      int       `json:"overall_score,omitempty"`
 }
 
 // TokenResponse adalah DTO untuk token autentikasi.

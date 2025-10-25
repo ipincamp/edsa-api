@@ -100,6 +100,7 @@ func main() {
 		loggerService,
 		sessionBlacklistService,
 		emailService,
+		progressRepositoryGORM,
 	)
 	adminService := admin.NewAdminService(
 		subjectRepositoryGORM,

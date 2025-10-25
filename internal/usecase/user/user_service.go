@@ -23,6 +23,7 @@ type userService struct {
 	logger       usecase.ActivityLoggerService
 	blacklistSvc usecase.SessionBlacklistService
 	emailSvc     usecase.EmailService
+	progressRepo usecase.UserBookProgressRepository
 }
 
 func NewUserService(
@@ -34,6 +35,7 @@ func NewUserService(
 	logger usecase.ActivityLoggerService,
 	blacklistSvc usecase.SessionBlacklistService,
 	emailSvc usecase.EmailService,
+	progressRepo usecase.UserBookProgressRepository,
 ) usecase.UserService {
 	return &userService{
 		userRepo:     userRepo,
@@ -44,6 +46,7 @@ func NewUserService(
 		logger:       logger,
 		blacklistSvc: blacklistSvc,
 		emailSvc:     emailSvc,
+		progressRepo: progressRepo,
 	}
 }
 
@@ -271,8 +274,34 @@ func (s *userService) GetUserByID(ctx context.Context, id uuid.UUID) (*domain.Us
 		return nil, errors.New("user not found")
 	}
 
-	// 2. Kembalikan respons
-	return toUserResponse(user), nil
+	// 2. Konversi ke DTO dasar
+	userResponse := toUserResponse(user)
+
+	// 3. Hitung overall score
+	progresses, err := s.progressRepo.FindAllByUserID(ctx, id)
+	if err != nil {
+		// Log error, tapi jangan gagalkan permintaan. Skor akan 0.
+		applogger.ErrorLogger.Printf("GetUserByID: Failed to fetch progresses for user %s: %v", id, err)
+	}
+
+	totalScore := 0
+	completedCount := 0
+	for _, p := range progresses {
+		if p.Status == domain.BookProgressStatusCompleted {
+			totalScore += p.HighestScore
+			completedCount++
+		}
+	}
+
+	overallScore := 0
+	if completedCount > 0 {
+		overallScore = totalScore / completedCount // Pembagian integer
+	}
+
+	userResponse.OverallScore = overallScore // Tambahkan skor ke DTO
+
+	// 4. Kembalikan respons
+	return userResponse, nil
 }
 
 func (s *userService) ChangePassword(ctx context.Context, userID uuid.UUID, req *domain.ChangePasswordRequest) error {
