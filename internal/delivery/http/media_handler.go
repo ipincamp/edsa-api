@@ -37,6 +37,11 @@ func (h *MediaHandler) UploadFile(c *fiber.Ctx) error {
 		return utils.SendSimpleError(c, fiber.StatusBadRequest, "Missing file", err.Error())
 	}
 
+	const maxFileSize = 1 * 1024 * 1024 // 1 MB
+	if file.Size > maxFileSize {
+		return utils.SendSimpleError(c, fiber.StatusRequestEntityTooLarge, "File is too large", "File size must be no more than 1 MB")
+	}
+
 	// 2. Ambil data polimorfik
 	ownerID := c.FormValue("owner_id")
 	ownerType := c.FormValue("owner_type") // Cth: "book_cover", "interaction_audio"
