@@ -161,6 +161,10 @@ func (s *userService) Login(ctx context.Context, req *domain.LoginRequest) (*dom
 	if user == nil {
 		return nil, errors.New("invalid email or password") // Pesan generik
 	}
+	if user.DeletedAt.Valid || !user.IsActive {
+		// Tolak jika user sudah soft deleted (DeletedAt terisi), ATAU tidak aktif
+		return nil, errors.New("invalid email or password") // Pesan generik
+	}
 
 	// 2. Bandingkan password
 	match, err := s.passSvc.Compare(req.Password, user.Password)
@@ -519,16 +523,15 @@ func (s *userService) ConfirmAccountDeletion(ctx context.Context, userID uuid.UU
 		Details:   details,
 	})
 
-	// 6. Lakukan Hard Delete
+	// 6. Lakukan Soft Delete
 	if err := s.userRepo.Delete(ctx, userID); err != nil {
-		applogger.ErrorLogger.Printf("ConfirmAccountDeletion: Failed to delete user %s from DB: %v", userID, err)
-		return errors.New("failed to delete account")
+		applogger.ErrorLogger.Printf("ConfirmAccountDeletion: Failed to soft delete user %s from DB: %v", userID, err)
+		return errors.New("failed to deactivate account") // Ubah pesan error jika perlu
 	}
 
-	// TODO: Blacklist semua sesi yang ada untuk user ini?
-	// Saat ini, user repo sudah dihapus, jadi token yang ada tidak akan divalidasi
-	// oleh AuthMiddleware (karena userRepo.FindByID akan gagal).
-	// Jadi, tidak perlu blacklist manual.
+	// 7. Blacklist sesi ini agar token tidak bisa dipakai lagi (Opsional tapi direkomendasikan)
+	// Ambil sessionID dari token konfirmasi (jika diperlukan) atau blacklist semua sesi user
+	// Untuk simple, kita skip blacklist semua sesi di sini, karena login akan dicegah
 
 	return nil
 }
