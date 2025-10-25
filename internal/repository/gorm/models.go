@@ -170,7 +170,7 @@ type UserBookProgressGORM struct {
 }
 
 func (UserBookProgressGORM) TableName() string {
-	return "user_book_progress"
+	return "user_book_progresses"
 }
 
 // GameGORM adalah representasi tabel 'games' di database
