@@ -3,12 +3,14 @@ package media
 import (
 	"context"
 	"errors"
+	"io"
 	"mime/multipart"
 	"path"
 	"path/filepath"
 	"regexp"
 	"strings"
 
+	"github.com/gabriel-vasile/mimetype"
 	"github.com/google/uuid"
 	"github.com/ipincamp/go-edsa-api/internal/config"
 	"github.com/ipincamp/go-edsa-api/internal/domain"
@@ -53,6 +55,18 @@ func toMediaAssetResponse(a *domain.MediaAsset) *domain.MediaAssetResponse {
 var (
 	// Regex untuk menemukan karakter APAPUN yang BUKAN alphanumeric (a-z, A-Z, 0-9)
 	slugInvalidChars = regexp.MustCompile(`[^a-zA-Z0-9]+`)
+
+	// Whitelist tipe MIME yang diizinkan untuk di-upload
+	allowedMimeTypes = map[string]bool{
+		"image/jpeg":      true,
+		"image/png":       true,
+		"image/gif":       true,
+		"image/svg+xml":   true, // Untuk favicon/logo
+		"audio/mpeg":      true, // Untuk MP3
+		"audio/wav":       true,
+		"video/mp4":       true,
+		"application/pdf": true, // Untuk dokumen PDF
+	}
 )
 
 // slugifyFilename membersihkan nama file dari karakter spesial
@@ -80,6 +94,30 @@ func slugifyFilename(originalFilename string) string {
 // --- Methods ---
 
 func (s *mediaService) UploadFile(ctx context.Context, file *multipart.FileHeader, ownerID, ownerType string, uploaderID *uuid.UUID) (*domain.MediaAssetResponse, error) {
+	// Validasi tipe MIME file yang di-upload
+	src, err := file.Open()
+	if err != nil {
+		return nil, errors.New("failed to open uploaded file")
+	}
+	defer src.Close()
+
+	// Deteksi tipe MIME dari konten file, BUKAN dari header
+	mime, err := mimetype.DetectReader(src)
+	if err != nil {
+		return nil, errors.New("failed to detect file type")
+	}
+
+	// Cek apakah tipe MIME ada di daftar putih
+	if !allowedMimeTypes[mime.String()] {
+		applogger.ErrorLogger.Printf("UploadFile: BLOCKED! User tried to upload disallowed file type: %s", mime.String())
+		return nil, errors.New("file type not allowed: " + mime.String())
+	}
+
+	// Reset file reader kembali ke awal agar bisa dibaca lagi oleh storageSvc
+	if _, err := src.Seek(0, io.SeekStart); err != nil {
+		return nil, errors.New("failed to reset file reader")
+	}
+
 	// 1. Buat UUID di sini
 	assetID := uuid.New()
 
@@ -104,7 +142,7 @@ func (s *mediaService) UploadFile(ctx context.Context, file *multipart.FileHeade
 		FileName:         cleanFileName,
 		FilePath:         filePath,  // "uploads/uuid.png"
 		PublicURL:        publicURL, // "http://localhost:8080/public/uploads/uuid.png"
-		MimeType:         file.Header.Get("Content-Type"),
+		MimeType:         mime.String(),
 		FileSize:         file.Size,
 		OwnerID:          ownerID,
 		OwnerType:        ownerType,
