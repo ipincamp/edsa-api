@@ -119,6 +119,7 @@ type ActivityLogRepository interface {
 type MediaAssetRepository interface {
 	Create(ctx context.Context, asset *domain.MediaAsset) error
 	FindByID(ctx context.Context, id uuid.UUID) (*domain.MediaAsset, error)
+	FindByFileName(ctx context.Context, fileName string) (*domain.MediaAsset, error)
 	SoftDelete(ctx context.Context, assetID uuid.UUID, deleterID *uuid.UUID) error
 }
 

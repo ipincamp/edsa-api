@@ -57,12 +57,29 @@ func NewUserService(
 // --- Helper Mapper ---
 func (s *userService) toUserResponse(user *domain.User) *domain.UserResponse {
 	var avatarURL string
-	// Cek apakah ProfilePicture (relasi) dimuat dan memiliki ID
-	if user.ProfilePicture.ID != uuid.Nil {
+
+	// 1. Cek apakah ada avatar KUSTOM yang terpasang
+	if user.ProfilePictureID != nil && user.ProfilePicture.ID != uuid.Nil {
 		avatarURL = user.ProfilePicture.PublicURL
 	} else {
-		// Jika tidak ada avatar kustom, gunakan default avatar1.png
-		avatarURL = s.cfg.Storage.StoragePath + "/uploads/avatar1.png"
+		// 2. Jika TIDAK ada avatar kustom, CARI URL avatar default 'avatar1.png' DARI DB
+		defaultAvatarFileName := "avatar1.png"
+		ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second) // Timeout pendek
+		defer cancel()
+
+		defaultAsset, err := s.mediaRepo.FindByFileName(ctx, defaultAvatarFileName)
+		if err == nil && defaultAsset != nil {
+			avatarURL = defaultAsset.PublicURL // Gunakan URL dari DB
+		} else {
+			// Fallback jika asset default tidak ditemukan di DB atau error query
+			if err != nil {
+				applogger.ErrorLogger.Printf("toUserResponse: DB error finding default avatar '%s': %v", defaultAvatarFileName, err)
+			} else { // err == nil && defaultAsset == nil
+				applogger.ErrorLogger.Printf("toUserResponse: CRITICAL! Default avatar asset '%s' not found in DB.", defaultAvatarFileName)
+			}
+			// Gunakan fallback URL hardcoded
+			avatarURL = s.cfg.Storage.StoragePublicBaseURL + "/public/cdn/" + defaultAvatarFileName // Fallback
+		}
 	}
 
 	return &domain.UserResponse{
@@ -71,7 +88,7 @@ func (s *userService) toUserResponse(user *domain.User) *domain.UserResponse {
 		Email:             user.Email,
 		RoleName:          user.Role.Name,
 		JoinedAt:          user.CreatedAt,
-		ProfilePictureURL: avatarURL, // <-- URL Dinamis
+		ProfilePictureURL: avatarURL,
 		IsActive:          user.IsActive,
 		EmailVerified:     user.EmailVerifiedAt != nil,
 		// OverallScore dihitung terpisah

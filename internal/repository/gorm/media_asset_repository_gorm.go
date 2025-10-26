@@ -41,6 +41,19 @@ func (r *mediaAssetRepositoryGORM) FindByID(ctx context.Context, id uuid.UUID) (
 	return gormAsset.ToDomain(), nil
 }
 
+func (r *mediaAssetRepositoryGORM) FindByFileName(ctx context.Context, fileName string) (*domain.MediaAsset, error) {
+	var gormAsset MediaAssetGORM
+	// Cari record pertama yang cocok dengan file_name
+	result := r.db.WithContext(ctx).Where("file_name = ?", fileName).First(&gormAsset)
+	if result.Error != nil {
+		if errors.Is(result.Error, gorm.ErrRecordNotFound) {
+			return nil, nil // Tidak ditemukan bukan error
+		}
+		return nil, result.Error // Error database lain
+	}
+	return gormAsset.ToDomain(), nil
+}
+
 func (r *mediaAssetRepositoryGORM) SoftDelete(ctx context.Context, assetID uuid.UUID, deleterID *uuid.UUID) error {
 	// Update manual agar bisa mengisi DeletedByUserID
 	result := r.db.WithContext(ctx).
