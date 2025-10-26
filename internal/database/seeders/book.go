@@ -138,10 +138,10 @@ func seedBookCover(db *gorm.DB, bookID uint, bookTitle, sourceFilename string) (
 	return asset.PublicURL, nil // Kembalikan URL asli yang di-seed/ditemukan
 }
 
-func BookSeeder(db *gorm.DB) error {
-	log.Println("Seeding books and their covers...")
+func BookSeeder(db *gorm.DB, logger *log.Logger) error {
+	logger.Println("Seeding books and their covers...")
 
-	bookCoverMap := map[string]string{ /* ... (map tetap sama) ... */
+	bookCoverMap := map[string]string{
 		"Alphabet":   "cover1.png",
 		"Numbers":    "cover2.png",
 		"Body Parts": "cover3.png",
@@ -152,7 +152,7 @@ func BookSeeder(db *gorm.DB) error {
 		"Verbs":      "cover8.png",
 	}
 
-	booksData := []repo.BookGORM{ /* ... (data buku tetap sama) ... */
+	booksData := []repo.BookGORM{
 		{Title: "The Alphabet in the Land of Dewi Sri", Description: "An exciting journey through the ABCs.", Theme: "Alphabet", BookOrder: 1},
 		{Title: "The Numbers in the Village of Ten Hills", Description: "Learn numbers with friendly creatures.", Theme: "Numbers", BookOrder: 2},
 		{Title: "Bawang Putih and the Kind Body Parts", Description: "Discover all the parts of your body.", Theme: "Body Parts", BookOrder: 3},
@@ -172,9 +172,9 @@ func BookSeeder(db *gorm.DB) error {
 
 		created := result.RowsAffected > 0
 		if created {
-			log.Printf("Seeded book record: '%s' (ID: %d)", book.Title, book.ID)
+			logger.Printf("Seeded book record: '%s' (ID: %d)", book.Title, book.ID)
 		} else {
-			log.Printf("Book record '%s' (ID: %d) already exists.", book.Title, book.ID)
+			logger.Printf("Book record '%s' (ID: %d) already exists.", book.Title, book.ID)
 		}
 
 		coverFilename, ok := bookCoverMap[book.Theme]
@@ -182,7 +182,7 @@ func BookSeeder(db *gorm.DB) error {
 		var coverErr error
 
 		if !ok {
-			log.Printf("   -> WARNING: No cover image defined for theme '%s'. Setting placeholder URL for book '%s'.", book.Theme, book.Title)
+			logger.Printf("   -> WARNING: No cover image defined for theme '%s'. Setting placeholder URL for book '%s'.", book.Theme, book.Title)
 			targetURL = placeholderCoverURL
 			coverErr = nil // Tidak ada error jika hanya tidak ada definisi
 		} else {
@@ -190,7 +190,7 @@ func BookSeeder(db *gorm.DB) error {
 			targetURL, coverErr = seedBookCover(db, book.ID, book.Title, coverFilename)
 			if coverErr != nil {
 				// Log error dari helper jika ada (helper sudah log detailnya)
-				log.Printf("   -> ERROR processing cover for book '%s'. URL set to placeholder.", book.Title)
+				logger.Printf("   -> ERROR processing cover for book '%s'. URL set to placeholder.", book.Title)
 				targetURL = placeholderCoverURL // Pastikan targetURL adalah placeholder jika ada error
 			}
 		}
@@ -200,19 +200,19 @@ func BookSeeder(db *gorm.DB) error {
 			oldURL := book.CoverImageURL // Simpan URL lama untuk logging
 			book.CoverImageURL = targetURL
 			if err := db.Save(&book).Error; err != nil {
-				log.Printf("   -> ERROR updating CoverImageURL for book '%s' (ID: %d): %v", book.Title, book.ID, err)
+				logger.Printf("   -> ERROR updating CoverImageURL for book '%s' (ID: %d): %v", book.Title, book.ID, err)
 			} else {
 				if oldURL == "" && created { // Kasus buku baru
-					log.Printf("   -> Set CoverImageURL for new book '%s' to: %s", book.Title, targetURL)
+					logger.Printf("   -> Set CoverImageURL for new book '%s' to: %s", book.Title, targetURL)
 				} else { // Kasus update URL
-					log.Printf("   -> Updated CoverImageURL for book '%s' from '%s' to: %s", book.Title, oldURL, targetURL)
+					logger.Printf("   -> Updated CoverImageURL for book '%s' from '%s' to: %s", book.Title, oldURL, targetURL)
 				}
 			}
 		} else {
 			// Log jika URL sudah sesuai, baik itu placeholder maupun URL asli
-			log.Printf("   -> CoverImageURL for book '%s' is already set to: %s", book.Title, book.CoverImageURL)
+			logger.Printf("   -> CoverImageURL for book '%s' is already set to: %s", book.Title, book.CoverImageURL)
 		}
 	}
-	log.Println("Finished seeding books and covers.")
+	logger.Println("Finished seeding books and covers.")
 	return nil
 }

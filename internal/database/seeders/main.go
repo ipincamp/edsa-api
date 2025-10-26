@@ -7,46 +7,51 @@ import (
 	"gorm.io/gorm"
 )
 
-// Fungsi untuk menjalankan semua seeders
-func RunAllSeeders(db *gorm.DB) error {
-	// 1. Jalankan seeder penting yang harus ada di semua environment
-	if err := RoleSeeder(db); err != nil {
+// Update RunAllSeeders to accept a logger
+func RunAllSeeders(db *gorm.DB, logger *log.Logger) error {
+	// Pass the logger to each seeder function
+	logger.Println("Seeding Roles...")
+	if err := RoleSeeder(db, logger); err != nil {
 		return err
 	}
-	if err := DefaultAvatarsSeeder(db); err != nil {
+	logger.Println("Seeding Default Avatars...")
+	if err := DefaultAvatarsSeeder(db, logger); err != nil {
 		return err
 	}
-	if err := UserAdminSeeder(db); err != nil {
+	logger.Println("Seeding Admin User...")
+	if err := UserAdminSeeder(db, logger); err != nil {
 		return err
 	}
-	if err := BookSeeder(db); err != nil {
+	logger.Println("Seeding Books and Covers...")
+	if err := BookSeeder(db, logger); err != nil {
 		return err
 	}
-	if err := GameSeeder(db); err != nil {
+	logger.Println("Seeding Games...")
+	if err := GameSeeder(db, logger); err != nil {
 		return err
 	}
 
-	// 2. Cek environment dari config
 	env := config.AppConfig.App.Env
-
-	// 3. Hanya jalankan seeder tambahan jika BUKAN production
 	if env != "production" {
-		log.Printf("Running additional seeders for '%s' environment...", env)
-		if err := UserTeacherSeeder(db); err != nil {
+		logger.Printf("Running additional seeders for '%s' environment...", env)
+		logger.Println("Seeding Teacher Users...")
+		if err := UserTeacherSeeder(db, logger); err != nil {
 			return err
 		}
-		if err := UserStudentSeeder(db); err != nil {
+		logger.Println("Seeding Student Users...")
+		if err := UserStudentSeeder(db, logger); err != nil {
 			return err
 		}
-		if err := UserPublicSeeder(db); err != nil {
+		logger.Println("Seeding Public Users...")
+		if err := UserPublicSeeder(db, logger); err != nil {
 			return err
 		}
-		if err := ClassGroupSeeder(db); err != nil {
+		logger.Println("Seeding Classes and Groups...")
+		if err := ClassGroupSeeder(db, logger); err != nil {
 			return err
 		}
-		// Panggil seeder lain di sini
 	} else {
-		log.Println("Production environment detected. Only Role, Admin, Book, and Game seeders were run.")
+		logger.Println("Production environment detected. Only essential seeders were run.")
 	}
 
 	return nil

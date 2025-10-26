@@ -9,8 +9,8 @@ import (
 	"gorm.io/gorm"
 )
 
-func RoleSeeder(db *gorm.DB) error {
-	log.Println("Seeding roles...")
+func RoleSeeder(db *gorm.DB, logger *log.Logger) error {
+	logger.Println("Seeding roles...")
 	roles := []repo.RoleGORM{
 		{Name: domain.RoleNameAdmin},
 		{Name: domain.RoleNameTeacher},
@@ -24,7 +24,7 @@ func RoleSeeder(db *gorm.DB) error {
 			return fmt.Errorf("failed to seed role '%s': %w", role.Name, result.Error)
 		}
 		if result.RowsAffected > 0 {
-			log.Printf("Seeded role: %s\n", role.Name)
+			logger.Printf("Seeded role: %s\n", role.Name)
 		}
 	}
 	return nil

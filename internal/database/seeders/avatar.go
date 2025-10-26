@@ -16,8 +16,10 @@ import (
 	"gorm.io/gorm"
 )
 
-func DefaultAvatarsSeeder(db *gorm.DB) error {
-	log.Println("Seeding default avatar media assets (Original Filename, UUID Storage)...")
+// Update function signature to accept logger
+func DefaultAvatarsSeeder(db *gorm.DB, logger *log.Logger) error {
+	// Replace log.Println with logger.Println or logger.Printf
+	logger.Println("Seeding default avatar media assets (Original Filename, UUID Storage)...")
 
 	cfg := config.AppConfig.Storage
 	originalAvatarMap := map[string]string{
@@ -33,21 +35,24 @@ func DefaultAvatarsSeeder(db *gorm.DB) error {
 
 	// Pastikan direktori tujuan ada
 	if err := os.MkdirAll(uploadDir, os.ModePerm); err != nil {
+		// Use logger for fatal errors too if desired, though log.Fatalf exits
+		// logger.Printf("ERROR: Failed to create public upload directory '%s': %v", uploadDir, err)
 		return fmt.Errorf("failed to create public upload directory '%s': %w", uploadDir, err)
 	}
 
 	for logicalName, sourceFilename := range originalAvatarMap {
-		log.Printf("   Processing avatar '%s' (logical name: %s)...", sourceFilename, logicalName) // Log awal
+		// Use logger.Printf instead of log.Printf
+		logger.Printf("   Processing avatar '%s' (logical name: %s)...", sourceFilename, logicalName)
 
 		// --- File Handling & Path Generation ---
-		sourcePath := filepath.Join(sourceAssetDir, sourceFilename) // Path file sumber asli
+		sourcePath := filepath.Join(sourceAssetDir, sourceFilename)
 
 		// Cek file sumber dulu
 		if _, err := os.Stat(sourcePath); os.IsNotExist(err) {
-			log.Printf("   -> WARNING: Source avatar file '%s' not found. Skipping.", sourcePath)
+			logger.Printf("   -> WARNING: Source avatar file '%s' not found. Skipping.", sourcePath)
 			continue // Lanjut ke avatar berikutnya jika file sumber tidak ada
 		} else if err != nil {
-			log.Printf("   -> ERROR: Could not check source avatar file '%s': %v. Skipping.", sourcePath, err)
+			logger.Printf("   -> ERROR: Could not check source avatar file '%s': %v. Skipping.", sourcePath, err)
 			continue // Error lain saat cek file sumber, skip
 		}
 
@@ -64,32 +69,36 @@ func DefaultAvatarsSeeder(db *gorm.DB) error {
 
 		// --- Cek & Salin File Fisik ---
 		if _, err := os.Stat(destPathUUID); os.IsNotExist(err) {
-			log.Printf("   -> Copying '%s' to '%s'...", sourcePath, destPathUUID) // Log copy
+			logger.Printf("   -> Copying '%s' to '%s'...", sourcePath, destPathUUID)
 			sourceFile, err := os.Open(sourcePath)
 			if err != nil {
-				log.Printf("   -> WARNING: Could not open source avatar '%s' after stat: %v. Skipping.", sourcePath, err)
+				logger.Printf("   -> WARNING: Could not open source avatar '%s' after stat: %v. Skipping.", sourcePath, err)
 				continue // Gagal buka sumber
 			}
-			defer sourceFile.Close()
+			// Use anonymous function for scoped defer
+			func() {
+				defer sourceFile.Close()
+				destFile, err := os.Create(destPathUUID)
+				if err != nil {
+					logger.Printf("   -> ERROR: Could not create destination avatar '%s': %v. Skipping.", destPathUUID, err)
+					return // Return from anonymous function
+				}
+				defer destFile.Close()
 
-			destFile, err := os.Create(destPathUUID)
-			if err != nil {
-				log.Printf("   -> ERROR: Could not create destination avatar '%s': %v. Skipping.", destPathUUID, err)
-				continue // Gagal buat tujuan
-			}
-			defer destFile.Close()
-
-			_, err = io.Copy(destFile, sourceFile)
-			if err != nil {
-				log.Printf("   -> ERROR: Could not copy avatar from '%s' to '%s': %v. Skipping.", sourcePath, destPathUUID, err)
-				os.Remove(destPathUUID) // Coba hapus file gagal
-				continue                // Gagal copy
-			}
-			log.Printf("   -> Successfully copied avatar.") // Log sukses copy
+				_, err = io.Copy(destFile, sourceFile)
+				if err != nil {
+					logger.Printf("   -> ERROR: Could not copy avatar from '%s' to '%s': %v. Skipping.", sourcePath, destPathUUID, err)
+					os.Remove(destPathUUID) // Coba hapus file gagal
+					return                  // Return from anonymous function
+				}
+				logger.Printf("   -> Successfully copied avatar.")
+			}() // Call the anonymous function
+			// Check if error occurred inside anonymous function (alternative: pass error out)
+			// This simplified version relies on logging inside
 		} else if err == nil {
-			log.Printf("   -> Physical avatar file '%s' already exists, skipping copy.", newFilenameUUID)
+			logger.Printf("   -> Physical avatar file '%s' already exists, skipping copy.", newFilenameUUID)
 		} else {
-			log.Printf("   -> ERROR: Error checking destination avatar file '%s': %v. Skipping.", destPathUUID, err)
+			logger.Printf("   -> ERROR: Error checking destination avatar file '%s': %v. Skipping.", destPathUUID, err)
 			continue // Gagal cek tujuan
 		}
 
@@ -98,14 +107,14 @@ func DefaultAvatarsSeeder(db *gorm.DB) error {
 		var mimeType string
 		fileInfo, err := os.Stat(sourcePath)
 		if err != nil {
-			log.Printf("   -> WARNING: Could not stat source avatar file '%s' to get size: %v. Using size 0.", sourcePath, err)
+			logger.Printf("   -> WARNING: Could not stat source avatar file '%s' to get size: %v. Using size 0.", sourcePath, err)
 			fileSize = 0
 		} else {
 			fileSize = fileInfo.Size()
 		}
 		mime, err := mimetype.DetectFile(sourcePath)
 		if err != nil {
-			log.Printf("   -> WARNING: Could not detect MIME type for source avatar file '%s': %v. Using default 'image/png'.", sourcePath, err)
+			logger.Printf("   -> WARNING: Could not detect MIME type for source avatar file '%s': %v. Using default 'image/png'.", sourcePath, err)
 			mimeType = "image/png"
 		} else {
 			mimeType = mime.String()
@@ -133,7 +142,7 @@ func DefaultAvatarsSeeder(db *gorm.DB) error {
 
 		if result.Error != nil {
 			// Gagal seed asset -> Log error tapi lanjutkan ke avatar berikutnya
-			log.Printf("   -> ERROR seeding default avatar asset DB record for '%s': %v. Skipping.", sourceFilename, result.Error)
+			logger.Printf("   -> ERROR seeding default avatar asset DB record for '%s': %v. Skipping.", sourceFilename, result.Error)
 			continue
 		}
 
@@ -142,10 +151,10 @@ func DefaultAvatarsSeeder(db *gorm.DB) error {
 		if result.RowsAffected == 0 { // Jika record sudah ada
 			logMsgFormat = "   -> Found existing asset DB record: OriginalName='%s', StoredAs='%s' (AssetID: %s, Size: %d, Type: %s)"
 		}
-		log.Printf(logMsgFormat, asset.FileName, newFilenameUUID, asset.ID, asset.FileSize, asset.MimeType)
+		logger.Printf(logMsgFormat, asset.FileName, newFilenameUUID, asset.ID, asset.FileSize, asset.MimeType)
 
 	} // End loop for originalAvatarMap
 
-	log.Println("Finished seeding default avatar assets.")
+	logger.Println("Finished seeding default avatar assets.")
 	return nil
 }

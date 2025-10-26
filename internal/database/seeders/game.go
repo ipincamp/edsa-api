@@ -8,8 +8,8 @@ import (
 	"gorm.io/gorm"
 )
 
-func GameSeeder(db *gorm.DB) error {
-	log.Println("Seeding games...")
+func GameSeeder(db *gorm.DB, logger *log.Logger) error {
+	logger.Println("Seeding games...")
 
 	games := []repo.GameGORM{
 		{Name: "Alphabet Match", Type: "Matching", RelatedBookTheme: "Alphabet"},
@@ -28,7 +28,7 @@ func GameSeeder(db *gorm.DB) error {
 			return fmt.Errorf("failed to seed game '%s': %w", game.Name, result.Error)
 		}
 		if result.RowsAffected > 0 {
-			log.Printf("Seeded game: %s\n", game.Name)
+			logger.Printf("Seeded game: %s\n", game.Name)
 		}
 	}
 	return nil

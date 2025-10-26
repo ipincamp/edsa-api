@@ -12,8 +12,8 @@ import (
 	"gorm.io/gorm"
 )
 
-func ClassGroupSeeder(db *gorm.DB) error {
-	log.Println("Seeding subjects, classes, groups, and user_groups...")
+func ClassGroupSeeder(db *gorm.DB, logger *log.Logger) error {
+	logger.Println("Seeding subjects, classes, groups, and user_groups...")
 
 	// 1. Dapatkan Role ID
 	var teacherRole repo.RoleGORM
@@ -32,14 +32,14 @@ func ClassGroupSeeder(db *gorm.DB) error {
 	if err != nil {
 		return fmt.Errorf("failed to hash default password for ClassGroupSeeder: %w", err)
 	}
-	log.Println("   Hashed default password for teachers and students in groups.")
+	logger.Println("   Hashed default password for teachers and students in groups.")
 
 	// 3. Ambil email yang sudah ada
 	existingEmails, err := getExistingEmails(db)
 	if err != nil {
 		return err
 	}
-	log.Printf("   Loaded %d existing emails for ClassGroupSeeder.", len(existingEmails))
+	logger.Printf("   Loaded %d existing emails for ClassGroupSeeder.", len(existingEmails))
 
 	// 4. Data subject
 	subjectData := map[string]int{
@@ -53,14 +53,14 @@ func ClassGroupSeeder(db *gorm.DB) error {
 		// --- BUAT SUBJECT ---
 		subject := repo.SubjectGORM{Name: subjectName}
 		db.FirstOrCreate(&subject, repo.SubjectGORM{Name: subject.Name})
-		log.Printf("Seeded Subject: %s (ID: %d)", subject.Name, subject.ID)
+		logger.Printf("Seeded Subject: %s (ID: %d)", subject.Name, subject.ID)
 
 		// --- BUAT CLASS ---
 		// Cth: "Beginner Class", "Intermediate Class"
 		className := strings.Split(subject.Name, " ")[1] + " Class"
 		class := repo.ClassGORM{Name: className, SubjectID: subject.ID}
 		db.FirstOrCreate(&class, repo.ClassGORM{Name: class.Name, SubjectID: class.SubjectID})
-		log.Printf("  -> Seeded Class: %s (ID: %d)", class.Name, class.ID)
+		logger.Printf("  -> Seeded Class: %s (ID: %d)", class.Name, class.ID)
 
 		// --- BUAT GROUP ---
 		for i := 1; i <= numGroups; i++ {
@@ -68,7 +68,7 @@ func ClassGroupSeeder(db *gorm.DB) error {
 			groupName := fmt.Sprintf("%s Group %d", strings.Split(subject.Name, " ")[1], i)
 			group := repo.GroupGORM{Name: groupName, ClassID: class.ID}
 			db.FirstOrCreate(&group, repo.GroupGORM{Name: group.Name, ClassID: class.ID})
-			log.Printf("    -> Seeded Group: %s (ID: %d)", group.Name, group.ID)
+			logger.Printf("    -> Seeded Group: %s (ID: %d)", group.Name, group.ID)
 
 			// --- BUAT USERS (TEACHER & STUDENT) UNTUK GROUP INI ---
 			const numTeachers = 2
@@ -106,27 +106,27 @@ func ClassGroupSeeder(db *gorm.DB) error {
 			}
 
 			if len(usersToAssign) < targetUserCount {
-				log.Printf("      WARNING: Could only generate %d unique users for group %s after %d attempts.", len(usersToAssign), group.Name, attempts)
+				logger.Printf("      WARNING: Could only generate %d unique users for group %s after %d attempts.", len(usersToAssign), group.Name, attempts)
 			}
 
 			// Batch Insert Users & Assign to Group
 			if len(usersToAssign) > 0 {
-				log.Printf("      -> Inserting %d users for group %s...", len(usersToAssign), group.Name)
+				logger.Printf("      -> Inserting %d users for group %s...", len(usersToAssign), group.Name)
 				if err := db.Create(&usersToAssign).Error; err != nil {
 					return fmt.Errorf("failed to batch insert users for group %s: %w", group.Name, err)
 				}
-				log.Printf("      -> Successfully inserted %d users.", len(usersToAssign))
+				logger.Printf("      -> Successfully inserted %d users.", len(usersToAssign))
 
 				if err := db.Model(&group).Association("Users").Append(usersToAssign); err != nil {
 					return fmt.Errorf("failed to assign users to group %s: %w", group.Name, err)
 				}
-				log.Printf("      -> Assigned %d users to group %s", len(usersToAssign), group.Name)
+				logger.Printf("      -> Assigned %d users to group %s", len(usersToAssign), group.Name)
 			} else {
-				log.Printf("      -> No new unique users generated for group %s", group.Name)
+				logger.Printf("      -> No new unique users generated for group %s", group.Name)
 			}
 		}
 	}
 
-	log.Println("Finished seeding classes and groups.")
+	logger.Println("Finished seeding classes and groups.")
 	return nil
 }
