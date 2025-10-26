@@ -70,9 +70,9 @@ func SetupRoutes(
 		middleware.AuthMiddleware(tokenSvc, blacklistSvc),
 		userHandler.ResendVerification,
 	) // PASSED
-	auth.Post("/verify-email", userHandler.VerifyEmail)       // PASSED
-	auth.Post("/forgot-password", userHandler.ForgotPassword) // PASSED
-	auth.Post("/reset-password", userHandler.ResetPassword)   // PASSED
+	app.Get("/auth/verify-email", userHandler.VerifyEmailDirect) // PASSED
+	auth.Post("/forgot-password", userHandler.ForgotPassword)    // PASSED
+	auth.Post("/reset-password", userHandler.ResetPassword)      // PASSED
 
 	// Rute User (dilindungi)
 	protected := api.Group("/users")

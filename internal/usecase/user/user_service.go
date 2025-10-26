@@ -295,8 +295,8 @@ func (s *userService) SendVerificationEmail(ctx context.Context, userID uuid.UUI
 	}
 
 	// 3. Create verification link
-	frontendURL := s.cfg.App.FrontendURL
-	verificationLink := fmt.Sprintf("%s/verify-email?token=%s", frontendURL, verificationToken)
+	backendBaseURL := s.cfg.Storage.StoragePublicBaseURL
+	verificationLink := fmt.Sprintf("%s/auth/verify-email?token=%s", backendBaseURL, verificationToken)
 
 	// 4. Send email
 	subject := "Verifikasi Alamat Email Anda - EDSA"
@@ -331,26 +331,42 @@ func (s *userService) SendVerificationEmail(ctx context.Context, userID uuid.UUI
 }
 
 func (s *userService) VerifyEmail(ctx context.Context, token string) error {
-	// 1. Validasi token
-	userID, _, _, err := s.tokenSvc.ValidateToken(token)
+	// 1. Validasi token (dapatkan userID, sessionID verifikasi, email)
+	userID, verificationSessionID, _, err := s.tokenSvc.ValidateToken(token)
 	if err != nil {
-		return fmt.Errorf("invalid or expired token: %w", err)
+		// Token tidak valid atau kedaluwarsa -> anggap tidak valid
+		// Gunakan error spesifik yang bisa dikenali handler
+		return fmt.Errorf("token invalid or expired: %w", err)
 	}
 
-	// 2. Cari user
+	// 2. Cek apakah sesi verifikasi ini sudah pernah digunakan (di-blacklist)
+	isBlacklisted, err := s.blacklistSvc.IsSessionBlacklisted(ctx, verificationSessionID)
+	if err != nil {
+		// Error saat cek blacklist -> error internal
+		applogger.ErrorLogger.Printf("VerifyEmail: Error checking blacklist for session %s: %v", verificationSessionID, err)
+		return errors.New("internal server error checking token status")
+	}
+	if isBlacklisted {
+		// Token sudah pernah dipakai
+		return errors.New("token already used") // Error spesifik
+	}
+
+	// 3. Cari user
 	user, err := s.userRepo.FindByID(ctx, userID)
 	if err != nil {
 		applogger.ErrorLogger.Printf("VerifyEmail: DB error finding user %s: %v", userID, err)
-		return errors.New("database error")
+		return errors.New("database error finding user")
 	}
 	if user == nil {
-		return errors.New("user associated with token not found")
+		// User tidak ditemukan -> token dianggap tidak valid
+		return errors.New("user associated with token not found") // Error spesifik
 	}
 	if user.EmailVerifiedAt != nil {
-		return errors.New("email already verified")
+		// Sudah terverifikasi sebelumnya
+		return errors.New("email already verified") // Error spesifik
 	}
 
-	// 3. Update status verifikasi
+	// 4. Update status verifikasi
 	now := time.Now()
 	user.EmailVerifiedAt = &now
 
@@ -359,7 +375,19 @@ func (s *userService) VerifyEmail(ctx context.Context, token string) error {
 		return errors.New("failed to update verification status")
 	}
 
-	// Log aktivitas verifikasi email
+	// 5. Blacklist sesi verifikasi ini agar tidak bisa dipakai lagi
+	// Gunakan durasi yang cukup lama, misal TTL token + buffer, atau TTL refresh token
+	blacklistDuration := 1*time.Hour + 5*time.Minute // TTL token (1 jam) + buffer 5 menit
+	// Atau bisa juga pakai TTL refresh token jika lebih lama:
+	// blacklistDuration := time.Duration(s.cfg.Security.RefreshTokenTTLMin) * time.Minute
+	if err := s.blacklistSvc.BlacklistSession(ctx, verificationSessionID, blacklistDuration); err != nil {
+		// Gagal blacklist adalah masalah, log tapi JANGAN gagalkan verifikasi yang sudah berhasil di DB
+		applogger.ErrorLogger.Printf("VerifyEmail: WARNING - Failed to blacklist verification session %s after successful verification for user %s: %v", verificationSessionID, userID, err)
+	} else {
+		applogger.ErrorLogger.Printf("VerifyEmail: INFO - Successfully blacklisted verification session %s for user %s", verificationSessionID, userID) // Optional Info Log
+	}
+
+	// 6. Log aktivitas verifikasi email
 	s.logger.Log(ctx, domain.ActivityLog{
 		UserID:    user.ID,
 		Action:    domain.ActionVerifyEmail,

@@ -354,7 +354,45 @@ func (h *UserHandler) ResendVerification(c *fiber.Ctx) error {
 	return utils.SendSuccess(c, fiber.StatusOK, "Verification email sent successfully to your registered email address.", nil)
 }
 
+// VerifyEmailDirect menangani GET /auth/verify-email?token=...
+func (h *UserHandler) VerifyEmailDirect(c *fiber.Ctx) error {
+	// 1. Ambil token dari query parameter
+	token := c.Query("token")
+	if token == "" {
+		// Tidak ada token, kirim respons error sederhana
+		// Gunakan SendString untuk respons teks
+		return c.Status(fiber.StatusBadRequest).SendString("Verification token missing.")
+	}
+
+	// 2. Panggil service VerifyEmail
+	err := h.userService.VerifyEmail(c.Context(), token)
+
+	// 3. Kirim respons berdasarkan hasil service
+	if err == nil {
+		// Sukses
+		return c.Status(fiber.StatusOK).SendString("Verification successful.")
+	}
+
+	// Cek error spesifik dari service
+	errMsg := err.Error()
+	if errMsg == "email already verified" {
+		return c.Status(fiber.StatusBadRequest).SendString("Email already verified.")
+	}
+	// Gabungkan kondisi token tidak valid (kadaluwarsa, sudah dipakai, user tidak ada)
+	if strings.Contains(errMsg, "token invalid or expired") ||
+		errMsg == "token already used" ||
+		errMsg == "user associated with token not found" {
+		return c.Status(fiber.StatusBadRequest).SendString("Token is no longer valid.")
+	}
+
+	// Error internal lainnya
+	applogger.ErrorLogger.Printf("VerifyEmailDirect Handler: Internal error during verification: %v", err) // Log error internal
+	// Berikan pesan generik ke pengguna untuk error internal
+	return c.Status(fiber.StatusInternalServerError).SendString("Verification failed due to an internal error. Please try again later or contact support.")
+}
+
 // VerifyEmail menangani 'POST /auth/verify-email'
+// DEPRECATED: Gunakan VerifyEmailDirect sebagai gantinya
 func (h *UserHandler) VerifyEmail(c *fiber.Ctx) error {
 	var req domain.VerifyEmailRequest
 	if err := c.BodyParser(&req); err != nil {
