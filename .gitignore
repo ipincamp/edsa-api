@@ -41,6 +41,6 @@ go.work.sum
 # File kompresi statis yang dibuat oleh Fiber
 *.fiber.gz
 
-# Abaikan semua yang ada di dalam public/uploads/
+# Abaikan semua yang ada di dalam public/cdn/
 # Ini akan mengabaikan file yang di-upload oleh pengguna
-public/uploads/*
+public/cdn/*
