@@ -121,7 +121,9 @@ func (s *mediaService) UploadFile(ctx context.Context, file *multipart.FileHeade
 	// 1. Buat UUID di sini
 	assetID := uuid.New()
 
-	// 2. Simpan file fisik, dapatkan path relatif (cth: "uploads/uuid.png")
+	// 2. Simpan file fisik, dapatkan path relatif (cth: "cdn/uuid.png")
+	// Perhatikan: storageSvc.Upload HARUS mengembalikan path relatif terhadap STORAGE_PATH
+	// e.g., "cdn/uuid.png" atau "cdn/subfolder/uuid.png"
 	filePath, err := s.storageSvc.Upload(file, assetID)
 	if err != nil {
 		applogger.ErrorLogger.Printf("UploadFile: Failed to upload to storage: %v", err)
@@ -129,9 +131,9 @@ func (s *mediaService) UploadFile(ctx context.Context, file *multipart.FileHeade
 	}
 
 	// 3. Buat URL statis lengkap
-	// Cth: /public + uploads/uuid.png -> /public/uploads/uuid.png
-	baseURL := s.cfg.Storage.StoragePublicBaseURL
-	publicURL := baseURL + path.Join(s.cfg.Storage.StoragePublicURL, filePath)
+	baseURL := s.cfg.Storage.StoragePublicBaseURL                     // e.g., "http://localhost:8000"
+	publicPath := path.Join(s.cfg.Storage.StoragePublicURL, filePath) // e.g., path.Join("/", "cdn/uuid.png") -> "/cdn/uuid.png"
+	publicURL := baseURL + publicPath                                 // e.g., "http://localhost:8000/cdn/uuid.png"
 
 	// 4. Slugify nama file asli untuk disimpan di DB
 	cleanFileName := slugifyFilename(file.Filename)
@@ -140,8 +142,8 @@ func (s *mediaService) UploadFile(ctx context.Context, file *multipart.FileHeade
 	asset := &domain.MediaAsset{
 		ID:               assetID,
 		FileName:         cleanFileName,
-		FilePath:         filePath,  // "uploads/uuid.png"
-		PublicURL:        publicURL, // "http://localhost:8080/public/uploads/uuid.png"
+		FilePath:         filePath,  // "cdn/uuid.png"
+		PublicURL:        publicURL, // "http://localhost:8000/cdn/uuid.png"
 		MimeType:         mime.String(),
 		FileSize:         file.Size,
 		OwnerID:          ownerID,

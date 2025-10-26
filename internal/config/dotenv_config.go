@@ -118,8 +118,8 @@ func LoadConfig() {
 		},
 		Storage: Storage{
 			StoragePath:          getEnv("STORAGE_PATH", "./public"),
-			StorageUploadDir:     getEnv("STORAGE_UPLOAD_DIR", "uploads"),
-			StoragePublicURL:     getEnv("STORAGE_PUBLIC_URL", "/public"),
+			StorageUploadDir:     getEnv("STORAGE_UPLOAD_DIR", "cdn"),
+			StoragePublicURL:     getEnv("STORAGE_PUBLIC_URL", "/"),
 			StoragePublicBaseURL: getEnv("STORAGE_PUBLIC_BASE_URL", "http://localhost:8000"),
 		},
 		Email: EmailConfig{

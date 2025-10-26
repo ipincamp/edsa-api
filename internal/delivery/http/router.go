@@ -1,6 +1,7 @@
 package http
 
 import (
+	"path/filepath"
 	"time"
 
 	"github.com/gofiber/fiber/v2"
@@ -26,8 +27,12 @@ func SetupRoutes(
 	app.Use(logger.New())
 
 	// Static files untuk media (gambar, video, dsb.)
-	// Cth: GET /public/uploads/file.png akan disajikan dari ./public/uploads/file.png
-	app.Static(cfg.Storage.StoragePublicURL, cfg.Storage.StoragePath, fiber.Static{
+	// URL prefix: cfg.Storage.StorageUploadDir (e.g., "/cdn")
+	// Physical path: cfg.Storage.StoragePath + cfg.Storage.StorageUploadDir (e.g., "./public/cdn")
+	staticUrlPrefix := "/" + cfg.Storage.StorageUploadDir                                      // --> "/cdn"
+	staticPhysicalPath := filepath.Join(cfg.Storage.StoragePath, cfg.Storage.StorageUploadDir) // --> "./public/cdn"
+
+	app.Static(staticUrlPrefix, staticPhysicalPath, fiber.Static{
 		CacheDuration: 365 * 24 * time.Hour,
 		Compress:      true, // Mengaktifkan kompresi gzip/brotli
 		ByteRange:     true, // Mengizinkan browser me-resume download
