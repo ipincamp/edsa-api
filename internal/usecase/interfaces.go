@@ -141,7 +141,7 @@ type UserService interface {
 	ResetPassword(ctx context.Context, req *domain.ResetPasswordRequest) error
 	GetUserByID(ctx context.Context, id uuid.UUID) (*domain.UserResponse, error)
 	RefreshToken(ctx context.Context, req *domain.RefreshTokenRequest) (*domain.TokenResponse, error)
-	Logout(ctx context.Context, userID uuid.UUID, sessionID uuid.UUID) error
+	Logout(ctx context.Context, userID uuid.UUID, sessionID uuid.UUID, email string) error
 	ChangePassword(ctx context.Context, userID uuid.UUID, req *domain.ChangePasswordRequest) error
 	UpdateUserDetails(ctx context.Context, userID uuid.UUID, req *domain.UpdateDetailsRequest) (*domain.UserResponse, error)
 	UpdateAvatar(ctx context.Context, userID uuid.UUID, mediaID uuid.UUID) (*domain.UserResponse, error)
@@ -158,7 +158,7 @@ type PasswordService interface {
 // TokenService mendefinisikan kontrak untuk pembuatan & validasi token
 type TokenService interface {
 	CreateToken(user *domain.User, sessionID uuid.UUID, duration time.Duration) (string, error)
-	ValidateToken(tokenString string) (userID uuid.UUID, sessionID uuid.UUID, err error)
+	ValidateToken(tokenString string) (userID uuid.UUID, sessionID uuid.UUID, email string, err error)
 }
 
 // AdminService mendefinisikan logika bisnis untuk fitur admin

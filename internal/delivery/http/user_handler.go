@@ -7,6 +7,7 @@ import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/google/uuid"
 	"github.com/ipincamp/go-edsa-api/internal/domain"
+	"github.com/ipincamp/go-edsa-api/internal/pkg/applogger"
 	"github.com/ipincamp/go-edsa-api/internal/pkg/utils"
 	"github.com/ipincamp/go-edsa-api/internal/pkg/validator"
 	"github.com/ipincamp/go-edsa-api/internal/usecase"
@@ -108,9 +109,19 @@ func (h *UserHandler) Logout(c *fiber.Ctx) error {
 		return utils.SendSimpleError(c, fiber.StatusUnauthorized, "Invalid token", "Invalid session ID in token")
 	}
 
-	// Panggil Usecase
-	if err := h.userService.Logout(c.Context(), userID, sessionID); err != nil {
-		return utils.SendSimpleError(c, fiber.StatusInternalServerError, err.Error(), err.Error())
+	// Ambil email dari middleware
+	userEmail, ok := c.Locals("userEmail").(string)
+	if !ok || userEmail == "" {
+		// Ini seharusnya tidak terjadi jika AuthMiddleware benar
+		applogger.ErrorLogger.Printf("Logout Handler: userEmail not found or empty in context for userID %s", userID)
+		// Tetap lanjutkan logout, tapi log tanpa email
+		userEmail = "[email not found in context]"
+	}
+
+	// Panggil Usecase dengan email
+	if err := h.userService.Logout(c.Context(), userID, sessionID, userEmail); err != nil { // Teruskan email
+		// userService.Logout sekarang mengembalikan error jika blacklist gagal
+		return utils.SendSimpleError(c, fiber.StatusInternalServerError, "Logout failed", err.Error())
 	}
 
 	return utils.SendSuccess(c, fiber.StatusOK, "Logged out successfully", nil)

@@ -4,6 +4,7 @@ import (
 	"strings"
 
 	"github.com/gofiber/fiber/v2"
+	"github.com/ipincamp/go-edsa-api/internal/pkg/applogger"
 	"github.com/ipincamp/go-edsa-api/internal/pkg/utils"
 	"github.com/ipincamp/go-edsa-api/internal/usecase"
 )
@@ -22,25 +23,28 @@ func AuthMiddleware(tokenSvc usecase.TokenService, blacklistSvc usecase.SessionB
 
 		tokenString := parts[1]
 
-		// 1. Validasi token DULU untuk dapat sessionID
-		userID, sessionID, err := tokenSvc.ValidateToken(tokenString)
+		// 1. Validasi token DULU untuk dapat userID, sessionID, dan email
+		userID, sessionID, userEmail, err := tokenSvc.ValidateToken(tokenString)
 		if err != nil {
-			return utils.SendSimpleError(c, fiber.StatusUnauthorized, "Invalid token", err.Error())
+			// Sertakan detail error dari ValidateToken
+			return utils.SendSimpleError(c, fiber.StatusUnauthorized, "Invalid or expired token", err.Error())
 		}
 
 		// 2. Cek apakah SESSION-nya di-blacklist
 		isBlacklisted, err := blacklistSvc.IsSessionBlacklisted(c.Context(), sessionID)
 		if err != nil {
-			return utils.SendSimpleError(c, fiber.StatusInternalServerError, "Session error", err.Error())
+			// Log error internal ini
+			applogger.ErrorLogger.Printf("AuthMiddleware: Error checking blacklist for session %s: %v", sessionID, err)
+			return utils.SendSimpleError(c, fiber.StatusInternalServerError, "Session check error", "Could not verify session status")
 		}
 		if isBlacklisted {
-			// Sesi ini sudah logout
-			return utils.SendSimpleError(c, fiber.StatusUnauthorized, "Invalid token", "Token has been logged out")
+			return utils.SendSimpleError(c, fiber.StatusUnauthorized, "Session expired", "This session has been logged out")
 		}
 
-		// Simpan user ID dan session ID di context
+		// Simpan user ID, session ID, dan email di context
 		c.Locals("userID", userID)
 		c.Locals("sessionID", sessionID)
+		c.Locals("userEmail", userEmail)
 
 		return c.Next()
 	}

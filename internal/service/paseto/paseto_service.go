@@ -68,29 +68,33 @@ func (s *pasetoService) CreateToken(user *domain.User, sessionID uuid.UUID, dura
 	return s.paseto.Encrypt(s.symmetricKey, jsonToken, nil)
 }
 
-func (s *pasetoService) ValidateToken(tokenString string) (uuid.UUID, uuid.UUID, error) {
+func (s *pasetoService) ValidateToken(tokenString string) (uuid.UUID, uuid.UUID, string, error) { // Tambahkan string return
 	var jsonToken paseto.JSONToken
 	var payload PasetoPayload
 
 	// Decrypt (Symmetric)
 	err := s.paseto.Decrypt(tokenString, s.symmetricKey, &jsonToken, nil)
 	if err != nil {
-		return uuid.Nil, uuid.Nil, errors.New("invalid token")
+		// Kembalikan email kosong jika token tidak valid
+		return uuid.Nil, uuid.Nil, "", errors.New("invalid token")
 	}
 
 	// Validasi expiration
 	if err := jsonToken.Validate(); err != nil {
-		return uuid.Nil, uuid.Nil, fmt.Errorf("token has expired: %w", err)
+		// Kembalikan email kosong jika token kedaluwarsa
+		return uuid.Nil, uuid.Nil, "", fmt.Errorf("token has expired: %w", err)
 	}
 
 	// Ekstrak payload kustom
 	if err := jsonToken.Get("data", &payload); err != nil {
-		return uuid.Nil, uuid.Nil, fmt.Errorf("failed to get payload from token: %w", err)
+		// Kembalikan email kosong jika payload error
+		return uuid.Nil, uuid.Nil, "", fmt.Errorf("failed to get payload from token: %w", err)
 	}
 
 	userID, err := uuid.Parse(payload.UserID)
 	if err != nil {
-		return uuid.Nil, uuid.Nil, errors.New("invalid user ID format in token payload")
+		// Kembalikan email kosong jika userID error
+		return uuid.Nil, uuid.Nil, "", errors.New("invalid user ID format in token payload")
 	}
 
 	sessionID, err := uuid.Parse(payload.SessionID)
@@ -99,5 +103,12 @@ func (s *pasetoService) ValidateToken(tokenString string) (uuid.UUID, uuid.UUID,
 		sessionID = uuid.New()
 	}
 
-	return userID, sessionID, nil
+	// Pastikan email ada di payload
+	if payload.Email == "" {
+		// Kembalikan email kosong jika email tidak ada (seharusnya tidak terjadi jika CreateToken benar)
+		return uuid.Nil, uuid.Nil, "", errors.New("email not found in token payload")
+	}
+
+	// Kembalikan userID, sessionID, dan email
+	return userID, sessionID, payload.Email, nil
 }

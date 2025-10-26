@@ -330,7 +330,7 @@ func (s *userService) SendVerificationEmail(ctx context.Context, email string) e
 
 func (s *userService) VerifyEmail(ctx context.Context, token string) error {
 	// 1. Validasi token
-	userID, _, err := s.tokenSvc.ValidateToken(token)
+	userID, _, _, err := s.tokenSvc.ValidateToken(token)
 	if err != nil {
 		return fmt.Errorf("invalid or expired token: %w", err)
 	}
@@ -419,7 +419,7 @@ func (s *userService) SendPasswordResetEmail(ctx context.Context, email string) 
 
 func (s *userService) ResetPassword(ctx context.Context, req *domain.ResetPasswordRequest) error {
 	// 1. Validasi token reset
-	userID, _, err := s.tokenSvc.ValidateToken(req.Token)
+	userID, _, _, err := s.tokenSvc.ValidateToken(req.Token)
 	if err != nil {
 		return fmt.Errorf("invalid or expired token: %w", err)
 	}
@@ -456,9 +456,9 @@ func (s *userService) ResetPassword(ctx context.Context, req *domain.ResetPasswo
 
 func (s *userService) RefreshToken(ctx context.Context, req *domain.RefreshTokenRequest) (*domain.TokenResponse, error) {
 	// 1. Validasi refresh token
-	userID, sessionID, err := s.tokenSvc.ValidateToken(req.RefreshToken)
+	userID, sessionID, _, err := s.tokenSvc.ValidateToken(req.RefreshToken)
 	if err != nil {
-		return nil, errors.New("invalid or expired refresh token")
+		return nil, fmt.Errorf("invalid or expired refresh token: %w", err)
 	}
 
 	// 2. Cek apakah sesi sudah di-blacklist (logout)
@@ -498,7 +498,7 @@ func (s *userService) RefreshToken(ctx context.Context, req *domain.RefreshToken
 	}, nil
 }
 
-func (s *userService) Logout(ctx context.Context, userID uuid.UUID, sessionID uuid.UUID) error {
+func (s *userService) Logout(ctx context.Context, userID uuid.UUID, sessionID uuid.UUID, email string) error {
 	// 0. Ambil data user untuk logging email (opsional, tapi bagus untuk detail log)
 	user, err := s.userRepo.FindByID(ctx, userID)
 	if err != nil {
@@ -803,7 +803,7 @@ func (s *userService) ConfirmAccountDeletion(ctx context.Context, userID uuid.UU
 	}
 
 	// 3. Validasi Token Konfirmasi
-	tokenUserID, _, err := s.tokenSvc.ValidateToken(req.ConfirmationToken)
+	tokenUserID, _, _, err := s.tokenSvc.ValidateToken(req.ConfirmationToken)
 	if err != nil {
 		// Cth: "token has expired" atau "invalid token"
 		return err
