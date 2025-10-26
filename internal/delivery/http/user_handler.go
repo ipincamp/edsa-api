@@ -330,29 +330,28 @@ func (h *UserHandler) DeleteAccount(c *fiber.Ctx) error {
 
 // ResendVerification menangani 'POST /auth/resend-verification'
 func (h *UserHandler) ResendVerification(c *fiber.Ctx) error {
-	var req domain.ResendVerificationRequest
-	if err := c.BodyParser(&req); err != nil {
-		return utils.SendSimpleError(c, fiber.StatusBadRequest, "Invalid request body", err.Error())
-	}
-	if errs := h.validate.ValidateStruct(req); len(errs) > 0 {
-		return utils.SendValidationErrors(c, errs)
+	// --- Get userID from context ---
+	userID, ok := c.Locals("userID").(uuid.UUID)
+	if !ok || userID == uuid.Nil {
+		return utils.SendSimpleError(c, fiber.StatusUnauthorized, "Invalid token", "Invalid user ID in token")
 	}
 
-	err := h.userService.SendVerificationEmail(c.Context(), req.Email)
+	err := h.userService.SendVerificationEmail(c.Context(), userID)
 	if err != nil {
-		// Handle error spesifik
+		// Handle specific errors
 		if err.Error() == "email already verified" {
 			return utils.SendSimpleError(c, fiber.StatusBadRequest, err.Error(), err.Error())
 		}
-		// Jangan ekspos error "user not found"
 		if err.Error() == "user not found" {
-			return utils.SendSuccess(c, fiber.StatusOK, "If your email is registered and not verified, a verification link has been sent.", nil)
+			// This shouldn't happen if the token is valid, but handle defensively
+			return utils.SendSimpleError(c, fiber.StatusNotFound, err.Error(), err.Error())
 		}
-		// Error internal lainnya
-		return utils.SendSimpleError(c, fiber.StatusInternalServerError, err.Error(), err.Error())
+		// Other internal errors
+		return utils.SendSimpleError(c, fiber.StatusInternalServerError, "Failed to send verification email", err.Error())
 	}
 
-	return utils.SendSuccess(c, fiber.StatusOK, "Verification email sent successfully.", nil)
+	// Adjusted success message
+	return utils.SendSuccess(c, fiber.StatusOK, "Verification email sent successfully to your registered email address.", nil)
 }
 
 // VerifyEmail menangani 'POST /auth/verify-email'

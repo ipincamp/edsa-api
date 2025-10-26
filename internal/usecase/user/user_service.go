@@ -270,32 +270,35 @@ func (s *userService) Login(ctx context.Context, req *domain.LoginRequest) (*dom
 	}, nil
 }
 
-func (s *userService) SendVerificationEmail(ctx context.Context, email string) error {
-	// 1. Cari user berdasarkan email
-	user, err := s.userRepo.FindByEmail(ctx, email)
+func (s *userService) SendVerificationEmail(ctx context.Context, userID uuid.UUID) error {
+	// 1. Find user by ID
+	user, err := s.userRepo.FindByID(ctx, userID)
 	if err != nil {
-		applogger.ErrorLogger.Printf("SendVerificationEmail: DB error finding user %s: %v", email, err)
+		applogger.ErrorLogger.Printf("SendVerificationEmail: DB error finding user %s: %v", userID, err)
 		return errors.New("database error")
 	}
 	if user == nil {
+		// Should not happen if called after AuthMiddleware, but handle defensively
 		return errors.New("user not found")
 	}
 	if user.EmailVerifiedAt != nil {
 		return errors.New("email already verified")
 	}
 
-	// 2. Buat token verifikasi (misalnya, berlaku 1 jam)
-	verificationToken, err := s.tokenSvc.CreateToken(user, uuid.New(), 1*time.Hour) // Sesi ID tidak terlalu relevan di sini
+	verificationSessionID := uuid.New() // ID baru khusus untuk flow verifikasi ini
+
+	// 2. Create verification token (using verificationSessionID)
+	verificationToken, err := s.tokenSvc.CreateToken(user, verificationSessionID, 1*time.Hour)
 	if err != nil {
-		applogger.ErrorLogger.Printf("SendVerificationEmail: Failed to create verification token for %s: %v", email, err)
+		applogger.ErrorLogger.Printf("SendVerificationEmail: Failed to create verification token for %s: %v", user.Email, err)
 		return errors.New("failed to create verification token")
 	}
 
-	// 3. Buat link verifikasi (sesuaikan dengan rute frontend Anda)
+	// 3. Create verification link
 	frontendURL := s.cfg.App.FrontendURL
 	verificationLink := fmt.Sprintf("%s/verify-email?token=%s", frontendURL, verificationToken)
 
-	// 4. Kirim email
+	// 4. Send email
 	subject := "Verifikasi Alamat Email Anda - EDSA"
 	body := fmt.Sprintf(
 		"Halo %s,<br><br>"+
@@ -316,8 +319,7 @@ func (s *userService) SendVerificationEmail(ctx context.Context, email string) e
 	s.logger.Log(ctx, domain.ActivityLog{
 		UserID:    user.ID,
 		Action:    domain.ActionResendVerificationEmail,
-		SessionID: uuid.Nil,
-		// Format Details yang lebih aman menggunakan json.Marshal
+		SessionID: verificationSessionID,
 		Details: func() json.RawMessage {
 			detailMap := map[string]interface{}{"email": user.Email}
 			jsonData, _ := json.Marshal(detailMap)
