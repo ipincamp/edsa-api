@@ -40,7 +40,13 @@ func main() {
 	cfg := config.AppConfig
 
 	// 2. Init Database (PostgreSQL + GORM)
-	db := database.NewPostgresConnection(config.GetDatabaseDSN(), cfg.App.Env)
+	// Pass the whole cfg object and handle potential error
+	db, err := database.NewPostgresConnection(cfg)
+	if err != nil {
+		// Use Fatalf here in main if connection fails during startup
+		log.Fatalf("🚨 Failed to initialize database: %v", err)
+	}
+	log.Println("✅ Database connection established and pool configured.")
 
 	// 3. Init Validator
 	validate := validator.NewValidator()

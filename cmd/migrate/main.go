@@ -71,22 +71,26 @@ func askForConfirmation(prompt string) bool {
 			return false
 		}
 		response = strings.ToLower(strings.TrimSpace(response))
-		if response == "y" || response == "yes" {
+		switch response {
+		case "y", "yes":
 			return true
-		} else if response == "" || response == "n" || response == "no" {
+		case "", "n", "no":
 			return false
 		}
 	}
 }
 
 func main() {
+	// Load config first
 	config.LoadConfig()
-	// Initialize logger only after config load if logger depends on config, otherwise keep it simple
-	// applogger.InitErrorLogger() // Assuming logger doesn't depend on config for initialization path
+	cfg := config.AppConfig
 
 	log.Println("🔧 Initializing database connection...")
-	db := database.NewPostgresConnection(config.GetDatabaseDSN(), config.AppConfig.App.Env)
-	log.Println("🔗 Database connection established.")
+	db, err := database.NewPostgresConnection(cfg) // Pass config
+	if err != nil {                                // Handle error
+		log.Fatalf("❌ Failed to connect to database: %v", err)
+	}
+	log.Println("🔗 Database connection established.") // Log success after check
 
 	m := gormigrate.New(db, gormigrate.DefaultOptions, migrations.GetAllMigrations())
 

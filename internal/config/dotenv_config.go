@@ -29,13 +29,16 @@ type Server struct {
 
 // Database is a struct to hold database configuration
 type Database struct {
-	Host     string
-	Port     int
-	User     string
-	Password string
-	Name     string
-	SSLMode  string
-	TimeZone string
+	Host                string
+	Port                int
+	User                string
+	Password            string
+	Name                string
+	SSLMode             string
+	TimeZone            string
+	PoolMaxIdleConns    int
+	PoolMaxOpenConns    int
+	PoolConnMaxLifetime int // in minutes
 }
 
 // Security is a struct to hold security configuration
@@ -92,13 +95,16 @@ func LoadConfig() {
 			FrontendURL: getEnv("FRONTEND_URL", "http://localhost:3000"),
 		},
 		Database: Database{
-			Host:     getEnv("DB_HOST", "localhost"),
-			Port:     getEnvAsInt("DB_PORT", 5432),
-			User:     getEnv("DB_USER", "edsa"),
-			Password: getEnv("DB_PASSWORD", "password"),
-			Name:     getEnv("DB_NAME", "edsa_staging"),
-			SSLMode:  getEnv("DB_SSLMODE", "disable"),
-			TimeZone: getEnv("DB_TIMEZONE", "Asia/Jakarta"),
+			Host:                getEnv("DB_HOST", "localhost"),
+			Port:                getEnvAsInt("DB_PORT", 5432),
+			User:                getEnv("DB_USER", "edsa"),
+			Password:            getEnv("DB_PASSWORD", "password"),
+			Name:                getEnv("DB_NAME", "edsa_staging"),
+			SSLMode:             getEnv("DB_SSLMODE", "disable"),
+			TimeZone:            getEnv("DB_TIMEZONE", "Asia/Jakarta"),
+			PoolMaxIdleConns:    getEnvAsInt("DB_POOL_MAX_IDLE_CONNS", 10),
+			PoolMaxOpenConns:    getEnvAsInt("DB_POOL_MAX_OPEN_CONNS", 100),
+			PoolConnMaxLifetime: getEnvAsInt("DB_POOL_CONN_MAX_LIFETIME_MIN", 60),
 		},
 		Security: Security{
 			PasetoSymmetricKey: getEnv("PASETO_SYMMETRIC_KEY", ""),

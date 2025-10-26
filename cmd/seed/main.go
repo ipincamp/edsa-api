@@ -47,9 +47,16 @@ func main() {
 
 	// Use seederLogger for initial messages
 	seederLogger.Println("🌱 Loading configuration...")
+	// Load config first
 	config.LoadConfig()
-	seederLogger.Println("🔗 Establishing database connection...")
-	db := database.NewPostgresConnection(config.GetDatabaseDSN(), config.AppConfig.App.Env)
+	cfg := config.AppConfig
+
+	log.Println("🔧 Initializing database connection...")
+	db, err := database.NewPostgresConnection(cfg) // Pass config
+	if err != nil {                                // Handle error
+		log.Fatalf("❌ Failed to connect to database: %v", err)
+	}
+	log.Println("🔗 Database connection established.") // Log success after check
 
 	seederLogger.Println("⏳ Starting database seeding transaction...")
 
