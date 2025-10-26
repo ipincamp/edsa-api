@@ -13,6 +13,9 @@ func RunAllSeeders(db *gorm.DB) error {
 	if err := RoleSeeder(db); err != nil {
 		return err
 	}
+	if err := DefaultAvatarsSeeder(db); err != nil {
+		return err
+	}
 	if err := UserAdminSeeder(db); err != nil {
 		return err
 	}

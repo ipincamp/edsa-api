@@ -4,8 +4,10 @@ import (
 	"fmt"
 	"log"
 
+	"github.com/google/uuid"
 	"github.com/ipincamp/go-edsa-api/internal/config"
 	"github.com/ipincamp/go-edsa-api/internal/database/factories"
+	"github.com/ipincamp/go-edsa-api/internal/database/shared"
 	repo "github.com/ipincamp/go-edsa-api/internal/repository/gorm"
 	"github.com/ipincamp/go-edsa-api/internal/service/argon2id"
 	"gorm.io/gorm"
@@ -40,13 +42,22 @@ func UserAdminSeeder(db *gorm.DB) error {
 		return fmt.Errorf("failed to hash admin password for seeder: %w", err)
 	}
 
+	// Ambil ID avatar admin (avatar4.png) dari map
+	var adminAvatarIDPtr *uuid.UUID
+	if avatarID, ok := shared.DefaultAvatarAssets["avatar4.png"]; ok {
+		idCopy := avatarID
+		adminAvatarIDPtr = &idCopy
+	} else {
+		log.Println("WARNING: Default admin avatar 'avatar4.png' not found in seeded assets.")
+	}
+
 	// 5. Buat user admin baru dari config
 	user := &repo.UserGORM{
 		Name:             adminName,
 		Email:            adminEmail,
 		Password:         hashedPassword,
 		RoleID:           userRole.ID,
-		ProfilePictureID: nil,
+		ProfilePictureID: adminAvatarIDPtr,
 	}
 
 	// 6. Simpan ke database
@@ -67,7 +78,7 @@ func UserTeacherSeeder(db *gorm.DB) error {
 
 	count := 3
 	for i := 0; i < count; i++ {
-		user := factories.UserFactory(userRole.ID)
+		user := factories.UserFactory(db, userRole.ID, "avatar3.png")
 
 		var existing repo.UserGORM
 		if db.Where("email = ?", user.Email).First(&existing).Error == nil {
@@ -93,7 +104,7 @@ func UserStudentSeeder(db *gorm.DB) error {
 
 	count := 5
 	for i := 0; i < count; i++ {
-		user := factories.UserFactory(userRole.ID)
+		user := factories.UserFactory(db, userRole.ID, "avatar2.png")
 
 		var existing repo.UserGORM
 		if db.Where("email = ?", user.Email).First(&existing).Error == nil {
@@ -119,7 +130,7 @@ func UserPublicSeeder(db *gorm.DB) error {
 
 	count := 2
 	for i := 0; i < count; i++ {
-		user := factories.UserFactory(userRole.ID)
+		user := factories.UserFactory(db, userRole.ID, "avatar1.png")
 
 		var existing repo.UserGORM
 		if db.Where("email = ?", user.Email).First(&existing).Error == nil {
