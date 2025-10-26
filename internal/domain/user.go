@@ -98,11 +98,6 @@ type ResetPasswordRequest struct {
 	NewPassword string `json:"new_password" validate:"required,min=8"`
 }
 
-// UpdateAvatarRequest adalah DTO untuk 'PATCH /users/me/avatar'
-type UpdateAvatarRequest struct {
-	MediaID uuid.UUID `json:"media_id" validate:"required,uuid"`
-}
-
 // UserResponse adalah DTO untuk data pengguna yang aman dikirim ke klien.
 type UserResponse struct {
 	ID                uuid.UUID `json:"id"`

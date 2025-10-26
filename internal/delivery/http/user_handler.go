@@ -1,6 +1,7 @@
 package http
 
 import (
+	"encoding/json"
 	"strings"
 
 	"github.com/gofiber/fiber/v2"
@@ -12,14 +13,23 @@ import (
 )
 
 type UserHandler struct {
-	userService usecase.UserService
-	validate    *validator.GoPlaygroundValidator
+	userService   usecase.UserService
+	mediaService  usecase.MediaService
+	loggerService usecase.ActivityLoggerService
+	validate      *validator.GoPlaygroundValidator
 }
 
-func NewUserHandler(us usecase.UserService, v *validator.GoPlaygroundValidator) *UserHandler {
+func NewUserHandler(
+	us usecase.UserService,
+	ms usecase.MediaService,
+	logger usecase.ActivityLoggerService,
+	v *validator.GoPlaygroundValidator,
+) *UserHandler {
 	return &UserHandler{
-		userService: us,
-		validate:    v,
+		userService:   us,
+		mediaService:  ms,
+		loggerService: logger,
+		validate:      v,
 	}
 }
 
@@ -193,19 +203,44 @@ func (h *UserHandler) UpdateAvatar(c *fiber.Ctx) error {
 	if !ok || userID == uuid.Nil {
 		return utils.SendSimpleError(c, fiber.StatusUnauthorized, "Invalid token", "Invalid user ID in token")
 	}
+	sessionID, _ := c.Locals("sessionID").(uuid.UUID)
 
-	var req domain.UpdateAvatarRequest
-
-	// 2. Parse & Validasi
-	if err := c.BodyParser(&req); err != nil {
-		return utils.SendSimpleError(c, fiber.StatusBadRequest, "Invalid request body", err.Error())
-	}
-	if errs := h.validate.ValidateStruct(req); len(errs) > 0 {
-		return utils.SendValidationErrors(c, errs)
+	// 2. Ambil file dari form field "picture"
+	file, err := c.FormFile("picture")
+	if err != nil {
+		return utils.SendSimpleError(c, fiber.StatusBadRequest, "Missing 'picture' file in form-data", err.Error())
 	}
 
-	// 3. Panggil Usecase
-	updatedUser, err := h.userService.UpdateAvatar(c.Context(), userID, req.MediaID)
+	// 3. Validasi ukuran (sesuai media_handler)
+	const maxFileSize = 1 * 1024 * 1024 // 1 MB
+	if file.Size > maxFileSize {
+		return utils.SendSimpleError(c, fiber.StatusRequestEntityTooLarge, "File is too large", "File size must be no more than 1 MB")
+	}
+
+	// 4. Panggil MediaService.UploadFile
+	// OwnerID adalah user_id, OwnerType adalah 'user_avatar'
+	uploaderIDPtr := &userID
+	asset, err := h.mediaService.UploadFile(c.Context(), file, userID.String(), domain.OwnerTypeUserAvatar, uploaderIDPtr)
+	if err != nil {
+		// mediaService.UploadFile sudah menangani error (mime type, dll)
+		return utils.SendSimpleError(c, fiber.StatusInternalServerError, err.Error(), err.Error())
+	}
+
+	// 5. Log aktivitas upload
+	details, _ := json.Marshal(map[string]interface{}{
+		"asset_id":   asset.ID,
+		"file_name":  asset.FileName,
+		"owner_type": domain.OwnerTypeUserAvatar,
+	})
+	h.loggerService.Log(c.Context(), domain.ActivityLog{
+		UserID:    userID,
+		SessionID: sessionID,
+		Action:    domain.ActionMediaUpload,
+		Details:   details,
+	})
+
+	// 6. Panggil Usecase UserService.UpdateAvatar dengan MediaID baru
+	updatedUser, err := h.userService.UpdateAvatar(c.Context(), userID, asset.ID)
 	if err != nil {
 		if err.Error() == "media asset not found" || err.Error() == "user not found" {
 			return utils.SendSimpleError(c, fiber.StatusNotFound, err.Error(), err.Error())
@@ -216,7 +251,7 @@ func (h *UserHandler) UpdateAvatar(c *fiber.Ctx) error {
 		return utils.SendSimpleError(c, fiber.StatusInternalServerError, err.Error(), err.Error())
 	}
 
-	// 4. Kembalikan sukses dengan data user yang diperbarui
+	// 7. Kembalikan sukses dengan data user yang diperbarui
 	return utils.SendSuccess(c, fiber.StatusOK, "Avatar updated successfully", updatedUser)
 }
 

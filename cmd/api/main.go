@@ -135,7 +135,7 @@ func main() {
 	)
 
 	// 7. Init Handlers
-	userHandler := http.NewUserHandler(userService, validate)
+	userHandler := http.NewUserHandler(userService, mediaService, loggerService, validate)
 	adminHandler := http.NewAdminHandler(adminService, validate)
 	appHandler := http.NewAppHandler(appService, dashboardService, validate)
 	dashboardHandler := http.NewDashboardHandler(dashboardService, validate)
