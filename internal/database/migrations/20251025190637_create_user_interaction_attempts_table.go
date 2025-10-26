@@ -39,7 +39,7 @@ func CreateUserInteractionAttemptsTable() *gormigrate.Migration {
 			return tx.AutoMigrate(&UserInteractionAttempt{})
 		},
 		Rollback: func(tx *gorm.DB) error {
-			return tx.Migrator().DropTable("user_interaction_attempts")
+			return tx.Migrator().DropTable(&UserInteractionAttempt{})
 		},
 	}
 }

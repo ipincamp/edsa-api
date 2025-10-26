@@ -30,7 +30,7 @@ func CreatePagesTable() *gormigrate.Migration {
 			return tx.AutoMigrate(&Page{})
 		},
 		Rollback: func(tx *gorm.DB) error {
-			return tx.Migrator().DropTable("pages")
+			return tx.Migrator().DropTable(&Page{})
 		},
 	}
 }

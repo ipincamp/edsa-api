@@ -51,7 +51,7 @@ func CreateApprovalRequestsTable() *gormigrate.Migration {
 			return tx.AutoMigrate(&ApprovalRequest{})
 		},
 		Rollback: func(tx *gorm.DB) error {
-			return tx.Migrator().DropTable("approval_requests")
+			return tx.Migrator().DropTable(&ApprovalRequest{})
 		},
 	}
 }

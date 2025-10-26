@@ -37,7 +37,7 @@ func CreateUserBookProgressTable() *gormigrate.Migration {
 			return tx.AutoMigrate(&UserBookProgress{})
 		},
 		Rollback: func(tx *gorm.DB) error {
-			return tx.Migrator().DropTable("user_book_progress")
+			return tx.Migrator().DropTable(&UserBookProgress{})
 		},
 	}
 }

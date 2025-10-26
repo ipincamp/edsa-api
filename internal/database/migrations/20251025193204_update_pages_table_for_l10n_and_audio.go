@@ -7,7 +7,8 @@ import (
 
 func UpdatePagesTableForL10nAndAudio() *gormigrate.Migration {
 	type Page struct {
-		ID uint `gorm:"primarykey"`
+		ID            uint   `gorm:"primarykey"`
+		NarrativeText string `gorm:"type:text"`
 
 		// Kolom baru untuk L10n
 		Narration_ID string `gorm:"type:text"`
@@ -18,12 +19,6 @@ func UpdatePagesTableForL10nAndAudio() *gormigrate.Migration {
 
 		// Kolom baru untuk Post Activity
 		IsPostActivity bool `gorm:"default:false;not null;index"`
-	}
-
-	// Definisikan struct untuk rollback (menambahkan kembali kolom lama)
-	type OldPage struct {
-		ID            uint   `gorm:"primarykey"`
-		NarrativeText string `gorm:"type:text"`
 	}
 
 	return &gormigrate.Migration{
@@ -39,21 +34,21 @@ func UpdatePagesTableForL10nAndAudio() *gormigrate.Migration {
 		},
 		Rollback: func(tx *gorm.DB) error {
 			// 1. Tambahkan kembali kolom 'narrative_text'
-			if err := tx.Migrator().AddColumn(&OldPage{}, "NarrativeText"); err != nil {
+			if err := tx.Migrator().AddColumn(&Page{}, "NarrativeText"); err != nil {
 				return err
 			}
 
 			// 2. Hapus kolom-kolom baru
-			if err := tx.Migrator().DropColumn(&Page{}, "narration_id"); err != nil {
+			if err := tx.Migrator().DropColumn(&Page{}, "Narration_ID"); err != nil {
 				return err
 			}
-			if err := tx.Migrator().DropColumn(&Page{}, "narration_en"); err != nil {
+			if err := tx.Migrator().DropColumn(&Page{}, "Narration_EN"); err != nil {
 				return err
 			}
-			if err := tx.Migrator().DropColumn(&Page{}, "audio_narration_url"); err != nil {
+			if err := tx.Migrator().DropColumn(&Page{}, "AudioNarrationURL"); err != nil {
 				return err
 			}
-			if err := tx.Migrator().DropColumn(&Page{}, "is_post_activity"); err != nil {
+			if err := tx.Migrator().DropColumn(&Page{}, "IsPostActivity"); err != nil {
 				return err
 			}
 			return nil

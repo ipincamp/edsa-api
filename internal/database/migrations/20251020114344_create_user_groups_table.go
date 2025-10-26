@@ -27,7 +27,7 @@ func CreateUserGroupsTable() *gormigrate.Migration {
 			return tx.AutoMigrate(&UserGroup{})
 		},
 		Rollback: func(tx *gorm.DB) error {
-			return tx.Migrator().DropTable("user_groups")
+			return tx.Migrator().DropTable(&UserGroup{})
 		},
 	}
 }

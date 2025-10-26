@@ -34,7 +34,7 @@ func CreateUserGameScoresTable() *gormigrate.Migration {
 			return tx.AutoMigrate(&UserGameScore{})
 		},
 		Rollback: func(tx *gorm.DB) error {
-			return tx.Migrator().DropTable("user_game_scores")
+			return tx.Migrator().DropTable(&UserGameScore{})
 		},
 	}
 }

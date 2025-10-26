@@ -22,7 +22,7 @@ func CreateSubjectsTable() *gormigrate.Migration {
 			return tx.AutoMigrate(&Subject{})
 		},
 		Rollback: func(tx *gorm.DB) error {
-			return tx.Migrator().DropTable("subjects")
+			return tx.Migrator().DropTable(&Subject{})
 		},
 	}
 }

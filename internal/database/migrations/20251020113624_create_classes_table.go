@@ -28,7 +28,7 @@ func CreateClassesTable() *gormigrate.Migration {
 			return tx.AutoMigrate(&Class{})
 		},
 		Rollback: func(tx *gorm.DB) error {
-			return tx.Migrator().DropTable("classes")
+			return tx.Migrator().DropTable(&Class{})
 		},
 	}
 }

@@ -26,7 +26,7 @@ func CreateBooksTable() *gormigrate.Migration {
 			return tx.AutoMigrate(&Book{})
 		},
 		Rollback: func(tx *gorm.DB) error {
-			return tx.Migrator().DropTable("books")
+			return tx.Migrator().DropTable(&Book{})
 		},
 	}
 }

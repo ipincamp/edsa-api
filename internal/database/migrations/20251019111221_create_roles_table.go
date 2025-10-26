@@ -22,7 +22,7 @@ func CreateRolesTable() *gormigrate.Migration {
 			return tx.AutoMigrate(&Role{})
 		},
 		Rollback: func(tx *gorm.DB) error {
-			return tx.Migrator().DropTable("roles")
+			return tx.Migrator().DropTable(&Role{})
 		},
 	}
 }

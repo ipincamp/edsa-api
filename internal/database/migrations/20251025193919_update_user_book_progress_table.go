@@ -29,7 +29,7 @@ func UpdateUserBookProgressTable() *gormigrate.Migration {
 
 			// 2. Ubah tipe 'highest_score' kembali ke INT
 			// Kita gunakan TRUNC() untuk mengonversi decimal (cth: 85.5) kembali ke integer (85)
-			return tx.Exec("ALTER TABLE user_book_progress ALTER COLUMN highest_score TYPE INT USING (TRUNC(highest_score)::integer), ALTER COLUMN highest_score SET DEFAULT 0").Error
+			return tx.Exec("ALTER TABLE user_book_progresses ALTER COLUMN highest_score TYPE INT USING (TRUNC(highest_score)::integer), ALTER COLUMN highest_score SET DEFAULT 0").Error
 		},
 	}
 }

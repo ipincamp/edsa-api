@@ -30,7 +30,7 @@ func CreateInteractionsTable() *gormigrate.Migration {
 			return tx.AutoMigrate(&Interaction{})
 		},
 		Rollback: func(tx *gorm.DB) error {
-			return tx.Migrator().DropTable("interactions")
+			return tx.Migrator().DropTable(&Interaction{})
 		},
 	}
 }
