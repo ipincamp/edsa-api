@@ -28,6 +28,7 @@ func GetAllMigrations() []*gormigrate.Migration {
 		UpdatePagesTableForL10nAndAudio(),
 		UpdateUserBookProgressTable(),
 		ChangeRatingColumnToDecimal(),
+		AddAvatarFkToUsersTable(),
 		// AnotherMigration(),
 	}
 }
