@@ -3,7 +3,6 @@ package seeders
 import (
 	"fmt"
 	"log"
-	"path"
 
 	"github.com/ipincamp/go-edsa-api/internal/config"
 	"github.com/ipincamp/go-edsa-api/internal/database/factories"
@@ -27,10 +26,6 @@ func UserAdminSeeder(db *gorm.DB) error {
 	adminPassword := adminCfg.AdminPassword
 	adminName := adminCfg.AdminName
 
-	// Ambil URL avatar spesifik untuk admin
-	baseURL := config.AppConfig.Storage.StoragePublicBaseURL
-	defaultAvatarURL := baseURL + path.Join("/public/uploads", "avatar4.png")
-
 	// 3. Cek dulu agar email unik
 	var existing repo.UserGORM
 	if db.Where("email = ?", adminEmail).First(&existing).Error == nil {
@@ -47,11 +42,11 @@ func UserAdminSeeder(db *gorm.DB) error {
 
 	// 5. Buat user admin baru dari config
 	user := &repo.UserGORM{
-		Name:              adminName,
-		Email:             adminEmail,
-		Password:          hashedPassword,
-		RoleID:            userRole.ID,
-		ProfilePictureURL: defaultAvatarURL,
+		Name:             adminName,
+		Email:            adminEmail,
+		Password:         hashedPassword,
+		RoleID:           userRole.ID,
+		ProfilePictureID: nil,
 	}
 
 	// 6. Simpan ke database
@@ -72,7 +67,7 @@ func UserTeacherSeeder(db *gorm.DB) error {
 
 	count := 3
 	for i := 0; i < count; i++ {
-		user := factories.UserFactory(userRole.ID, "avatar3.png")
+		user := factories.UserFactory(userRole.ID)
 
 		var existing repo.UserGORM
 		if db.Where("email = ?", user.Email).First(&existing).Error == nil {
@@ -98,7 +93,7 @@ func UserStudentSeeder(db *gorm.DB) error {
 
 	count := 5
 	for i := 0; i < count; i++ {
-		user := factories.UserFactory(userRole.ID, "avatar2.png")
+		user := factories.UserFactory(userRole.ID)
 
 		var existing repo.UserGORM
 		if db.Where("email = ?", user.Email).First(&existing).Error == nil {
@@ -124,7 +119,7 @@ func UserPublicSeeder(db *gorm.DB) error {
 
 	count := 2
 	for i := 0; i < count; i++ {
-		user := factories.UserFactory(userRole.ID, "avatar1.png")
+		user := factories.UserFactory(userRole.ID)
 
 		var existing repo.UserGORM
 		if db.Where("email = ?", user.Email).First(&existing).Error == nil {
