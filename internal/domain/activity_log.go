@@ -10,16 +10,18 @@ import (
 
 // Konstanta untuk Aksi Log
 const (
-	ActionLogin         = "LOGIN"
-	ActionLogout        = "LOGOUT"
-	ActionRegister      = "REGISTER"
-	ActionStartBook     = "START_BOOK"
-	ActionCompleteBook  = "COMPLETE_BOOK"
-	ActionCompleteGame  = "COMPLETE_GAME"
-	ActionMediaUpload   = "MEDIA_UPLOAD"
-	ActionMediaDelete   = "MEDIA_DELETE"
-	ActionDeleteAccount = "DELETE_ACCOUNT"
-	ActionPageView      = "PAGE_VIEW"
+	ActionLogin                   = "LOGIN"
+	ActionLogout                  = "LOGOUT"
+	ActionRegister                = "REGISTER"
+	ActionStartBook               = "START_BOOK"
+	ActionCompleteBook            = "COMPLETE_BOOK"
+	ActionCompleteGame            = "COMPLETE_GAME"
+	ActionMediaUpload             = "MEDIA_UPLOAD"
+	ActionMediaDelete             = "MEDIA_DELETE"
+	ActionDeleteAccount           = "DELETE_ACCOUNT"
+	ActionPageView                = "PAGE_VIEW"
+	ActionResendVerificationEmail = "RESEND_VERIFICATION"
+	ActionVerifyEmail             = "VERIFY_EMAIL"
 )
 
 // ActivityLog adalah entitas domain inti untuk log aktivitas pengguna

@@ -275,6 +275,14 @@ func (s *userService) SendVerificationEmail(ctx context.Context, email string) e
 		return errors.New("failed to send verification email")
 	}
 
+	s.logger.Log(ctx, domain.ActivityLog{
+		UserID: user.ID,
+		Action: domain.ActionResendVerificationEmail,
+		// SessionID bisa diisi uuid.Nil karena aksi ini mungkin terjadi di luar sesi login
+		SessionID: uuid.Nil,
+		Details:   json.RawMessage(fmt.Sprintf(`{"email": "%s"}`, user.Email)),
+	})
+
 	return nil
 }
 
@@ -306,6 +314,14 @@ func (s *userService) VerifyEmail(ctx context.Context, token string) error {
 		applogger.ErrorLogger.Printf("VerifyEmail: Failed to update user %s: %v", userID, err)
 		return errors.New("failed to update verification status")
 	}
+
+	s.logger.Log(ctx, domain.ActivityLog{
+		UserID: user.ID,
+		Action: domain.ActionVerifyEmail,
+		// SessionID bisa diisi uuid.Nil karena aksi ini mungkin terjadi di luar sesi login
+		SessionID: uuid.Nil,
+		Details:   json.RawMessage(fmt.Sprintf(`{"email": "%s"}`, user.Email)),
+	})
 
 	return nil
 }
