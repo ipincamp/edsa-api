@@ -233,7 +233,7 @@ type DashboardService interface {
 
 // FileStorageService mendefinisikan kontrak untuk mengunggah file
 type FileStorageService interface {
-	Upload(file *multipart.FileHeader, fileID uuid.UUID) (filePath string, err error)
+	Upload(file *multipart.FileHeader, fileID uuid.UUID, subDirectory string) (filePath string, err error)
 	Delete(filePath string) error
 }
 

@@ -20,14 +20,20 @@ import (
 const placeholderCoverURL = "https://placehold.co/800x400/EEE/31343C/png?text=No+Cover+Yet"
 
 // Helper function to seed a single book cover
-func seedBookCover(db *gorm.DB, bookID uint, bookTitle, sourceFilename string) (string, error) { // Tambahkan bookTitle untuk logging
+func seedBookCover(db *gorm.DB, bookID uint, bookTitle, sourceFilename string) (string, error) {
 	cfg := config.AppConfig.Storage
 	sourceAssetDir := filepath.Join("internal", "assets", "books")
-	coversUploadDir := filepath.Join(cfg.StoragePath, cfg.StorageUploadDir, "covers")
-	uploadDirRelative := filepath.Join(cfg.StorageUploadDir, "covers") // "cdn/covers"
-	sourcePath := filepath.Join(sourceAssetDir, sourceFilename)        // Path file sumber asli
 
-	// Log awal untuk cover buku ini
+	// Tentukan subdirektori
+	bookCoverSubDir := filepath.Join("books", "covers")
+
+	// Direktori fisik upload (e.g., ./public/cdn/books/covers)
+	coversUploadDir := filepath.Join(cfg.StoragePath, cfg.StorageUploadDir, bookCoverSubDir)
+	// Path relatif untuk DB (e.g., "cdn/books/covers")
+	uploadDirRelative := filepath.Join(cfg.StorageUploadDir, bookCoverSubDir)
+
+	sourcePath := filepath.Join(sourceAssetDir, sourceFilename)
+
 	log.Printf("   Processing cover '%s' for book '%s' (ID: %d)...", sourceFilename, bookTitle, bookID)
 
 	// *** PENGECEKAN KEBERADAAN FILE SUMBER ***
@@ -49,8 +55,10 @@ func seedBookCover(db *gorm.DB, bookID uint, bookTitle, sourceFilename string) (
 	fileUUID := uuid.New()
 	fileExt := filepath.Ext(sourceFilename)
 	newFilenameUUID := fileUUID.String() + fileExt
-	destPathUUID := filepath.Join(coversUploadDir, newFilenameUUID)
+	destPathUUID := filepath.Join(coversUploadDir, newFilenameUUID) // Path fisik sudah benar
+	// Path DB (e.g., "cdn/books/covers/uuid.png")
 	dbFilePathUUID := path.Join(uploadDirRelative, newFilenameUUID)
+	// URL Publik (e.g., "http://localhost:8000/cdn/books/covers/uuid.png")
 	publicURLUUID := cfg.StoragePublicBaseURL + path.Join(cfg.StoragePublicURL, dbFilePathUUID)
 
 	// --- Cek & Salin File Fisik ---
@@ -129,11 +137,12 @@ func seedBookCover(db *gorm.DB, bookID uint, bookTitle, sourceFilename string) (
 	}
 
 	// Log detail asset yang di-seed atau ditemukan (mirip AvatarSeeder)
-	logMsgFormat := "   -> Seeded asset DB record: OriginalName='%s', StoredAs='%s' (AssetID: %s, Size: %d, Type: %s)"
-	if result.RowsAffected == 0 { // Jika record sudah ada
-		logMsgFormat = "   -> Found existing asset DB record: OriginalName='%s', StoredAs='%s' (AssetID: %s, Size: %d, Type: %s)"
+	logMsgFormat := "   -> Seeded asset DB record: OriginalName='%s', StoredAs='%s' (AssetID: %s, Size: %d, Type: %s, Path: %s)"
+	if result.RowsAffected == 0 {
+		logMsgFormat = "   -> Found existing asset DB record: OriginalName='%s', StoredAs='%s' (AssetID: %s, Size: %d, Type: %s, Path: %s)"
 	}
-	log.Printf(logMsgFormat, asset.FileName, newFilenameUUID, asset.ID, asset.FileSize, asset.MimeType)
+	// Tambahkan Path ke log untuk verifikasi
+	log.Printf(logMsgFormat, asset.FileName, newFilenameUUID, asset.ID, asset.FileSize, asset.MimeType, asset.FilePath)
 
 	return asset.PublicURL, nil // Kembalikan URL asli yang di-seed/ditemukan
 }

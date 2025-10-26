@@ -21,20 +21,22 @@ func NewLocalStorageService(cfg *config.Config) usecase.FileStorageService {
 }
 
 // Upload menyimpan file ke disk lokal
-func (s *localStorageService) Upload(file *multipart.FileHeader, fileID uuid.UUID) (string, error) {
+func (s *localStorageService) Upload(file *multipart.FileHeader, fileID uuid.UUID, subDirectory string) (string, error) {
 	// 1. Buat nama file unik
 	ext := filepath.Ext(file.Filename)
 	uniqueFilename := fileID.String() + ext
 
 	// 2. Tentukan path tujuan
-	// Cth: ./public/cdn
-	uploadDir := filepath.Join(s.cfg.Storage.StoragePath, s.cfg.Storage.StorageUploadDir)
-	// Cth: ./public/cdn/xxxxxxxx-xxxx.png
+	// Cth base upload dir: ./public/cdn
+	uploadBaseDir := filepath.Join(s.cfg.Storage.StoragePath, s.cfg.Storage.StorageUploadDir)
+	// Cth upload dir spesifik: ./public/cdn/avatars
+	uploadDir := filepath.Join(uploadBaseDir, subDirectory)
+	// Cth dest path: ./public/cdn/avatars/xxxxxxxx-xxxx.png
 	destPath := filepath.Join(uploadDir, uniqueFilename)
 
-	// 3. Buat direktori jika belum ada
+	// 3. Buat direktori jika belum ada (termasuk subdirektori)
 	if err := os.MkdirAll(uploadDir, os.ModePerm); err != nil {
-		return "", fmt.Errorf("failed to create upload directory: %w", err)
+		return "", fmt.Errorf("failed to create upload directory %s: %w", uploadDir, err)
 	}
 
 	// 4. Buka file sumber
@@ -47,18 +49,20 @@ func (s *localStorageService) Upload(file *multipart.FileHeader, fileID uuid.UUI
 	// 5. Buat file tujuan
 	dst, err := os.Create(destPath)
 	if err != nil {
-		return "", fmt.Errorf("failed to create destination file: %w", err)
+		return "", fmt.Errorf("failed to create destination file %s: %w", destPath, err)
 	}
 	defer dst.Close()
 
 	// 6. Salin file
 	if _, err = io.Copy(dst, src); err != nil {
-		return "", fmt.Errorf("failed to copy file to destination: %w", err)
+		// Jika copy gagal, coba hapus file tujuan yang mungkin sebagian terbuat
+		os.Remove(destPath)
+		return "", fmt.Errorf("failed to copy file to destination %s: %w", destPath, err)
 	}
 
-	// 7. Tentukan path relatif untuk DB dan URL publik
-	// Cth: cdn/xxxxxxxx-xxxx.png
-	relativePath := filepath.ToSlash(filepath.Join(s.cfg.Storage.StorageUploadDir, uniqueFilename))
+	// 7. Tentukan path relatif untuk DB (HARUS menyertakan subdirektori)
+	// Cth: cdn/avatars/xxxxxxxx-xxxx.png
+	relativePath := filepath.ToSlash(filepath.Join(s.cfg.Storage.StorageUploadDir, subDirectory, uniqueFilename))
 
 	return relativePath, nil
 }

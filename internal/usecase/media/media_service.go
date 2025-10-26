@@ -121,19 +121,34 @@ func (s *mediaService) UploadFile(ctx context.Context, file *multipart.FileHeade
 	// 1. Buat UUID di sini
 	assetID := uuid.New()
 
-	// 2. Simpan file fisik, dapatkan path relatif (cth: "cdn/uuid.png")
-	// Perhatikan: storageSvc.Upload HARUS mengembalikan path relatif terhadap STORAGE_PATH
-	// e.g., "cdn/uuid.png" atau "cdn/subfolder/uuid.png"
-	filePath, err := s.storageSvc.Upload(file, assetID)
+	// Tentukan SubDirectory
+	var subDirectory string
+	switch ownerType {
+	case domain.OwnerTypeUserAvatar:
+		subDirectory = "avatars"
+	case domain.OwnerTypeBookCover:
+		subDirectory = filepath.Join("books", "covers")
+	// Tambahkan case lain jika perlu
+	// case "interaction_audio":
+	// 	subDirectory = filepath.Join("interactions", "audio")
+	default:
+		// Fallback ke direktori 'others' atau root cdn jika tipe tidak dikenal
+		subDirectory = "others"
+		applogger.ErrorLogger.Printf("UploadFile: Unknown ownerType '%s', saving to '%s' directory", ownerType, subDirectory)
+	}
+
+	// 2. Simpan file fisik, dapatkan path relatif (cth: "cdn/avatars/uuid.png")
+	// Teruskan subDirectory ke storageSvc.Upload
+	filePath, err := s.storageSvc.Upload(file, assetID, subDirectory) // <-- Ubah di sini
 	if err != nil {
-		applogger.ErrorLogger.Printf("UploadFile: Failed to upload to storage: %v", err)
+		applogger.ErrorLogger.Printf("UploadFile: Failed to upload to storage (subdir: %s): %v", subDirectory, err)
 		return nil, err
 	}
 
-	// 3. Buat URL statis lengkap
-	baseURL := s.cfg.Storage.StoragePublicBaseURL                     // e.g., "http://localhost:8000"
-	publicPath := path.Join(s.cfg.Storage.StoragePublicURL, filePath) // e.g., path.Join("/", "cdn/uuid.png") -> "/cdn/uuid.png"
-	publicURL := baseURL + publicPath                                 // e.g., "http://localhost:8000/cdn/uuid.png"
+	// 3. Buat URL statis lengkap (Logika ini tetap sama karena filePath sudah benar)
+	baseURL := s.cfg.Storage.StoragePublicBaseURL
+	publicPath := path.Join(s.cfg.Storage.StoragePublicURL, filePath) // filePath sudah termasuk subdir, misal "/cdn/avatars/uuid.png"
+	publicURL := baseURL + publicPath                                 // misal "http://localhost:8000/cdn/avatars/uuid.png"
 
 	// 4. Slugify nama file asli untuk disimpan di DB
 	cleanFileName := slugifyFilename(file.Filename)
@@ -142,8 +157,8 @@ func (s *mediaService) UploadFile(ctx context.Context, file *multipart.FileHeade
 	asset := &domain.MediaAsset{
 		ID:               assetID,
 		FileName:         cleanFileName,
-		FilePath:         filePath,  // "cdn/uuid.png"
-		PublicURL:        publicURL, // "http://localhost:8000/cdn/uuid.png"
+		FilePath:         filePath,  // "cdn/avatars/uuid.png" atau "cdn/books/covers/uuid.png"
+		PublicURL:        publicURL, // "http://localhost:8000/cdn/avatars/uuid.png"
 		MimeType:         mime.String(),
 		FileSize:         file.Size,
 		OwnerID:          ownerID,
@@ -151,15 +166,13 @@ func (s *mediaService) UploadFile(ctx context.Context, file *multipart.FileHeade
 		UploadedByUserID: uploaderID,
 	}
 
-	// 6. Simpan metadata ke database
+	// 6. Simpan metadata ke database (Logika ini tetap sama)
 	if err := s.mediaRepo.Create(ctx, asset); err != nil {
 		applogger.ErrorLogger.Printf("UploadFile: Failed to create media asset in DB: %v", err)
-		// Jika simpan DB gagal, hapus file fisik yang sudah terlanjur di-upload.
+		// Jika simpan DB gagal, hapus file fisik
 		if delErr := s.storageSvc.Delete(filePath); delErr != nil {
-			// Ini adalah skenario terburuk: DB gagal, Hapus file juga gagal.
 			applogger.ErrorLogger.Printf("UploadFile: CRITICAL! DB insert failed AND physical file delete failed for %s: %v", filePath, delErr)
 		}
-		// Kembalikan error database yang asli
 		return nil, err
 	}
 

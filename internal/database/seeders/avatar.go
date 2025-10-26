@@ -18,7 +18,6 @@ import (
 
 // Update function signature to accept logger
 func DefaultAvatarsSeeder(db *gorm.DB, logger *log.Logger) error {
-	// Replace log.Println with logger.Println or logger.Printf
 	logger.Println("Seeding default avatar media assets (Original Filename, UUID Storage)...")
 
 	cfg := config.AppConfig.Storage
@@ -30,21 +29,16 @@ func DefaultAvatarsSeeder(db *gorm.DB, logger *log.Logger) error {
 	}
 
 	sourceAssetDir := filepath.Join("internal", "assets", "avatars")
-	// Direktori fisik upload (e.g., ./public/cdn)
-	uploadDir := filepath.Join(cfg.StoragePath, cfg.StorageUploadDir)
+	// Direktori fisik upload (e.g., ./public/cdn/avatars)
+	avatarSubDir := "avatars"
+	uploadDir := filepath.Join(cfg.StoragePath, cfg.StorageUploadDir, avatarSubDir)
 
-	// Pastikan direktori tujuan ada
 	if err := os.MkdirAll(uploadDir, os.ModePerm); err != nil {
-		// Use logger for fatal errors too if desired, though log.Fatalf exits
-		// logger.Printf("ERROR: Failed to create public upload directory '%s': %v", uploadDir, err)
 		return fmt.Errorf("failed to create public upload directory '%s': %w", uploadDir, err)
 	}
 
 	for logicalName, sourceFilename := range originalAvatarMap {
-		// Use logger.Printf instead of log.Printf
 		logger.Printf("   Processing avatar '%s' (logical name: %s)...", sourceFilename, logicalName)
-
-		// --- File Handling & Path Generation ---
 		sourcePath := filepath.Join(sourceAssetDir, sourceFilename)
 
 		// Cek file sumber dulu
@@ -62,9 +56,9 @@ func DefaultAvatarsSeeder(db *gorm.DB, logger *log.Logger) error {
 		newFilenameUUID := fileUUID.String() + fileExt            // Nama file fisik (UUID)
 		destPathUUID := filepath.Join(uploadDir, newFilenameUUID) // Path file tujuan fisik (UUID)
 
-		// Path DB (e.g., "cdn/uuid.png")
-		dbFilePathUUID := path.Join(cfg.StorageUploadDir, newFilenameUUID)
-		// URL Publik (e.g., "http://localhost:8000/cdn/uuid.png")
+		// Path DB (e.g., "cdn/avatars/uuid.png")
+		dbFilePathUUID := path.Join(cfg.StorageUploadDir, avatarSubDir, newFilenameUUID)
+		// URL Publik (e.g., "http://localhost:8000/cdn/avatars/uuid.png")
 		publicURLUUID := cfg.StoragePublicBaseURL + path.Join(cfg.StoragePublicURL, dbFilePathUUID)
 
 		// --- Cek & Salin File Fisik ---
@@ -124,14 +118,14 @@ func DefaultAvatarsSeeder(db *gorm.DB, logger *log.Logger) error {
 		assetID := uuid.New()
 		asset := repo.MediaAssetGORM{
 			ID:               assetID,
-			FileName:         sourceFilename, // Nama file asli
-			FilePath:         dbFilePathUUID, // Path relatif disimpan
-			PublicURL:        publicURLUUID,  // URL publik lengkap
+			FileName:         sourceFilename,
+			FilePath:         dbFilePathUUID,
+			PublicURL:        publicURLUUID,
 			MimeType:         mimeType,
 			FileSize:         fileSize,
-			OwnerType:        domain.OwnerTypeUserAvatar,             // Tipe pemilik
-			OwnerID:          fmt.Sprintf("default-%s", logicalName), // ID unik untuk avatar default
-			UploadedByUserID: nil,                                    // Di-seed oleh sistem
+			OwnerType:        domain.OwnerTypeUserAvatar,
+			OwnerID:          fmt.Sprintf("default-%s", logicalName),
+			UploadedByUserID: nil,
 		}
 
 		// Gunakan FirstOrCreate berdasarkan OwnerType dan OwnerID unik ini
