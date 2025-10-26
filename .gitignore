@@ -44,4 +44,3 @@ go.work.sum
 # Abaikan semua yang ada di dalam public/uploads/
 # Ini akan mengabaikan file yang di-upload oleh pengguna
 public/uploads/*
-!public/uploads/avatar*.png
