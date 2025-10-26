@@ -85,7 +85,7 @@ func UserAdminSeeder(db *gorm.DB) error {
 	return nil
 }
 
-// seedUsersBatch adalah fungsi helper generik untuk batch insert user
+// seedUsersBatch sekarang hash password sekali saja
 func seedUsersBatch(db *gorm.DB, roleName, avatarFileName string, count int) error {
 	log.Printf("Seeding %d %s users...", count, roleName)
 
@@ -95,29 +95,38 @@ func seedUsersBatch(db *gorm.DB, roleName, avatarFileName string, count int) err
 		return fmt.Errorf("failed to find '%s' role: %w", roleName, err)
 	}
 
-	// 2. Ambil semua email yang sudah ada
+	// 2. Hash password default SEKALI di sini
+	passSvc := argon2id.NewPasswordService()
+	defaultPassword := "password" // Password default untuk user dummy
+	hashedDefaultPassword, err := passSvc.Hash(defaultPassword)
+	if err != nil {
+		return fmt.Errorf("failed to hash default password for %s seeder: %w", roleName, err)
+	}
+	log.Printf("   Hashed default password for %s users.", roleName)
+
+	// 3. Ambil email yang sudah ada
 	existingEmails, err := getExistingEmails(db)
 	if err != nil {
 		return err
 	}
 	log.Printf("   Loaded %d existing emails.", len(existingEmails))
 
-	// 3. Buat user baru dalam batch
+	// 4. Buat user baru dalam batch
 	newUsers := make([]*repo.UserGORM, 0, count)
-	generatedEmails := make(map[string]bool) // Untuk cek duplikasi dalam batch ini
-	attempts := 0                            // Batasi percobaan untuk menghindari infinite loop
+	generatedEmails := make(map[string]bool)
+	attempts := 0
+	maxAttempts := count * 5
 
-	for len(newUsers) < count && attempts < count*5 { // Beri toleransi 5x percobaan
+	for len(newUsers) < count && attempts < maxAttempts {
 		attempts++
-		user := factories.UserFactory(db, userRole.ID, avatarFileName)
+		// Panggil factory dengan hash yang sudah dibuat
+		user := factories.UserFactory(db, userRole.ID, avatarFileName, hashedDefaultPassword)
 
-		// 4. Cek duplikasi email (global dan dalam batch)
+		// 5. Cek duplikasi email
 		if existingEmails[user.Email] || generatedEmails[user.Email] {
-			log.Printf("   Email %s already exists, regenerating...", user.Email)
-			continue // Coba lagi
+			// log.Printf("   Email %s already exists, regenerating...", user.Email) // Optional logging
+			continue
 		}
-
-		// Jika unik, tambahkan ke batch dan catat emailnya
 		newUsers = append(newUsers, user)
 		generatedEmails[user.Email] = true
 	}
@@ -126,7 +135,7 @@ func seedUsersBatch(db *gorm.DB, roleName, avatarFileName string, count int) err
 		log.Printf("   WARNING: Could only generate %d unique users after %d attempts.", len(newUsers), attempts)
 	}
 
-	// 5. Batch Insert ke database jika ada user baru
+	// 6. Batch Insert
 	if len(newUsers) > 0 {
 		log.Printf("   Inserting %d new %s users into database...", len(newUsers), roleName)
 		if err := db.Create(&newUsers).Error; err != nil {

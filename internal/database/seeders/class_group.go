@@ -8,13 +8,14 @@ import (
 	"github.com/ipincamp/go-edsa-api/internal/database/factories"
 	"github.com/ipincamp/go-edsa-api/internal/domain"
 	repo "github.com/ipincamp/go-edsa-api/internal/repository/gorm"
+	"github.com/ipincamp/go-edsa-api/internal/service/argon2id"
 	"gorm.io/gorm"
 )
 
 func ClassGroupSeeder(db *gorm.DB) error {
 	log.Println("Seeding subjects, classes, groups, and user_groups...")
 
-	// 1. Dapatkan ID role "teacher" dan "student"
+	// 1. Dapatkan Role ID
 	var teacherRole repo.RoleGORM
 	if err := db.Where("name = ?", domain.RoleNameTeacher).First(&teacherRole).Error; err != nil {
 		return fmt.Errorf("failed to find 'teacher' role: %w", err)
@@ -24,43 +25,44 @@ func ClassGroupSeeder(db *gorm.DB) error {
 		return fmt.Errorf("failed to find 'student' role: %w", err)
 	}
 
-	// 2. Ambil semua email yang sudah ada SEBELUM loop utama
+	// 2. Hash password default SEKALI di sini
+	passSvc := argon2id.NewPasswordService()
+	defaultPassword := "password"
+	hashedDefaultPassword, err := passSvc.Hash(defaultPassword)
+	if err != nil {
+		return fmt.Errorf("failed to hash default password for ClassGroupSeeder: %w", err)
+	}
+	log.Println("   Hashed default password for teachers and students in groups.")
+
+	// 3. Ambil email yang sudah ada
 	existingEmails, err := getExistingEmails(db)
 	if err != nil {
 		return err
 	}
-	log.Printf("Loaded %d existing emails for ClassGroupSeeder.", len(existingEmails))
+	log.Printf("   Loaded %d existing emails for ClassGroupSeeder.", len(existingEmails))
 
-	// 3. Tentukan data subject
+	// 4. Data subject
 	subjectData := map[string]int{
 		"English for Beginner":     5,
 		"English for Intermediate": 3,
 		"English for Expert":       1,
 	}
 
-	// 3. Mulai iterasi
+	// 5. Iterasi
 	for subjectName, numGroups := range subjectData {
 		// --- BUAT SUBJECT ---
 		subject := repo.SubjectGORM{Name: subjectName}
-		if err := db.FirstOrCreate(&subject, repo.SubjectGORM{Name: subject.Name}).Error; err != nil {
-			return fmt.Errorf("failed to seed subject '%s': %w", subject.Name, err)
-		}
-		if subject.ID != 0 {
-			log.Printf("Seeded Subject: %s (ID: %d)", subject.Name, subject.ID)
-		}
+		db.FirstOrCreate(&subject, repo.SubjectGORM{Name: subject.Name})
+		log.Printf("Seeded Subject: %s (ID: %d)", subject.Name, subject.ID)
 
-		// --- BUAT 1 CLASS PER SUBJECT ---
+		// --- BUAT CLASS ---
 		// Cth: "Beginner Class", "Intermediate Class"
 		className := strings.Split(subject.Name, " ")[1] + " Class"
 		class := repo.ClassGORM{Name: className, SubjectID: subject.ID}
-		if err := db.FirstOrCreate(&class, repo.ClassGORM{Name: class.Name, SubjectID: class.SubjectID}).Error; err != nil {
-			return fmt.Errorf("failed to seed class '%s': %w", class.Name, err)
-		}
-		if class.ID != 0 {
-			log.Printf("  -> Seeded Class: %s (ID: %d)", class.Name, class.ID)
-		}
+		db.FirstOrCreate(&class, repo.ClassGORM{Name: class.Name, SubjectID: class.SubjectID})
+		log.Printf("  -> Seeded Class: %s (ID: %d)", class.Name, class.ID)
 
-		// --- BUAT N GROUPS PER CLASS ---
+		// --- BUAT GROUP ---
 		for i := 1; i <= numGroups; i++ {
 			// Cth: "Beginner Group 1", "Beginner Group 2", ...
 			groupName := fmt.Sprintf("%s Group %d", strings.Split(subject.Name, " ")[1], i)
@@ -72,52 +74,49 @@ func ClassGroupSeeder(db *gorm.DB) error {
 			const numTeachers = 2
 			const numStudents = 40
 			usersToAssign := make([]*repo.UserGORM, 0, numTeachers+numStudents)
-			generatedEmails := make(map[string]bool) // Email unik dalam batch group ini
+			generatedEmails := make(map[string]bool)
 			attempts := 0
-			maxAttempts := (numTeachers + numStudents) * 5 // Toleransi percobaan
+			maxAttempts := (numTeachers + numStudents) * 5
 
 			// Buat Teacher
 			for len(usersToAssign) < numTeachers && attempts < maxAttempts {
 				attempts++
-				teacher := factories.UserFactory(db, teacherRole.ID, "avatar3.png")
-				// Cek duplikasi (global & batch)
+				// Panggil factory dengan hash default
+				teacher := factories.UserFactory(db, teacherRole.ID, "avatar3.png", hashedDefaultPassword)
 				if existingEmails[teacher.Email] || generatedEmails[teacher.Email] {
 					continue
 				}
 				usersToAssign = append(usersToAssign, teacher)
 				generatedEmails[teacher.Email] = true
-				existingEmails[teacher.Email] = true // Tambahkan ke global set agar tidak dipakai group lain
+				existingEmails[teacher.Email] = true
 			}
 
 			// Buat Student
 			targetUserCount := numTeachers + numStudents
 			for len(usersToAssign) < targetUserCount && attempts < maxAttempts {
 				attempts++
-				student := factories.UserFactory(db, studentRole.ID, "avatar2.png")
-				// Cek duplikasi (global & batch)
+				// Panggil factory dengan hash default
+				student := factories.UserFactory(db, studentRole.ID, "avatar2.png", hashedDefaultPassword)
 				if existingEmails[student.Email] || generatedEmails[student.Email] {
 					continue
 				}
 				usersToAssign = append(usersToAssign, student)
 				generatedEmails[student.Email] = true
-				existingEmails[student.Email] = true // Tambahkan ke global set
+				existingEmails[student.Email] = true
 			}
 
-			// Laporkan jika gagal membuat semua user
 			if len(usersToAssign) < targetUserCount {
 				log.Printf("      WARNING: Could only generate %d unique users for group %s after %d attempts.", len(usersToAssign), group.Name, attempts)
 			}
 
-			// Batch Insert Users ke DB
+			// Batch Insert Users & Assign to Group
 			if len(usersToAssign) > 0 {
 				log.Printf("      -> Inserting %d users for group %s...", len(usersToAssign), group.Name)
 				if err := db.Create(&usersToAssign).Error; err != nil {
-					// Jika batch insert gagal, log error dan mungkin hentikan seeder
 					return fmt.Errorf("failed to batch insert users for group %s: %w", group.Name, err)
 				}
 				log.Printf("      -> Successfully inserted %d users.", len(usersToAssign))
 
-				// Tambahkan relasi User-Group (Append association)
 				if err := db.Model(&group).Association("Users").Append(usersToAssign); err != nil {
 					return fmt.Errorf("failed to assign users to group %s: %w", group.Name, err)
 				}
