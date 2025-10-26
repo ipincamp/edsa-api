@@ -7,6 +7,12 @@ import (
 	"gorm.io/gorm"
 )
 
+// Konstanta untuk OwnerType
+const (
+	OwnerTypeUserAvatar = "user_avatar"
+	// Tambahkan tipe lain di sini jika perlu
+)
+
 // MediaAsset adalah entitas domain inti untuk aset media
 type MediaAsset struct {
 	ID               uuid.UUID

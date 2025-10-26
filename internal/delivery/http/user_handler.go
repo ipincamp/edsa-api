@@ -186,6 +186,40 @@ func (h *UserHandler) UpdateUserDetails(c *fiber.Ctx) error {
 	return utils.SendSuccess(c, fiber.StatusOK, "User details updated successfully", updatedUser)
 }
 
+// UpdateAvatar menangani 'PATCH /api/v1/users/me/avatar'
+func (h *UserHandler) UpdateAvatar(c *fiber.Ctx) error {
+	// 1. Ambil user ID dari middleware
+	userID, ok := c.Locals("userID").(uuid.UUID)
+	if !ok || userID == uuid.Nil {
+		return utils.SendSimpleError(c, fiber.StatusUnauthorized, "Invalid token", "Invalid user ID in token")
+	}
+
+	var req domain.UpdateAvatarRequest
+
+	// 2. Parse & Validasi
+	if err := c.BodyParser(&req); err != nil {
+		return utils.SendSimpleError(c, fiber.StatusBadRequest, "Invalid request body", err.Error())
+	}
+	if errs := h.validate.ValidateStruct(req); len(errs) > 0 {
+		return utils.SendValidationErrors(c, errs)
+	}
+
+	// 3. Panggil Usecase
+	updatedUser, err := h.userService.UpdateAvatar(c.Context(), userID, req.MediaID)
+	if err != nil {
+		if err.Error() == "media asset not found" || err.Error() == "user not found" {
+			return utils.SendSimpleError(c, fiber.StatusNotFound, err.Error(), err.Error())
+		}
+		if err.Error() == "you do not own this media asset" || err.Error() == "this media asset is not designated for user avatars" {
+			return utils.SendSimpleError(c, fiber.StatusForbidden, err.Error(), err.Error())
+		}
+		return utils.SendSimpleError(c, fiber.StatusInternalServerError, err.Error(), err.Error())
+	}
+
+	// 4. Kembalikan sukses dengan data user yang diperbarui
+	return utils.SendSuccess(c, fiber.StatusOK, "Avatar updated successfully", updatedUser)
+}
+
 // DeleteAccount menangani 'DELETE /api/v1/users/me'
 // Endpoint ini memiliki dua status:
 // 1. Jika 'confirmation_token' tidak ada: Memulai proses, mengirim email.

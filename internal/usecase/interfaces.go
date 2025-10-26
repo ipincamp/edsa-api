@@ -143,6 +143,7 @@ type UserService interface {
 	Logout(ctx context.Context, userID uuid.UUID, sessionID uuid.UUID) error
 	ChangePassword(ctx context.Context, userID uuid.UUID, req *domain.ChangePasswordRequest) error
 	UpdateUserDetails(ctx context.Context, userID uuid.UUID, req *domain.UpdateDetailsRequest) (*domain.UserResponse, error)
+	UpdateAvatar(ctx context.Context, userID uuid.UUID, mediaID uuid.UUID) (*domain.UserResponse, error)
 	RequestAccountDeletion(ctx context.Context, userID uuid.UUID) error
 	ConfirmAccountDeletion(ctx context.Context, userID uuid.UUID, req *domain.ConfirmDeletionRequest) error
 }

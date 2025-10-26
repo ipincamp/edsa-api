@@ -101,6 +101,7 @@ func main() {
 		sessionBlacklistService,
 		emailService,
 		progressRepositoryGORM,
+		mediaAssetRepositoryGORM,
 	)
 	adminService := admin.NewAdminService(
 		subjectRepositoryGORM,

@@ -25,6 +25,7 @@ type userService struct {
 	blacklistSvc usecase.SessionBlacklistService
 	emailSvc     usecase.EmailService
 	progressRepo usecase.UserBookProgressRepository
+	mediaRepo    usecase.MediaAssetRepository
 }
 
 func NewUserService(
@@ -37,6 +38,7 @@ func NewUserService(
 	blacklistSvc usecase.SessionBlacklistService,
 	emailSvc usecase.EmailService,
 	progressRepo usecase.UserBookProgressRepository,
+	mediaRepo usecase.MediaAssetRepository,
 ) usecase.UserService {
 	return &userService{
 		userRepo:     userRepo,
@@ -48,18 +50,28 @@ func NewUserService(
 		blacklistSvc: blacklistSvc,
 		emailSvc:     emailSvc,
 		progressRepo: progressRepo,
+		mediaRepo:    mediaRepo,
 	}
 }
 
 // --- Helper Mapper ---
-func toUserResponse(user *domain.User) *domain.UserResponse {
+func (s *userService) toUserResponse(user *domain.User) *domain.UserResponse {
+	var avatarURL string
+	// Cek apakah ProfilePicture (relasi) dimuat dan memiliki ID
+	if user.ProfilePicture.ID != uuid.Nil {
+		avatarURL = user.ProfilePicture.PublicURL
+	} else {
+		// Jika tidak ada avatar kustom, gunakan default avatar1.png
+		avatarURL = s.cfg.Storage.StoragePath + "/uploads/avatar1.png"
+	}
+
 	return &domain.UserResponse{
 		ID:                user.ID,
 		Name:              user.Name,
 		Email:             user.Email,
 		RoleName:          user.Role.Name,
 		JoinedAt:          user.CreatedAt,
-		ProfilePictureURL: user.ProfilePictureURL,
+		ProfilePictureURL: avatarURL, // <-- URL Dinamis
 		IsActive:          user.IsActive,
 		EmailVerified:     user.EmailVerifiedAt != nil,
 		// OverallScore dihitung terpisah
@@ -95,17 +107,13 @@ func (s *userService) Register(ctx context.Context, req *domain.RegisterRequest)
 	}
 
 	// 4. Buat domain user baru
-	// Ambil URL avatar default dari config
-	baseURL := s.cfg.Storage.StoragePublicBaseURL
-	defaultAvatarURL := baseURL + "/public/uploads/avatar1.png"
-
 	user := &domain.User{
-		Name:              req.Name,
-		Email:             req.Email,
-		Password:          hashedPassword,
-		RoleID:            defaultRole.ID,
-		ProfilePictureURL: defaultAvatarURL,
-		IsActive:          true,
+		Name:             req.Name,
+		Email:            req.Email,
+		Password:         hashedPassword,
+		RoleID:           defaultRole.ID,
+		ProfilePictureID: nil,
+		IsActive:         true,
 	}
 
 	// 5. Simpan ke database
@@ -143,7 +151,7 @@ func (s *userService) Register(ctx context.Context, req *domain.RegisterRequest)
 
 	// 10. Kembalikan respons
 	return &domain.AuthResponse{
-		User: *toUserResponse(user),
+		User: *s.toUserResponse(user),
 		Token: domain.TokenResponse{
 			AccessToken:  accessToken,
 			RefreshToken: refreshToken,
@@ -200,7 +208,7 @@ func (s *userService) Login(ctx context.Context, req *domain.LoginRequest) (*dom
 
 	// 7. Kembalikan respons
 	return &domain.AuthResponse{
-		User: *toUserResponse(user),
+		User: *s.toUserResponse(user),
 		Token: domain.TokenResponse{
 			AccessToken:  accessToken,
 			RefreshToken: refreshToken,
@@ -440,7 +448,7 @@ func (s *userService) GetUserByID(ctx context.Context, id uuid.UUID) (*domain.Us
 	}
 
 	// 2. Konversi ke DTO dasar
-	userResponse := toUserResponse(user)
+	userResponse := s.toUserResponse(user)
 
 	// 3. Hitung overall score
 	progresses, err := s.progressRepo.FindAllByUserID(ctx, id)
@@ -547,7 +555,51 @@ func (s *userService) UpdateUserDetails(ctx context.Context, userID uuid.UUID, r
 	}
 
 	// 5. Kembalikan respons DTO
-	return toUserResponse(user), nil
+	return s.toUserResponse(user), nil
+}
+
+func (s *userService) UpdateAvatar(ctx context.Context, userID uuid.UUID, mediaID uuid.UUID) (*domain.UserResponse, error) {
+	// 1. Ambil user
+	user, err := s.userRepo.FindByID(ctx, userID)
+	if err != nil {
+		applogger.ErrorLogger.Printf("UpdateAvatar: DB error checking user %s: %v", userID, err)
+		return nil, errors.New("database error")
+	}
+	if user == nil {
+		return nil, errors.New("user not found")
+	}
+
+	// 2. Ambil media asset
+	media, err := s.mediaRepo.FindByID(ctx, mediaID)
+	if err != nil {
+		applogger.ErrorLogger.Printf("UpdateAvatar: DB error checking media %s: %v", mediaID, err)
+		return nil, errors.New("database error")
+	}
+	if media == nil {
+		return nil, errors.New("media asset not found")
+	}
+
+	// 3. Validasi Keamanan: Pastikan media ini memang diupload oleh user ini
+	//    dan tipenya adalah 'user_avatar'.
+	if media.UploadedByUserID == nil || *media.UploadedByUserID != userID {
+		return nil, errors.New("you do not own this media asset")
+	}
+	if media.OwnerType != domain.OwnerTypeUserAvatar {
+		return nil, errors.New("this media asset is not designated for user avatars")
+	}
+
+	// 4. Update ID di struct domain
+	user.ProfilePictureID = &mediaID
+	user.ProfilePicture = *media // Update relasi yang di-memori
+
+	// 5. Simpan ke database
+	if err := s.userRepo.Update(ctx, user); err != nil {
+		applogger.ErrorLogger.Printf("UpdateAvatar: failed to update user %s in DB: %v", userID, err)
+		return nil, errors.New("failed to save avatar")
+	}
+
+	// 6. Kembalikan respons DTO
+	return s.toUserResponse(user), nil
 }
 
 // DEPRECATED: Gunakan ConfirmAccountDeletion dan RequestAccountDeletion

@@ -10,22 +10,26 @@ import (
 // Map GORM model ke Domain entity
 func (u *UserGORM) ToDomain() *domain.User {
 	domainUser := &domain.User{
-		ID:                u.ID,
-		Name:              u.Name,
-		Email:             u.Email,
-		Password:          u.Password,
-		ProfilePictureURL: u.ProfilePictureURL,
-		RoleID:            u.RoleID,
-		EmailVerifiedAt:   u.EmailVerifiedAt,
-		IsActive:          u.IsActive,
-		CreatedAt:         u.CreatedAt,
-		UpdatedAt:         u.UpdatedAt,
-		DeletedAt:         u.DeletedAt,
+		ID:               u.ID,
+		Name:             u.Name,
+		Email:            u.Email,
+		Password:         u.Password,
+		ProfilePictureID: u.ProfilePictureID,
+		RoleID:           u.RoleID,
+		EmailVerifiedAt:  u.EmailVerifiedAt,
+		IsActive:         u.IsActive,
+		CreatedAt:        u.CreatedAt,
+		UpdatedAt:        u.UpdatedAt,
+		DeletedAt:        u.DeletedAt,
 	}
 
 	// Penting: mapping untuk role jika di-preload
 	if u.Role.ID != 0 {
 		domainUser.Role = *u.Role.ToDomain()
+	}
+	// Penting: mapping untuk profile picture jika di-preload
+	if u.ProfilePicture.ID != uuid.Nil {
+		domainUser.ProfilePicture = *u.ProfilePicture.ToDomain()
 	}
 	return domainUser
 }
@@ -33,17 +37,17 @@ func (u *UserGORM) ToDomain() *domain.User {
 // Map Domain entity ke GORM model
 func UserFromDomain(u *domain.User) *UserGORM {
 	return &UserGORM{
-		ID:                u.ID,
-		Name:              u.Name,
-		Email:             u.Email,
-		Password:          u.Password,
-		ProfilePictureURL: u.ProfilePictureURL,
-		RoleID:            u.RoleID,
-		EmailVerifiedAt:   u.EmailVerifiedAt,
-		IsActive:          u.IsActive,
-		CreatedAt:         u.CreatedAt,
-		UpdatedAt:         u.UpdatedAt,
-		DeletedAt:         u.DeletedAt,
+		ID:               u.ID,
+		Name:             u.Name,
+		Email:            u.Email,
+		Password:         u.Password,
+		ProfilePictureID: u.ProfilePictureID,
+		RoleID:           u.RoleID,
+		EmailVerifiedAt:  u.EmailVerifiedAt,
+		IsActive:         u.IsActive,
+		CreatedAt:        u.CreatedAt,
+		UpdatedAt:        u.UpdatedAt,
+		DeletedAt:        u.DeletedAt,
 	}
 }
 

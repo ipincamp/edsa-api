@@ -23,19 +23,20 @@ func (RoleGORM) TableName() string {
 
 // UserGORM adalah representasi tabel 'users' di database
 type UserGORM struct {
-	ID                uuid.UUID   `gorm:"type:uuid;default:gen_random_uuid();primarykey"`
-	Name              string      `gorm:"type:varchar(255)"`
-	Email             string      `gorm:"type:varchar(255);uniqueIndex;not null"`
-	Password          string      `gorm:"type:varchar(255);not null"`
-	ProfilePictureURL string      `gorm:"type:varchar(255);default:''"`
-	RoleID            uint        `gorm:"not null"`
-	Role              RoleGORM    `gorm:"foreignKey:RoleID"`
-	Groups            []GroupGORM `gorm:"many2many:user_groups;joinForeignKey:user_id;joinReferences:group_id"` // Relasi many-to-many
-	EmailVerifiedAt   *time.Time  `gorm:"index"`
-	IsActive          bool        `gorm:"default:true;not null;index"`
-	CreatedAt         time.Time
-	UpdatedAt         time.Time
-	DeletedAt         gorm.DeletedAt `gorm:"index"`
+	ID               uuid.UUID      `gorm:"type:uuid;default:gen_random_uuid();primarykey"`
+	Name             string         `gorm:"type:varchar(255)"`
+	Email            string         `gorm:"type:varchar(255);uniqueIndex;not null"`
+	Password         string         `gorm:"type:varchar(255);not null"`
+	RoleID           uint           `gorm:"not null"`
+	Role             RoleGORM       `gorm:"foreignKey:RoleID"`
+	Groups           []GroupGORM    `gorm:"many2many:user_groups;joinForeignKey:user_id;joinReferences:group_id"`      // Relasi many-to-many
+	ProfilePictureID *uuid.UUID     `gorm:"type:uuid;index"`                                                           // <-- DIUBAH
+	ProfilePicture   MediaAssetGORM `gorm:"foreignKey:ProfilePictureID;constraint:OnUpdate:CASCADE,OnDelete:SET NULL"` // <-- DITAMBAHKAN
+	EmailVerifiedAt  *time.Time     `gorm:"index"`
+	IsActive         bool           `gorm:"default:true;not null;index"`
+	CreatedAt        time.Time
+	UpdatedAt        time.Time
+	DeletedAt        gorm.DeletedAt `gorm:"index"`
 }
 
 func (UserGORM) TableName() string {
@@ -235,9 +236,7 @@ type MediaAssetGORM struct {
 	OwnerID          string     `gorm:"type:varchar(255);index"`
 	OwnerType        string     `gorm:"type:varchar(100);index"`
 	UploadedByUserID *uuid.UUID `gorm:"type:uuid;index"`
-	UploadedByUser   UserGORM   `gorm:"foreignKey:UploadedByUserID"`
 	DeletedByUserID  *uuid.UUID `gorm:"type:uuid;index"`
-	DeletedByUser    UserGORM   `gorm:"foreignKey:DeletedByUserID"`
 	CreatedAt        time.Time
 	UpdatedAt        time.Time
 	DeletedAt        gorm.DeletedAt `gorm:"index"`

@@ -9,18 +9,19 @@ import (
 
 // User adalah entitas domain inti untuk pengguna
 type User struct {
-	ID                uuid.UUID
-	Name              string
-	Email             string
-	Password          string
-	RoleID            uint
-	Role              Role
-	ProfilePictureURL string
-	EmailVerifiedAt   *time.Time
-	IsActive          bool
-	CreatedAt         time.Time
-	UpdatedAt         time.Time
-	DeletedAt         gorm.DeletedAt
+	ID               uuid.UUID
+	Name             string
+	Email            string
+	Password         string
+	RoleID           uint
+	Role             Role
+	ProfilePictureID *uuid.UUID
+	ProfilePicture   MediaAsset
+	EmailVerifiedAt  *time.Time
+	IsActive         bool
+	CreatedAt        time.Time
+	UpdatedAt        time.Time
+	DeletedAt        gorm.DeletedAt
 }
 
 // --- Data Transfer Objects (DTOs) ---
@@ -95,6 +96,11 @@ type ForgotPasswordRequest struct {
 type ResetPasswordRequest struct {
 	Token       string `json:"token" validate:"required"`
 	NewPassword string `json:"new_password" validate:"required,min=8"`
+}
+
+// UpdateAvatarRequest adalah DTO untuk 'PATCH /users/me/avatar'
+type UpdateAvatarRequest struct {
+	MediaID uuid.UUID `json:"media_id" validate:"required,uuid"`
 }
 
 // UserResponse adalah DTO untuk data pengguna yang aman dikirim ke klien.
