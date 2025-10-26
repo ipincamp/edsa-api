@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log"
 	"os"
@@ -32,199 +33,180 @@ import (
 )
 
 func main() {
+	log.Println("🚀 Starting EDSA API application...")
+
 	// 0. Init Error Logger
-	applogger.InitErrorLogger()
+	log.Println("📝 Initializing Error Logger...")
+	applogger.InitErrorLogger() // Assuming InitErrorLogger already logs its success/failure
+	log.Println("✅ Error Logger Initialized.")
 
 	// 1. Load Config
+	log.Println("⚙️ Loading Configuration...")
 	config.LoadConfig()
 	cfg := config.AppConfig
+	log.Println("✅ Configuration Loaded.")
 
-	// 2. Init Database (PostgreSQL + GORM)
-	// Pass the whole cfg object and handle potential error
-	db, err := database.NewPostgresConnection(cfg)
+	// 2. Init Database
+	log.Println("🔧 Initializing Database Connection...")
+	db, err := database.NewPostgresConnection(cfg) // Pass cfg
 	if err != nil {
-		// Use Fatalf here in main if connection fails during startup
-		log.Fatalf("🚨 Failed to initialize database: %v", err)
+		log.Fatalf("🚨 CRITICAL: Failed to initialize database: %v", err) // Use a distinct emoji for critical errors
 	}
 	log.Println("✅ Database connection established and pool configured.")
 
 	// 3. Init Validator
+	log.Println("🔍 Initializing Validator...")
 	validate := validator.NewValidator()
+	log.Println("✅ Validator Initialized.")
 
-	// 4. Init Services
+	// 4. Init Services (Grouped Log)
+	log.Println("🛠️ Initializing Core Services (Password, Token, Storage, Email)...")
 	passwordService := argon2id.NewPasswordService()
 	tokenService, err := paseto.NewPasetoService(cfg.Security.PasetoSymmetricKey)
 	if err != nil {
-		log.Fatalf("Failed to init Paseto service: %v", err)
+		log.Fatalf("🚨 CRITICAL: Failed to init Paseto service: %v", err)
 	}
 	fileStorageService := storage.NewLocalStorageService(cfg)
 	emailService := email.NewSmtpService(cfg)
+	log.Println("✅ Core Services Initialized.")
 
-	// 5. Init Repositories
-	// Buat GORM Role Repo (untuk di-pass ke cache)
+	// 5. Init Repositories (Grouped Log)
+	log.Println("📦 Initializing Repositories (GORM & Cache)...")
 	roleRepositoryGORM := gorm.NewRoleRepository(db)
-
-	// Buat Cache Role Repo
 	roleRepositoryCACHE, err := cache.NewRoleRepositoryCACHE(roleRepositoryGORM)
 	if err != nil {
-		log.Fatalf("Failed to create role cache: %v", err)
+		log.Fatalf("🚨 CRITICAL: Failed to create and pre-load role cache: %v", err)
 	}
-
-	// Inject cache repo ke UserRepository
-	// (Struct userRepositoryGORM sudah konsisten)
 	userRepositoryGORM := gorm.NewUserRepository(db, roleRepositoryCACHE)
-
-	// Admin
 	subjectRepositoryGORM := gorm.NewSubjectRepository(db)
 	classRepositoryGORM := gorm.NewClassRepository(db)
 	groupRepositoryGORM := gorm.NewGroupRepository(db)
-	// Konten
 	bookRepositoryGORM := gorm.NewBookRepository(db)
 	pageRepositoryGORM := gorm.NewPageRepository(db)
 	interactionRepositoryGORM := gorm.NewInteractionRepository(db)
-	// Progres
 	progressRepositoryGORM := gorm.NewUserBookProgressRepository(db)
-	// Game
 	gameRepositoryGORM := gorm.NewGameRepository(db)
 	userGameScoreRepositoryGORM := gorm.NewUserGameScoreRepository(db)
-	// Log Aktivitas
 	activityLogRepositoryGORM := gorm.NewActivityLogRepository(db)
-	// Repo Media
 	mediaAssetRepositoryGORM := gorm.NewMediaAssetRepository(db)
-	// Repo Pengaturan Buku Grup
 	groupBookSettingRepositoryGORM := gorm.NewGroupBookSettingRepository(db)
+	log.Println("✅ Repositories Initialized.")
 
-	// 6. Init Usecases
-	loggerService := logger.NewActivityLoggerService(activityLogRepositoryGORM)
-	sessionBlacklistService := cache.NewSessionBlacklistCACHE()
+	// 6. Init Usecases (Grouped Log)
+	log.Println("🧠 Initializing Usecases/Services...")
+	loggerService := logger.NewActivityLoggerService(activityLogRepositoryGORM) // Logs its own start internally
+	sessionBlacklistService := cache.NewSessionBlacklistCACHE()                 // Simple in-memory, might not need detailed log
 	userService := user.NewUserService(
-		userRepositoryGORM,
-		roleRepositoryCACHE,
-		passwordService,
-		tokenService,
-		cfg,
-		loggerService,
-		sessionBlacklistService,
-		emailService,
-		progressRepositoryGORM,
-		mediaAssetRepositoryGORM,
+		userRepositoryGORM, roleRepositoryCACHE, passwordService, tokenService, cfg,
+		loggerService, sessionBlacklistService, emailService, progressRepositoryGORM, mediaAssetRepositoryGORM,
 	)
 	adminService := admin.NewAdminService(
-		subjectRepositoryGORM,
-		classRepositoryGORM,
-		groupRepositoryGORM,
-		bookRepositoryGORM,
-		pageRepositoryGORM,
-		interactionRepositoryGORM,
+		subjectRepositoryGORM, classRepositoryGORM, groupRepositoryGORM,
+		bookRepositoryGORM, pageRepositoryGORM, interactionRepositoryGORM,
 	)
 	appService := app.NewAppService(
-		bookRepositoryGORM,
-		progressRepositoryGORM,
-		gameRepositoryGORM,
-		userGameScoreRepositoryGORM,
-		loggerService,
-		userRepositoryGORM,
-		groupRepositoryGORM,
-		groupBookSettingRepositoryGORM,
+		bookRepositoryGORM, progressRepositoryGORM, gameRepositoryGORM, userGameScoreRepositoryGORM,
+		loggerService, userRepositoryGORM, groupRepositoryGORM, groupBookSettingRepositoryGORM,
 	)
 	dashboardService := dashboard.NewDashboardService(
-		activityLogRepositoryGORM,
-		userRepositoryGORM,
-		groupRepositoryGORM,
-		bookRepositoryGORM,
-		groupBookSettingRepositoryGORM,
+		activityLogRepositoryGORM, userRepositoryGORM, groupRepositoryGORM,
+		bookRepositoryGORM, groupBookSettingRepositoryGORM,
 	)
 	mediaService := media.NewMediaService(
-		fileStorageService,
-		mediaAssetRepositoryGORM,
-		cfg,
+		fileStorageService, mediaAssetRepositoryGORM, cfg,
 	)
+	log.Println("✅ Usecases/Services Initialized.")
 
-	// 7. Init Handlers
+	// 7. Init Handlers (Grouped Log)
+	log.Println("🔌 Initializing HTTP Handlers...")
 	userHandler := http.NewUserHandler(userService, mediaService, loggerService, validate)
 	adminHandler := http.NewAdminHandler(adminService, validate)
 	appHandler := http.NewAppHandler(appService, dashboardService, validate)
 	dashboardHandler := http.NewDashboardHandler(dashboardService, validate)
 	mediaHandler := http.NewMediaHandler(mediaService, validate, loggerService)
+	log.Println("✅ HTTP Handlers Initialized.")
 
 	// 8. Init Fiber App
+	log.Println("🌐 Initializing Fiber Application...")
 	app := fiber.New(fiber.Config{
-		// Error handling kustom
 		ErrorHandler: func(c *fiber.Ctx, err error) error {
 			code := fiber.StatusInternalServerError
-			message := "Failed" // Pesan default
+			message := "An unexpected error occurred" // Default internal error message
 
-			if e, ok := err.(*fiber.Error); ok {
+			var e *fiber.Error
+			if errors.As(err, &e) { // Use errors.As for type assertion
 				code = e.Code
-				message = e.Message // Gunakan pesan dari Fiber jika ada
+				message = e.Message
 			}
 
-			// Gunakan helper response error yang baru
-			// 'message' adalah pesan utama, err.Error() adalah detail di 'value'
+			// Log the actual error internally using the ErrorLogger
+			applogger.ErrorLogger.Printf("Fiber ErrorHandler caught: Code=%d, Message=%s, Error=%v", code, message, err)
+
+			// Send structured error response to client
 			return utils.SendSimpleError(c, code, message, err.Error())
 		},
 	})
+	log.Println("✅ Fiber Application Initialized.")
 
 	// Setup CORS Middleware
+	log.Println("🔗 Configuring CORS Middleware...")
 	app.Use(cors.New(cors.Config{
-		// Izinkan origin frontend Anda
-		AllowOrigins: cfg.Security.CorsAllowedOrigins,
-		// Izinkan header yang diperlukan frontend (termasuk Authorization)
-		AllowHeaders: "Origin, Content-Type, Accept, Authorization",
-		// Izinkan metode HTTP yang digunakan
-		AllowMethods: "GET, POST, PATCH, DELETE, OPTIONS",
-		// Izinkan pengiriman kredensial (seperti cookie atau header Authorization)
+		AllowOrigins:     cfg.Security.CorsAllowedOrigins,
+		AllowHeaders:     "Origin, Content-Type, Accept, Authorization",
+		AllowMethods:     "GET, POST, PATCH, DELETE, OPTIONS",
 		AllowCredentials: true,
 	}))
+	log.Println("✅ CORS Middleware Configured.")
 
 	// 9. Setup Routes
+	log.Println("🛣️ Setting up API Routes...")
 	http.SetupRoutes(
-		app,
-		userHandler,
-		adminHandler,
-		appHandler,
-		dashboardHandler,
-		mediaHandler,
-		tokenService,
-		userRepositoryGORM,
-		sessionBlacklistService,
-		cfg,
+		app, userHandler, adminHandler, appHandler, dashboardHandler, mediaHandler,
+		tokenService, userRepositoryGORM, sessionBlacklistService, cfg,
 	)
+	log.Println("✅ API Routes Configured.")
 
 	// 10. Start Server with Graceful Shutdown
-
-	// Channel untuk mendengarkan sinyal OS (cth: Ctrl+C, SIGTERM)
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, os.Interrupt, syscall.SIGTERM)
 
-	// Jalankan server di goroutine agar tidak memblokir
 	go func() {
-		log.Printf("Starting server on port %d...", cfg.App.Port)
-		if err := app.Listen(fmt.Sprintf(":%d", cfg.App.Port)); err != nil {
-			// Kita gunakan log.Printf agar shutdown bisa berjalan
-			log.Printf("Server failed to start: %v", err)
-			quit <- syscall.Signal(0) // Kirim sinyal dummy untuk memicu shutdown
+		serverAddr := fmt.Sprintf(":%d", cfg.App.Port)
+		log.Printf("👂 Starting server, listening on %s...", serverAddr)
+		if err := app.Listen(serverAddr); err != nil {
+			log.Printf("🔥 Server failed to start or stopped: %v", err)
+			// Signal the main goroutine to stop if the server fails immediately
+			// Use non-blocking send in case quit channel is already closed or full
+			select {
+			case quit <- syscall.SIGTERM:
+			default:
+			}
 		}
 	}()
 
-	// Blokir main goroutine sampai sinyal diterima
-	<-quit
+	// Block until signal is received
+	sig := <-quit
+	log.Printf("🛑 Received signal: %s. Initiating graceful shutdown...", sig)
 
-	log.Println("Received shutdown signal. Gracefully shutting down...")
-
-	// Beri waktu 5 detik untuk server menyelesaikan request yang sedang berjalan
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	// Create shutdown context with timeout
+	shutdownCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second) // Increased timeout slightly
 	defer cancel()
 
 	// Shutdown Fiber server
+	log.Println("⏳ Shutting down Fiber server...")
 	if err := app.Shutdown(); err != nil {
-		log.Printf("Fiber server shutdown failed: %v", err)
+		log.Printf("⚠️ Fiber server shutdown failed: %v", err)
+	} else {
+		log.Println("✅ Fiber server shut down gracefully.")
 	}
 
-	// Shutdown Logger Service (ini akan memproses sisa batch)
-	if err := loggerService.Shutdown(ctx); err != nil {
-		log.Printf("Logger service shutdown failed: %v", err)
+	// Shutdown Logger Service
+	log.Println("⏳ Shutting down Activity Logger service...")
+	// Pass the shutdown context to the logger service shutdown
+	if err := loggerService.Shutdown(shutdownCtx); err != nil {
+		log.Printf("⚠️ Activity Logger service shutdown failed: %v", err)
 	}
+	// Logger service logs its own success message internally
 
-	log.Println("Server gracefully shut down.")
+	log.Println("🏁 Application shut down complete.")
 }
