@@ -120,7 +120,29 @@ func (s *userService) Register(ctx context.Context, req *domain.RegisterRequest)
 		return nil, errors.New("database error while fetching role")
 	}
 	if defaultRole == nil {
-		return nil, errors.New("default role not found in database")
+		// Log error ini karena seharusnya role default selalu ada setelah seeder
+		applogger.ErrorLogger.Printf("Register: CRITICAL - Default role '%s' not found in database!", domain.RoleNamePublic)
+		return nil, errors.New("default role configuration error")
+	}
+
+	var defaultAvatarID *uuid.UUID // Gunakan pointer karena bisa jadi nil
+	defaultAvatarFileName := "avatar1.png"
+	// Gunakan context baru dengan timeout pendek agar tidak memblokir registrasi terlalu lama
+	ctxForAvatar, cancelAvatar := context.WithTimeout(ctx, 3*time.Second)
+	defer cancelAvatar() // Pastikan context dibatalkan
+
+	defaultAsset, errAsset := s.mediaRepo.FindByFileName(ctxForAvatar, defaultAvatarFileName)
+
+	if errAsset != nil {
+		// Jika ada error saat mencari avatar, log sebagai warning tapi JANGAN gagalkan registrasi
+		applogger.ErrorLogger.Printf("Register: WARNING - DB error finding default avatar '%s': %v. User will have NULL avatar ID.", defaultAvatarFileName, errAsset)
+	} else if defaultAsset == nil {
+		// Jika avatar default tidak ditemukan di DB (seeder mungkin gagal?), log sebagai warning
+		applogger.ErrorLogger.Printf("Register: WARNING - Default avatar asset '%s' not found in DB (Check Seeders?). User will have NULL avatar ID.", defaultAvatarFileName)
+	} else {
+		// Jika avatar ditemukan, gunakan ID-nya
+		defaultAvatarID = &defaultAsset.ID
+		applogger.ErrorLogger.Printf("Register: INFO - Found default avatar '%s' with ID: %s", defaultAvatarFileName, defaultAsset.ID.String()) // Log info (opsional)
 	}
 
 	// 4. Buat domain user baru
@@ -129,8 +151,9 @@ func (s *userService) Register(ctx context.Context, req *domain.RegisterRequest)
 		Email:            req.Email,
 		Password:         hashedPassword,
 		RoleID:           defaultRole.ID,
-		ProfilePictureID: nil,
+		ProfilePictureID: defaultAvatarID,
 		IsActive:         true,
+		// EmailVerifiedAt akan otomatis nil
 	}
 
 	// 5. Simpan ke database
@@ -138,7 +161,8 @@ func (s *userService) Register(ctx context.Context, req *domain.RegisterRequest)
 		applogger.ErrorLogger.Printf("Register: failed to create user %s: %v", user.Email, err)
 		return nil, errors.New("failed to create user")
 	}
-	user.Role = *defaultRole
+	// Setelah Create berhasil, user.ID sudah terisi
+	user.Role = *defaultRole // Attach role domain object for token creation
 
 	// 6. Buat Session ID baru
 	sessionID := uuid.New()
@@ -148,7 +172,8 @@ func (s *userService) Register(ctx context.Context, req *domain.RegisterRequest)
 	accessToken, err := s.tokenSvc.CreateToken(user, sessionID, accessTTL)
 	if err != nil {
 		applogger.ErrorLogger.Printf("Register: failed to create access token for %s: %v", user.Email, err)
-		return nil, errors.New("failed to create access token")
+		// Sebaiknya tidak mengembalikan error internal ke user
+		return nil, errors.New("failed to generate session token")
 	}
 
 	// 8. Buat Refresh Token
@@ -156,19 +181,27 @@ func (s *userService) Register(ctx context.Context, req *domain.RegisterRequest)
 	refreshToken, err := s.tokenSvc.CreateToken(user, sessionID, refreshTTL)
 	if err != nil {
 		applogger.ErrorLogger.Printf("Register: failed to create refresh token for %s: %v", user.Email, err)
-		return nil, errors.New("failed to create refresh token")
+		// Sebaiknya tidak mengembalikan error internal ke user
+		return nil, errors.New("failed to generate refresh token")
 	}
 
 	// 9. Log aktivitas registrasi
+	detailsRegister, _ := json.Marshal(map[string]interface{}{
+		"email": req.Email, // Ambil dari request
+	})
 	s.logger.Log(ctx, domain.ActivityLog{
 		UserID:    user.ID,
 		Action:    domain.ActionRegister,
 		SessionID: sessionID,
+		Details:   detailsRegister, // Gunakan details baru
 	})
 
 	// 10. Kembalikan respons
+	// Panggil toUserResponse untuk mendapatkan URL avatar yang benar (termasuk fallback jika ID null)
+	userResponse := s.toUserResponse(user)
+
 	return &domain.AuthResponse{
-		User: *s.toUserResponse(user),
+		User: *userResponse, // Gunakan hasil dari toUserResponse
 		Token: domain.TokenResponse{
 			AccessToken:  accessToken,
 			RefreshToken: refreshToken,
@@ -201,10 +234,14 @@ func (s *userService) Login(ctx context.Context, req *domain.LoginRequest) (*dom
 	sessionID := uuid.New()
 
 	// 4. Log aktivitas login
+	detailsLogin, _ := json.Marshal(map[string]interface{}{
+		"email": user.Email, // Ambil dari user object
+	})
 	s.logger.Log(ctx, domain.ActivityLog{
 		UserID:    user.ID,
 		Action:    domain.ActionLogin,
 		SessionID: sessionID,
+		Details:   detailsLogin, // Gunakan details baru
 	})
 
 	// 5. Buat Access Token
@@ -275,12 +312,17 @@ func (s *userService) SendVerificationEmail(ctx context.Context, email string) e
 		return errors.New("failed to send verification email")
 	}
 
+	// Log aktivitas resend verification email
 	s.logger.Log(ctx, domain.ActivityLog{
-		UserID: user.ID,
-		Action: domain.ActionResendVerificationEmail,
-		// SessionID bisa diisi uuid.Nil karena aksi ini mungkin terjadi di luar sesi login
+		UserID:    user.ID,
+		Action:    domain.ActionResendVerificationEmail,
 		SessionID: uuid.Nil,
-		Details:   json.RawMessage(fmt.Sprintf(`{"email": "%s"}`, user.Email)),
+		// Format Details yang lebih aman menggunakan json.Marshal
+		Details: func() json.RawMessage {
+			detailMap := map[string]interface{}{"email": user.Email}
+			jsonData, _ := json.Marshal(detailMap)
+			return jsonData
+		}(),
 	})
 
 	return nil
@@ -315,12 +357,17 @@ func (s *userService) VerifyEmail(ctx context.Context, token string) error {
 		return errors.New("failed to update verification status")
 	}
 
+	// Log aktivitas verifikasi email
 	s.logger.Log(ctx, domain.ActivityLog{
-		UserID: user.ID,
-		Action: domain.ActionVerifyEmail,
-		// SessionID bisa diisi uuid.Nil karena aksi ini mungkin terjadi di luar sesi login
+		UserID:    user.ID,
+		Action:    domain.ActionVerifyEmail,
 		SessionID: uuid.Nil,
-		Details:   json.RawMessage(fmt.Sprintf(`{"email": "%s"}`, user.Email)),
+		// Format Details yang lebih aman menggunakan json.Marshal
+		Details: func() json.RawMessage {
+			detailMap := map[string]interface{}{"email": user.Email}
+			jsonData, _ := json.Marshal(detailMap)
+			return jsonData
+		}(),
 	})
 
 	return nil
@@ -452,20 +499,32 @@ func (s *userService) RefreshToken(ctx context.Context, req *domain.RefreshToken
 }
 
 func (s *userService) Logout(ctx context.Context, userID uuid.UUID, sessionID uuid.UUID) error {
+	// 0. Ambil data user untuk logging email (opsional, tapi bagus untuk detail log)
+	user, err := s.userRepo.FindByID(ctx, userID)
+	if err != nil {
+		// Log error tapi jangan gagalkan logout
+		applogger.ErrorLogger.Printf("Logout: Failed to fetch user %s for logging email: %v", userID, err)
+	}
+
 	// 1. Tambahkan SESSION ID ke blacklist
 	duration := time.Duration(s.cfg.Security.BlacklistTTLHour) * time.Hour
-	// Gunakan sessionID, bukan tokenString
 	if err := s.blacklistSvc.BlacklistSession(ctx, sessionID, duration); err != nil {
 		applogger.ErrorLogger.Printf("Logout: failed to blacklist session %s for user %s: %v", sessionID, userID, err)
-		// Ini adalah error kritis, kita harus mengembalikannya
 		return errors.New("failed to invalidate session")
 	}
 
 	// 2. Log aktivitas logout
+	var detailsLogout json.RawMessage
+	if user != nil {
+		detailsLogout, _ = json.Marshal(map[string]interface{}{
+			"email": user.Email,
+		})
+	}
 	s.logger.Log(ctx, domain.ActivityLog{
 		UserID:    userID,
 		Action:    domain.ActionLogout,
 		SessionID: sessionID,
+		Details:   detailsLogout, // Gunakan details baru (bisa nil jika user fetch gagal)
 	})
 	return nil
 }
@@ -755,15 +814,17 @@ func (s *userService) ConfirmAccountDeletion(ctx context.Context, userID uuid.UU
 		return errors.New("confirmation token does not match authenticated user")
 	}
 
-	// 5. Log aktivitas (termasuk alasannya)
-	details, _ := json.Marshal(map[string]interface{}{
+	// 5. Log aktivitas penghapusan akun
+	// Gabungkan reason dan email
+	detailsDelete, _ := json.Marshal(map[string]interface{}{
 		"reason": req.DeletionReason,
+		"email":  user.Email, // Ambil dari user object
 	})
 	s.logger.Log(ctx, domain.ActivityLog{
 		UserID:    userID,
 		Action:    domain.ActionDeleteAccount,
-		SessionID: uuid.New(), // Sesi baru untuk tindakan ini
-		Details:   details,
+		SessionID: uuid.New(),
+		Details:   detailsDelete, // Gunakan details baru
 	})
 
 	// 6. Lakukan Soft Delete
