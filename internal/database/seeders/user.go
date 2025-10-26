@@ -23,6 +23,19 @@ func getAvatarIDFromDB(db *gorm.DB, avatarFileName string) *uuid.UUID {
 	return &avatarAsset.ID
 }
 
+// Fungsi helper getExistingEmails (baru)
+func getExistingEmails(db *gorm.DB) (map[string]bool, error) {
+	existingEmails := make(map[string]bool)
+	var emails []string
+	if err := db.Model(&repo.UserGORM{}).Pluck("email", &emails).Error; err != nil {
+		return nil, fmt.Errorf("failed to load existing emails: %w", err)
+	}
+	for _, email := range emails {
+		existingEmails[email] = true
+	}
+	return existingEmails, nil
+}
+
 func UserAdminSeeder(db *gorm.DB) error {
 	log.Println("Seeding admin user...")
 
@@ -72,83 +85,69 @@ func UserAdminSeeder(db *gorm.DB) error {
 	return nil
 }
 
-func UserTeacherSeeder(db *gorm.DB) error {
-	log.Println("Seeding teachers...")
+// seedUsersBatch adalah fungsi helper generik untuk batch insert user
+func seedUsersBatch(db *gorm.DB, roleName, avatarFileName string, count int) error {
+	log.Printf("Seeding %d %s users...", count, roleName)
 
+	// 1. Dapatkan Role ID
 	var userRole repo.RoleGORM
-	if err := db.Where("name = ?", "teacher").First(&userRole).Error; err != nil {
-		return fmt.Errorf("failed to find 'teacher' role. Did you run SeedRoles? Error: %w", err)
+	if err := db.Where("name = ?", roleName).First(&userRole).Error; err != nil {
+		return fmt.Errorf("failed to find '%s' role: %w", roleName, err)
 	}
 
-	count := 3
-	for i := 0; i < count; i++ {
-		// Panggil factory dengan nama file avatar yang diinginkan
-		user := factories.UserFactory(db, userRole.ID, "avatar3.png")
-
-		var existing repo.UserGORM
-		if db.Where("email = ?", user.Email).First(&existing).Error == nil {
-			log.Printf("User with email %s already exists, skipping.\n", user.Email)
-			continue
-		}
-
-		if err := db.Create(user).Error; err != nil {
-			return fmt.Errorf("failed to seed teacher user: %w", err)
-		}
+	// 2. Ambil semua email yang sudah ada
+	existingEmails, err := getExistingEmails(db)
+	if err != nil {
+		return err
 	}
-	fmt.Printf("Seeded %d users successfully.\n", count)
+	log.Printf("   Loaded %d existing emails.", len(existingEmails))
+
+	// 3. Buat user baru dalam batch
+	newUsers := make([]*repo.UserGORM, 0, count)
+	generatedEmails := make(map[string]bool) // Untuk cek duplikasi dalam batch ini
+	attempts := 0                            // Batasi percobaan untuk menghindari infinite loop
+
+	for len(newUsers) < count && attempts < count*5 { // Beri toleransi 5x percobaan
+		attempts++
+		user := factories.UserFactory(db, userRole.ID, avatarFileName)
+
+		// 4. Cek duplikasi email (global dan dalam batch)
+		if existingEmails[user.Email] || generatedEmails[user.Email] {
+			log.Printf("   Email %s already exists, regenerating...", user.Email)
+			continue // Coba lagi
+		}
+
+		// Jika unik, tambahkan ke batch dan catat emailnya
+		newUsers = append(newUsers, user)
+		generatedEmails[user.Email] = true
+	}
+
+	if len(newUsers) < count {
+		log.Printf("   WARNING: Could only generate %d unique users after %d attempts.", len(newUsers), attempts)
+	}
+
+	// 5. Batch Insert ke database jika ada user baru
+	if len(newUsers) > 0 {
+		log.Printf("   Inserting %d new %s users into database...", len(newUsers), roleName)
+		if err := db.Create(&newUsers).Error; err != nil {
+			return fmt.Errorf("failed to batch insert %s users: %w", roleName, err)
+		}
+		log.Printf("   Successfully inserted %d users.", len(newUsers))
+	} else {
+		log.Printf("   No new unique users generated.")
+	}
+
 	return nil
+}
+
+func UserTeacherSeeder(db *gorm.DB) error {
+	return seedUsersBatch(db, "teacher", "avatar3.png", 3)
 }
 
 func UserStudentSeeder(db *gorm.DB) error {
-	log.Println("Seeding students...")
-
-	var userRole repo.RoleGORM
-	if err := db.Where("name = ?", "student").First(&userRole).Error; err != nil {
-		return fmt.Errorf("failed to find 'student' role. Did you run SeedRoles? Error: %w", err)
-	}
-
-	count := 5
-	for i := 0; i < count; i++ {
-		// Panggil factory dengan nama file avatar yang diinginkan
-		user := factories.UserFactory(db, userRole.ID, "avatar2.png")
-
-		var existing repo.UserGORM
-		if db.Where("email = ?", user.Email).First(&existing).Error == nil {
-			log.Printf("User with email %s already exists, skipping.\n", user.Email)
-			continue
-		}
-
-		if err := db.Create(user).Error; err != nil {
-			return fmt.Errorf("failed to seed student user: %w", err)
-		}
-	}
-	fmt.Printf("Seeded %d users successfully.\n", count)
-	return nil
+	return seedUsersBatch(db, "student", "avatar2.png", 5)
 }
 
 func UserPublicSeeder(db *gorm.DB) error {
-	log.Println("Seeding public users...")
-
-	var userRole repo.RoleGORM
-	if err := db.Where("name = ?", "public").First(&userRole).Error; err != nil {
-		return fmt.Errorf("failed to find 'public' role. Did you run SeedRoles? Error: %w", err)
-	}
-
-	count := 2
-	for i := 0; i < count; i++ {
-		// Panggil factory dengan nama file avatar yang diinginkan
-		user := factories.UserFactory(db, userRole.ID, "avatar1.png")
-
-		var existing repo.UserGORM
-		if db.Where("email = ?", user.Email).First(&existing).Error == nil {
-			log.Printf("User with email %s already exists, skipping.\n", user.Email)
-			continue
-		}
-
-		if err := db.Create(user).Error; err != nil {
-			return fmt.Errorf("failed to seed public user: %w", err)
-		}
-	}
-	fmt.Printf("Seeded %d users successfully.\n", count)
-	return nil
+	return seedUsersBatch(db, "public", "avatar1.png", 2)
 }

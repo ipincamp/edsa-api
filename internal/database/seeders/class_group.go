@@ -24,8 +24,14 @@ func ClassGroupSeeder(db *gorm.DB) error {
 		return fmt.Errorf("failed to find 'student' role: %w", err)
 	}
 
-	// 2. Tentukan data yang akan di-seed
-	// Format: map[NamaSubject]jumlahGrup
+	// 2. Ambil semua email yang sudah ada SEBELUM loop utama
+	existingEmails, err := getExistingEmails(db)
+	if err != nil {
+		return err
+	}
+	log.Printf("Loaded %d existing emails for ClassGroupSeeder.", len(existingEmails))
+
+	// 3. Tentukan data subject
 	subjectData := map[string]int{
 		"English for Beginner":     5,
 		"English for Intermediate": 3,
@@ -59,57 +65,66 @@ func ClassGroupSeeder(db *gorm.DB) error {
 			// Cth: "Beginner Group 1", "Beginner Group 2", ...
 			groupName := fmt.Sprintf("%s Group %d", strings.Split(subject.Name, " ")[1], i)
 			group := repo.GroupGORM{Name: groupName, ClassID: class.ID}
-			if err := db.FirstOrCreate(&group, repo.GroupGORM{Name: group.Name, ClassID: class.ID}).Error; err != nil {
-				return fmt.Errorf("failed to seed group '%s': %w", group.Name, err)
-			}
-			if group.ID != 0 {
-				log.Printf("    -> Seeded Group: %s (ID: %d)", group.Name, group.ID)
-			}
+			db.FirstOrCreate(&group, repo.GroupGORM{Name: group.Name, ClassID: class.ID})
+			log.Printf("    -> Seeded Group: %s (ID: %d)", group.Name, group.ID)
 
-			// --- BUAT USERS DAN MASUKKAN KE GROUP (USER_GROUPS) ---
-			var usersToAssign []*repo.UserGORM
+			// --- BUAT USERS (TEACHER & STUDENT) UNTUK GROUP INI ---
+			const numTeachers = 2
+			const numStudents = 40
+			usersToAssign := make([]*repo.UserGORM, 0, numTeachers+numStudents)
+			generatedEmails := make(map[string]bool) // Email unik dalam batch group ini
+			attempts := 0
+			maxAttempts := (numTeachers + numStudents) * 5 // Toleransi percobaan
 
-			// Buat 2 Teacher baru untuk grup ini
-			for j := 0; j < 2; j++ {
-				// Panggil factory dengan nama file avatar teacher
+			// Buat Teacher
+			for len(usersToAssign) < numTeachers && attempts < maxAttempts {
+				attempts++
 				teacher := factories.UserFactory(db, teacherRole.ID, "avatar3.png")
-
-				// Cek email unik (penting!)
-				var existing repo.UserGORM
-				if db.Where("email = ?", teacher.Email).First(&existing).Error == nil {
-					j-- // Coba lagi jika email sudah ada
+				// Cek duplikasi (global & batch)
+				if existingEmails[teacher.Email] || generatedEmails[teacher.Email] {
 					continue
-				}
-
-				if err := db.Create(teacher).Error; err != nil {
-					return fmt.Errorf("failed to create teacher for group %s: %w", group.Name, err)
 				}
 				usersToAssign = append(usersToAssign, teacher)
+				generatedEmails[teacher.Email] = true
+				existingEmails[teacher.Email] = true // Tambahkan ke global set agar tidak dipakai group lain
 			}
 
-			// Buat 40 Student baru untuk grup ini
-			for j := 0; j < 40; j++ {
-				// Panggil factory dengan nama file avatar student
+			// Buat Student
+			targetUserCount := numTeachers + numStudents
+			for len(usersToAssign) < targetUserCount && attempts < maxAttempts {
+				attempts++
 				student := factories.UserFactory(db, studentRole.ID, "avatar2.png")
-
-				// Cek email unik
-				var existing repo.UserGORM
-				if db.Where("email = ?", student.Email).First(&existing).Error == nil {
-					j-- // Coba lagi jika email sudah ada
+				// Cek duplikasi (global & batch)
+				if existingEmails[student.Email] || generatedEmails[student.Email] {
 					continue
 				}
-
-				if err := db.Create(student).Error; err != nil {
-					return fmt.Errorf("failed to create student for group %s: %w", group.Name, err)
-				}
 				usersToAssign = append(usersToAssign, student)
+				generatedEmails[student.Email] = true
+				existingEmails[student.Email] = true // Tambahkan ke global set
 			}
 
-			// Masukkan semua user baru (2T + 40S) ke tabel relasi 'user_groups'
-			if err := db.Model(&group).Association("Users").Append(usersToAssign); err != nil {
-				return fmt.Errorf("failed to assign users to group %s: %w", group.Name, err)
+			// Laporkan jika gagal membuat semua user
+			if len(usersToAssign) < targetUserCount {
+				log.Printf("      WARNING: Could only generate %d unique users for group %s after %d attempts.", len(usersToAssign), group.Name, attempts)
 			}
-			log.Printf("      -> Created and assigned 2 teachers and 40 students to group %s", group.Name)
+
+			// Batch Insert Users ke DB
+			if len(usersToAssign) > 0 {
+				log.Printf("      -> Inserting %d users for group %s...", len(usersToAssign), group.Name)
+				if err := db.Create(&usersToAssign).Error; err != nil {
+					// Jika batch insert gagal, log error dan mungkin hentikan seeder
+					return fmt.Errorf("failed to batch insert users for group %s: %w", group.Name, err)
+				}
+				log.Printf("      -> Successfully inserted %d users.", len(usersToAssign))
+
+				// Tambahkan relasi User-Group (Append association)
+				if err := db.Model(&group).Association("Users").Append(usersToAssign); err != nil {
+					return fmt.Errorf("failed to assign users to group %s: %w", group.Name, err)
+				}
+				log.Printf("      -> Assigned %d users to group %s", len(usersToAssign), group.Name)
+			} else {
+				log.Printf("      -> No new unique users generated for group %s", group.Name)
+			}
 		}
 	}
 
