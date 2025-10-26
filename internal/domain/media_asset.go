@@ -10,6 +10,7 @@ import (
 // Konstanta untuk OwnerType
 const (
 	OwnerTypeUserAvatar = "user_avatar"
+	OwnerTypeBookCover  = "book_cover"
 	// Tambahkan tipe lain di sini jika perlu
 )
 
