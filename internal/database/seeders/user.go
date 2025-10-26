@@ -7,60 +7,64 @@ import (
 	"github.com/google/uuid"
 	"github.com/ipincamp/go-edsa-api/internal/config"
 	"github.com/ipincamp/go-edsa-api/internal/database/factories"
-	"github.com/ipincamp/go-edsa-api/internal/database/shared"
 	repo "github.com/ipincamp/go-edsa-api/internal/repository/gorm"
 	"github.com/ipincamp/go-edsa-api/internal/service/argon2id"
 	"gorm.io/gorm"
 )
 
+// Fungsi helper getAvatarIDFromDB (sama seperti di factory)
+func getAvatarIDFromDB(db *gorm.DB, avatarFileName string) *uuid.UUID {
+	var avatarAsset repo.MediaAssetGORM
+	result := db.Where("file_name = ?", avatarFileName).First(&avatarAsset)
+	if result.Error != nil {
+		log.Printf("WARNING: Default avatar '%s' not found in database for seeder. Error: %v", avatarFileName, result.Error)
+		return nil
+	}
+	return &avatarAsset.ID
+}
+
 func UserAdminSeeder(db *gorm.DB) error {
 	log.Println("Seeding admin user...")
 
-	// 1. Dapatkan ID role "admin" dari database
+	// 1. Dapatkan ID role "admin"
 	var userRole repo.RoleGORM
 	if err := db.Where("name = ?", "admin").First(&userRole).Error; err != nil {
 		return fmt.Errorf("failed to find 'admin' role. Did you run SeedRoles? Error: %w", err)
 	}
 
-	// 2. Ambil kredensial admin dari config
+	// 2. Ambil kredensial admin
 	adminCfg := config.AppConfig.Seeder
 	adminEmail := adminCfg.AdminEmail
 	adminPassword := adminCfg.AdminPassword
 	adminName := adminCfg.AdminName
 
-	// 3. Cek dulu agar email unik
+	// 3. Cek email unik
 	var existing repo.UserGORM
 	if db.Where("email = ?", adminEmail).First(&existing).Error == nil {
 		log.Printf("User with email %s already exists, skipping.\n", adminEmail)
 		return nil
 	}
 
-	// 4. Hash password admin
+	// 4. Hash password
 	passSvc := argon2id.NewPasswordService()
 	hashedPassword, err := passSvc.Hash(adminPassword)
 	if err != nil {
 		return fmt.Errorf("failed to hash admin password for seeder: %w", err)
 	}
 
-	// Ambil ID avatar admin (avatar4.png) dari map
-	var adminAvatarIDPtr *uuid.UUID
-	if avatarID, ok := shared.DefaultAvatarAssets["avatar4.png"]; ok {
-		idCopy := avatarID
-		adminAvatarIDPtr = &idCopy
-	} else {
-		log.Println("WARNING: Default admin avatar 'avatar4.png' not found in seeded assets.")
-	}
+	// 5. Cari ID avatar admin ("avatar4.png") langsung dari DB
+	adminAvatarIDPtr := getAvatarIDFromDB(db, "avatar4.png")
 
-	// 5. Buat user admin baru dari config
+	// 6. Buat user admin
 	user := &repo.UserGORM{
 		Name:             adminName,
 		Email:            adminEmail,
 		Password:         hashedPassword,
 		RoleID:           userRole.ID,
-		ProfilePictureID: adminAvatarIDPtr,
+		ProfilePictureID: adminAvatarIDPtr, // Gunakan ID dari DB
 	}
 
-	// 6. Simpan ke database
+	// 7. Simpan ke database
 	if err := db.Create(user).Error; err != nil {
 		return fmt.Errorf("failed to seed admin user: %w", err)
 	}
@@ -78,6 +82,7 @@ func UserTeacherSeeder(db *gorm.DB) error {
 
 	count := 3
 	for i := 0; i < count; i++ {
+		// Panggil factory dengan nama file avatar yang diinginkan
 		user := factories.UserFactory(db, userRole.ID, "avatar3.png")
 
 		var existing repo.UserGORM
@@ -104,6 +109,7 @@ func UserStudentSeeder(db *gorm.DB) error {
 
 	count := 5
 	for i := 0; i < count; i++ {
+		// Panggil factory dengan nama file avatar yang diinginkan
 		user := factories.UserFactory(db, userRole.ID, "avatar2.png")
 
 		var existing repo.UserGORM
@@ -130,6 +136,7 @@ func UserPublicSeeder(db *gorm.DB) error {
 
 	count := 2
 	for i := 0; i < count; i++ {
+		// Panggil factory dengan nama file avatar yang diinginkan
 		user := factories.UserFactory(db, userRole.ID, "avatar1.png")
 
 		var existing repo.UserGORM

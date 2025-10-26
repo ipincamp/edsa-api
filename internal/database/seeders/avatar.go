@@ -5,12 +5,12 @@ import (
 	"io"
 	"log"
 	"os"
+	"path"
 	"path/filepath"
 
 	"github.com/gabriel-vasile/mimetype"
 	"github.com/google/uuid"
 	"github.com/ipincamp/go-edsa-api/internal/config"
-	"github.com/ipincamp/go-edsa-api/internal/database/shared"
 	"github.com/ipincamp/go-edsa-api/internal/domain"
 	repo "github.com/ipincamp/go-edsa-api/internal/repository/gorm"
 	"gorm.io/gorm"
@@ -44,8 +44,13 @@ func DefaultAvatarsSeeder(db *gorm.DB) error {
 		sourcePath := filepath.Join(sourceAssetDir, sourceFilename) // Path file sumber asli
 		destPathUUID := filepath.Join(uploadDir, newFilenameUUID)   // Path file tujuan fisik (UUID)
 
-		dbFilePathUUID := filepath.ToSlash(filepath.Join(cfg.StorageUploadDir, newFilenameUUID))                          // Path DB (UUID)
-		publicURLUUID := cfg.StoragePublicBaseURL + filepath.ToSlash(filepath.Join(cfg.StoragePublicURL, dbFilePathUUID)) // URL Publik (UUID)
+		// UBAH CARA PEMBUATAN PATH DB DAN URL PUBLIK
+		// Path DB sekarang hanya nama direktori upload + nama file UUID
+		// e.g., "cdn/uuid.png"
+		dbFilePathUUID := path.Join(cfg.StorageUploadDir, newFilenameUUID)
+		// URL Publik sekarang base URL + StoragePublicURL (/) + path DB
+		// e.g., "http://localhost:8000" + "/" + "cdn/uuid.png" -> "http://localhost:8000/cdn/uuid.png"
+		publicURLUUID := cfg.StoragePublicBaseURL + path.Join(cfg.StoragePublicURL, dbFilePathUUID)
 
 		// --- Cek & Salin File Fisik ---
 		if _, err := os.Stat(destPathUUID); os.IsNotExist(err) {
@@ -103,8 +108,8 @@ func DefaultAvatarsSeeder(db *gorm.DB) error {
 		asset := repo.MediaAssetGORM{
 			ID:               assetID,
 			FileName:         sourceFilename, // Nama Asli
-			FilePath:         dbFilePathUUID, // Path UUID
-			PublicURL:        publicURLUUID,  // URL UUID
+			FilePath:         dbFilePathUUID, // Path UUID (e.g., "cdn/uuid.png")
+			PublicURL:        publicURLUUID,  // URL UUID (e.g., "http://localhost:8000/cdn/uuid.png")
 			MimeType:         mimeType,
 			FileSize:         fileSize,
 			OwnerType:        domain.OwnerTypeUserAvatar,
@@ -116,7 +121,6 @@ func DefaultAvatarsSeeder(db *gorm.DB) error {
 			// TODO: Jika DB gagal setelah file disalin, perlu rollback manual file
 			return fmt.Errorf("failed to seed default avatar asset DB record for '%s': %w", newFilenameUUID, result.Error)
 		}
-		shared.DefaultAvatarAssets[logicalName] = asset.ID
 
 		if result.RowsAffected > 0 {
 			log.Printf("Seeded asset DB record: OriginalName='%s', StoredAs='%s' (AssetID: %s, Size: %d, Type: %s)",
@@ -125,7 +129,6 @@ func DefaultAvatarsSeeder(db *gorm.DB) error {
 			// Jika record DB sudah ada (berdasarkan FilePath UUID), pastikan map shared tetap terisi ID yang benar
 			log.Printf("Asset DB record for stored file '%s' already exists (AssetID: %s). Ensuring map uses AssetID.",
 				newFilenameUUID, asset.ID)
-			shared.DefaultAvatarAssets[logicalName] = asset.ID // Pastikan ID yang benar ada di map
 		}
 	}
 	log.Println("Finished seeding default avatar assets.")
