@@ -23,7 +23,7 @@ type UserBookProgress struct {
 	HighestScore         float64
 	LastPageID           uint
 	CurrentSessionPoints int
-	Rating               int
+	Rating               float64
 	CreatedAt            time.Time
 	UpdatedAt            time.Time
 	DeletedAt            gorm.DeletedAt

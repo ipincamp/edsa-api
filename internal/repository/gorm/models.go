@@ -163,7 +163,7 @@ type UserBookProgressGORM struct {
 	HighestScore         float64   `gorm:"type:decimal(5,2);default:0"`
 	LastPageID           uint      `gorm:"default:0"`
 	CurrentSessionPoints int       `gorm:"default:0"`
-	Rating               int       `gorm:"default:0;index"`
+	Rating               float64   `gorm:"type:decimal(2,1);default:0.0;index"`
 	CreatedAt            time.Time
 	UpdatedAt            time.Time
 	DeletedAt            gorm.DeletedAt `gorm:"index"`
