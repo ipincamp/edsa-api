@@ -78,7 +78,7 @@ func (s *userService) toUserResponse(user *domain.User) *domain.UserResponse {
 				applogger.ErrorLogger.Printf("toUserResponse: CRITICAL! Default avatar asset '%s' not found in DB.", defaultAvatarFileName)
 			}
 			// Gunakan fallback URL hardcoded
-			avatarURL = s.cfg.Storage.StoragePublicBaseURL + "/public/cdn/" + defaultAvatarFileName // Fallback
+			avatarURL = s.cfg.Storage.StoragePublicBaseURL + "/cdn/" + defaultAvatarFileName // Fallback
 		}
 	}
 

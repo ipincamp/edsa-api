@@ -27,9 +27,9 @@ func (s *localStorageService) Upload(file *multipart.FileHeader, fileID uuid.UUI
 	uniqueFilename := fileID.String() + ext
 
 	// 2. Tentukan path tujuan
-	// Cth: ./public/uploads
+	// Cth: ./public/cdn
 	uploadDir := filepath.Join(s.cfg.Storage.StoragePath, s.cfg.Storage.StorageUploadDir)
-	// Cth: ./public/uploads/xxxxxxxx-xxxx.png
+	// Cth: ./public/cdn/xxxxxxxx-xxxx.png
 	destPath := filepath.Join(uploadDir, uniqueFilename)
 
 	// 3. Buat direktori jika belum ada
@@ -57,17 +57,17 @@ func (s *localStorageService) Upload(file *multipart.FileHeader, fileID uuid.UUI
 	}
 
 	// 7. Tentukan path relatif untuk DB dan URL publik
-	// Cth: uploads/xxxxxxxx-xxxx.png
+	// Cth: cdn/xxxxxxxx-xxxx.png
 	relativePath := filepath.ToSlash(filepath.Join(s.cfg.Storage.StorageUploadDir, uniqueFilename))
 
 	return relativePath, nil
 }
 
 func (s *localStorageService) Delete(filePath string) error {
-	// filePath adalah path relatif, cth: "uploads/uuid.png"
+	// filePath adalah path relatif, cth: "cdn/uuid.png"
 
 	// 1. Tentukan path absolut
-	// Cth: ./public + uploads/uuid.png
+	// Cth: ./public + cdn/uuid.png
 	fullPath := filepath.Join(s.cfg.Storage.StoragePath, filePath)
 
 	// 2. Hapus file
