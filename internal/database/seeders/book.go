@@ -17,134 +17,142 @@ import (
 	"gorm.io/gorm"
 )
 
+const placeholderCoverURL = "https://placehold.co/800x400/EEE/31343C/png?text=No+Cover+Yet"
+
 // Helper function to seed a single book cover
-func seedBookCover(db *gorm.DB, bookID uint, sourceFilename string) (string, error) {
+func seedBookCover(db *gorm.DB, bookID uint, bookTitle, sourceFilename string) (string, error) { // Tambahkan bookTitle untuk logging
 	cfg := config.AppConfig.Storage
 	sourceAssetDir := filepath.Join("internal", "assets", "books")
-	// Buat subdirektori "covers" di dalam direktori upload
 	coversUploadDir := filepath.Join(cfg.StoragePath, cfg.StorageUploadDir, "covers")
 	uploadDirRelative := filepath.Join(cfg.StorageUploadDir, "covers") // "cdn/covers"
+	sourcePath := filepath.Join(sourceAssetDir, sourceFilename)        // Path file sumber asli
 
-	// Pastikan direktori tujuan ada
+	// Log awal untuk cover buku ini
+	log.Printf("   Processing cover '%s' for book '%s' (ID: %d)...", sourceFilename, bookTitle, bookID)
+
+	// *** PENGECEKAN KEBERADAAN FILE SUMBER ***
+	if _, err := os.Stat(sourcePath); os.IsNotExist(err) {
+		log.Printf("   -> WARNING: Source cover file '%s' not found. Using placeholder URL.", sourcePath)
+		return placeholderCoverURL, nil // File tidak ada -> gunakan placeholder
+	} else if err != nil {
+		log.Printf("   -> ERROR: Could not check source cover file '%s': %v. Using placeholder URL.", sourcePath, err)
+		return placeholderCoverURL, err // Error lain -> gunakan placeholder, kembalikan error
+	}
+
+	// *** FILE SUMBER ADA, LANJUTKAN PROSES ***
 	if err := os.MkdirAll(coversUploadDir, os.ModePerm); err != nil {
-		return "", fmt.Errorf("failed to create covers upload directory '%s': %w", coversUploadDir, err)
+		// Gagal buat direktori tujuan -> error fatal untuk cover ini
+		return "", fmt.Errorf("   -> ERROR: Failed to create covers upload directory '%s': %w", coversUploadDir, err)
 	}
 
 	// --- File Handling & Path Generation ---
 	fileUUID := uuid.New()
 	fileExt := filepath.Ext(sourceFilename)
-	newFilenameUUID := fileUUID.String() + fileExt // Nama file fisik (UUID)
-
-	sourcePath := filepath.Join(sourceAssetDir, sourceFilename)     // Path file sumber asli
-	destPathUUID := filepath.Join(coversUploadDir, newFilenameUUID) // Path file tujuan fisik (UUID)
-
-	// Path DB relatif terhadap STORAGE_PATH (e.g., "cdn/covers/uuid.png")
+	newFilenameUUID := fileUUID.String() + fileExt
+	destPathUUID := filepath.Join(coversUploadDir, newFilenameUUID)
 	dbFilePathUUID := path.Join(uploadDirRelative, newFilenameUUID)
-	// URL Publik (e.g., "http://localhost:8000/cdn/covers/uuid.png")
 	publicURLUUID := cfg.StoragePublicBaseURL + path.Join(cfg.StoragePublicURL, dbFilePathUUID)
 
 	// --- Cek & Salin File Fisik ---
 	if _, err := os.Stat(destPathUUID); os.IsNotExist(err) {
-		log.Printf("   Copying book cover '%s' to '%s'...", sourcePath, destPathUUID)
+		log.Printf("   -> Copying '%s' to '%s'...", sourcePath, destPathUUID) // Log copy
 		sourceFile, err := os.Open(sourcePath)
 		if err != nil {
-			log.Printf("   WARNING: Could not open source cover '%s': %v. Skipping.", sourcePath, err)
-			return "", err // Kembalikan error jika file sumber tidak ada
+			log.Printf("   -> WARNING: Could not open source cover '%s' after stat: %v. Using placeholder.", sourcePath, err)
+			return placeholderCoverURL, nil // Gagal buka sumber -> gunakan placeholder
 		}
 		defer sourceFile.Close()
 
 		destFile, err := os.Create(destPathUUID)
 		if err != nil {
-			log.Printf("   WARNING: Could not create destination cover '%s': %v. Skipping.", destPathUUID, err)
-			return "", err
+			log.Printf("   -> ERROR: Could not create destination cover '%s': %v. Using placeholder.", destPathUUID, err)
+			return placeholderCoverURL, err // Gagal buat tujuan -> gunakan placeholder, kembalikan error
 		}
 		defer destFile.Close()
 
 		_, err = io.Copy(destFile, sourceFile)
 		if err != nil {
-			log.Printf("   WARNING: Could not copy cover from '%s' to '%s': %v. Skipping.", sourcePath, destPathUUID, err)
-			os.Remove(destPathUUID) // Coba hapus file yang gagal disalin
-			return "", err
+			log.Printf("   -> ERROR: Could not copy cover from '%s' to '%s': %v. Using placeholder.", sourcePath, destPathUUID, err)
+			os.Remove(destPathUUID)
+			return placeholderCoverURL, err // Gagal copy -> gunakan placeholder, kembalikan error
 		}
-		log.Printf("   Successfully copied book cover.")
+		log.Printf("   -> Successfully copied book cover.") // Log sukses copy
 	} else if err == nil {
-		log.Printf("   Physical book cover file '%s' already exists, skipping copy.", newFilenameUUID)
+		log.Printf("   -> Physical book cover file '%s' already exists, skipping copy.", newFilenameUUID)
 	} else {
-		log.Printf("   WARNING: Error checking destination cover file '%s': %v. Skipping.", destPathUUID, err)
-		return "", err
+		log.Printf("   -> ERROR: Error checking destination cover file '%s': %v. Using placeholder.", destPathUUID, err)
+		return placeholderCoverURL, err // Gagal cek tujuan -> gunakan placeholder, kembalikan error
 	}
 
-	// --- Baca File Size & MIME Type dari file SUMBER ---
+	// --- Baca File Size & MIME Type ---
 	var fileSize int64
 	var mimeType string
 	fileInfo, err := os.Stat(sourcePath)
 	if err != nil {
-		log.Printf("   WARNING: Could not stat source cover file '%s' to get size: %v. Using size 0.", sourcePath, err)
-		fileSize = 0
+		log.Printf("   -> WARNING: Could not stat source cover file '%s' to get size: %v. Using size 0.", sourcePath, err)
+		fileSize = 0 // Tetap lanjutkan dengan size 0
 	} else {
 		fileSize = fileInfo.Size()
 	}
 	mime, err := mimetype.DetectFile(sourcePath)
 	if err != nil {
-		log.Printf("   WARNING: Could not detect MIME type for source cover file '%s': %v. Using default 'image/png'.", sourcePath, err)
+		log.Printf("   -> WARNING: Could not detect MIME type for source cover file '%s': %v. Using default 'image/png'.", sourcePath, err)
 		mimeType = "image/png" // Fallback
 	} else {
 		mimeType = mime.String()
 	}
 
-	// --- Database Seeding ---
+	// --- Database Seeding MediaAsset ---
 	assetID := uuid.New()
 	asset := repo.MediaAssetGORM{
 		ID:               assetID,
-		FileName:         sourceFilename, // Nama file asli (e.g., cover1.png)
-		FilePath:         dbFilePathUUID, // Path relatif disimpan (e.g., cdn/covers/uuid.png)
-		PublicURL:        publicURLUUID,  // URL publik lengkap
+		FileName:         sourceFilename,
+		FilePath:         dbFilePathUUID,
+		PublicURL:        publicURLUUID,
 		MimeType:         mimeType,
 		FileSize:         fileSize,
-		OwnerType:        domain.OwnerTypeBookCover,              // Tipe pemilik
-		OwnerID:          strconv.FormatUint(uint64(bookID), 10), // ID buku sebagai string
-		UploadedByUserID: nil,                                    // Di-seed oleh sistem
+		OwnerType:        domain.OwnerTypeBookCover,
+		OwnerID:          strconv.FormatUint(uint64(bookID), 10),
+		UploadedByUserID: nil,
 	}
 
-	// Gunakan FirstOrCreate berdasarkan OwnerType dan OwnerID untuk buku ini
-	// Ini mencegah duplikasi aset cover untuk buku yang sama jika seeder dijalankan lagi
+	// FirstOrCreate berdasarkan OwnerType dan OwnerID
 	result := db.Where(repo.MediaAssetGORM{
 		OwnerType: domain.OwnerTypeBookCover,
 		OwnerID:   strconv.FormatUint(uint64(bookID), 10),
-	}).Attrs(asset).FirstOrCreate(&asset) // Attrs mengisi nilai jika record baru dibuat
+	}).Attrs(asset).FirstOrCreate(&asset)
 
 	if result.Error != nil {
-		return "", fmt.Errorf("failed to seed book cover asset DB record for book ID %d: %w", bookID, result.Error)
+		// Gagal seed asset -> Log error tapi kembalikan placeholder
+		log.Printf("   -> ERROR seeding book cover asset DB record for book ID %d: %v. Using placeholder.", bookID, result.Error)
+		return placeholderCoverURL, nil
 	}
 
-	if result.RowsAffected > 0 {
-		log.Printf("   Seeded cover asset DB record: OriginalName='%s', StoredAs='%s' (AssetID: %s)",
-			asset.FileName, newFilenameUUID, asset.ID)
-	} else {
-		log.Printf("   Cover asset DB record for book ID %d already exists (AssetID: %s). Using existing URL.", bookID, asset.ID)
+	// Log detail asset yang di-seed atau ditemukan (mirip AvatarSeeder)
+	logMsgFormat := "   -> Seeded asset DB record: OriginalName='%s', StoredAs='%s' (AssetID: %s, Size: %d, Type: %s)"
+	if result.RowsAffected == 0 { // Jika record sudah ada
+		logMsgFormat = "   -> Found existing asset DB record: OriginalName='%s', StoredAs='%s' (AssetID: %s, Size: %d, Type: %s)"
 	}
+	log.Printf(logMsgFormat, asset.FileName, newFilenameUUID, asset.ID, asset.FileSize, asset.MimeType)
 
-	// Kembalikan URL publik dari asset yang ada atau baru dibuat
-	return asset.PublicURL, nil
+	return asset.PublicURL, nil // Kembalikan URL asli yang di-seed/ditemukan
 }
 
 func BookSeeder(db *gorm.DB) error {
 	log.Println("Seeding books and their covers...")
 
-	// Map dari tema ke nama file cover
-	bookCoverMap := map[string]string{
+	bookCoverMap := map[string]string{ /* ... (map tetap sama) ... */
 		"Alphabet":   "cover1.png",
 		"Numbers":    "cover2.png",
 		"Body Parts": "cover3.png",
 		"Family":     "cover4.png",
-		"Colors":     "cover1.png", // Contoh: gunakan cover1 lagi karena belum ada
-		"Animals":    "cover2.png", // Contoh: gunakan cover2 lagi
-		"Time":       "cover3.png", // Contoh: gunakan cover3 lagi
-		"Verbs":      "cover4.png", // Contoh: gunakan cover4 lagi
+		"Colors":     "cover5.png",
+		"Animals":    "cover6.png",
+		"Time":       "cover7.png",
+		"Verbs":      "cover8.png",
 	}
 
-	// Definisikan data buku (tanpa CoverImageURL awal)
-	booksData := []repo.BookGORM{
+	booksData := []repo.BookGORM{ /* ... (data buku tetap sama) ... */
 		{Title: "The Alphabet in the Land of Dewi Sri", Description: "An exciting journey through the ABCs.", Theme: "Alphabet", BookOrder: 1},
 		{Title: "The Numbers in the Village of Ten Hills", Description: "Learn numbers with friendly creatures.", Theme: "Numbers", BookOrder: 2},
 		{Title: "Bawang Putih and the Kind Body Parts", Description: "Discover all the parts of your body.", Theme: "Body Parts", BookOrder: 3},
@@ -156,8 +164,7 @@ func BookSeeder(db *gorm.DB) error {
 	}
 
 	for _, bookData := range booksData {
-		book := bookData // Salin data untuk iterasi ini
-		// Buat atau cari buku berdasarkan Judul
+		book := bookData
 		result := db.FirstOrCreate(&book, repo.BookGORM{Title: book.Title})
 		if result.Error != nil {
 			return fmt.Errorf("failed to seed book '%s': %w", book.Title, result.Error)
@@ -165,37 +172,45 @@ func BookSeeder(db *gorm.DB) error {
 
 		created := result.RowsAffected > 0
 		if created {
-			log.Printf("Seeded book record: %s (ID: %d)", book.Title, book.ID)
+			log.Printf("Seeded book record: '%s' (ID: %d)", book.Title, book.ID)
 		} else {
 			log.Printf("Book record '%s' (ID: %d) already exists.", book.Title, book.ID)
 		}
 
-		// Ambil nama file cover dari map berdasarkan tema
 		coverFilename, ok := bookCoverMap[book.Theme]
+		var targetURL string
+		var coverErr error
+
 		if !ok {
-			log.Printf("   WARNING: No cover image defined for theme '%s'. Skipping cover seeding for book '%s'.", book.Theme, book.Title)
-			continue // Lanjut ke buku berikutnya jika tidak ada definisi cover
+			log.Printf("   -> WARNING: No cover image defined for theme '%s'. Setting placeholder URL for book '%s'.", book.Theme, book.Title)
+			targetURL = placeholderCoverURL
+			coverErr = nil // Tidak ada error jika hanya tidak ada definisi
+		} else {
+			// Panggil helper seedBookCover dengan book.Title untuk logging
+			targetURL, coverErr = seedBookCover(db, book.ID, book.Title, coverFilename)
+			if coverErr != nil {
+				// Log error dari helper jika ada (helper sudah log detailnya)
+				log.Printf("   -> ERROR processing cover for book '%s'. URL set to placeholder.", book.Title)
+				targetURL = placeholderCoverURL // Pastikan targetURL adalah placeholder jika ada error
+			}
 		}
 
-		// Panggil helper untuk seed cover DAN dapatkan URL publiknya
-		publicURL, err := seedBookCover(db, book.ID, coverFilename)
-		if err != nil {
-			// Jika seeding cover gagal, log error tapi lanjutkan (buku tetap ada tanpa cover)
-			log.Printf("   ERROR seeding cover for book '%s': %v", book.Title, err)
-			continue
-		}
-
-		// Perbarui CoverImageURL buku HANYA jika URL baru berbeda ATAU jika buku baru dibuat
-		if created || book.CoverImageURL != publicURL {
-			book.CoverImageURL = publicURL
+		// Perbarui CoverImageURL buku jika perlu (jika baru dibuat atau URL berbeda)
+		if created || book.CoverImageURL != targetURL {
+			oldURL := book.CoverImageURL // Simpan URL lama untuk logging
+			book.CoverImageURL = targetURL
 			if err := db.Save(&book).Error; err != nil {
-				// Jika gagal menyimpan URL cover, log error tapi jangan gagalkan seeder
-				log.Printf("   ERROR updating CoverImageURL for book '%s': %v", book.Title, err)
+				log.Printf("   -> ERROR updating CoverImageURL for book '%s' (ID: %d): %v", book.Title, book.ID, err)
 			} else {
-				log.Printf("   Updated CoverImageURL for book '%s' to: %s", book.Title, publicURL)
+				if oldURL == "" && created { // Kasus buku baru
+					log.Printf("   -> Set CoverImageURL for new book '%s' to: %s", book.Title, targetURL)
+				} else { // Kasus update URL
+					log.Printf("   -> Updated CoverImageURL for book '%s' from '%s' to: %s", book.Title, oldURL, targetURL)
+				}
 			}
 		} else {
-			log.Printf("   CoverImageURL for book '%s' is already up-to-date.", book.Title)
+			// Log jika URL sudah sesuai, baik itu placeholder maupun URL asli
+			log.Printf("   -> CoverImageURL for book '%s' is already set to: %s", book.Title, book.CoverImageURL)
 		}
 	}
 	log.Println("Finished seeding books and covers.")
