@@ -169,16 +169,24 @@ func (s *userService) Register(ctx context.Context, req *domain.RegisterRequest)
 	sessionID := uuid.New()
 
 	// 7. Buat PasetoPayload dari domain
-	payload := domain.PasetoPayload{
+	payloadAccess := domain.PasetoPayload{
 		UserID:    user.ID.String(),
 		Email:     user.Email,
 		SessionID: sessionID.String(),
 		RoleName:  user.Role.Name,
+		TokenType: domain.TokenTypeAccess,
+	}
+	payloadRefresh := domain.PasetoPayload{
+		UserID:    user.ID.String(),
+		Email:     user.Email,
+		SessionID: sessionID.String(),
+		RoleName:  user.Role.Name,
+		TokenType: domain.TokenTypeRefresh,
 	}
 
 	// 8. Buat Access Token
 	accessTTL := time.Duration(s.cfg.Security.AccessTokenTTLMin) * time.Minute
-	accessToken, err := s.tokenSvc.CreateToken(payload, accessTTL)
+	accessToken, err := s.tokenSvc.CreateToken(payloadAccess, accessTTL)
 	if err != nil {
 		applogger.ErrorLogger.Printf("Register: failed to create access token for %s: %v", user.Email, err)
 		// Sebaiknya tidak mengembalikan error internal ke user
@@ -187,7 +195,7 @@ func (s *userService) Register(ctx context.Context, req *domain.RegisterRequest)
 
 	// 9. Buat Refresh Token
 	refreshTTL := time.Duration(s.cfg.Security.RefreshTokenTTLMin) * time.Minute
-	refreshToken, err := s.tokenSvc.CreateToken(payload, refreshTTL)
+	refreshToken, err := s.tokenSvc.CreateToken(payloadRefresh, refreshTTL)
 	if err != nil {
 		applogger.ErrorLogger.Printf("Register: failed to create refresh token for %s: %v", user.Email, err)
 		// Sebaiknya tidak mengembalikan error internal ke user
@@ -254,16 +262,24 @@ func (s *userService) Login(ctx context.Context, req *domain.LoginRequest) (*dom
 	})
 
 	// 5. Buat PasetoPayload dari domain
-	payload := domain.PasetoPayload{
+	payloadAccess := domain.PasetoPayload{
 		UserID:    user.ID.String(),
 		Email:     user.Email,
 		SessionID: sessionID.String(),
 		RoleName:  user.Role.Name,
+		TokenType: domain.TokenTypeAccess,
+	}
+	payloadRefresh := domain.PasetoPayload{
+		UserID:    user.ID.String(),
+		Email:     user.Email,
+		SessionID: sessionID.String(),
+		RoleName:  user.Role.Name,
+		TokenType: domain.TokenTypeRefresh,
 	}
 
 	// 6. Buat Access Token
 	accessTTL := time.Duration(s.cfg.Security.AccessTokenTTLMin) * time.Minute
-	accessToken, err := s.tokenSvc.CreateToken(payload, accessTTL)
+	accessToken, err := s.tokenSvc.CreateToken(payloadAccess, accessTTL)
 	if err != nil {
 		applogger.ErrorLogger.Printf("Login: failed to create access token for %s: %v", user.Email, err)
 		return nil, errors.New("failed to create access token")
@@ -271,7 +287,7 @@ func (s *userService) Login(ctx context.Context, req *domain.LoginRequest) (*dom
 
 	// 7. Buat Refresh Token
 	refreshTTL := time.Duration(s.cfg.Security.RefreshTokenTTLMin) * time.Minute
-	refreshToken, err := s.tokenSvc.CreateToken(payload, refreshTTL)
+	refreshToken, err := s.tokenSvc.CreateToken(payloadRefresh, refreshTTL)
 	if err != nil {
 		applogger.ErrorLogger.Printf("Login: failed to create refresh token for %s: %v", user.Email, err)
 		return nil, errors.New("failed to create refresh token")
@@ -312,6 +328,7 @@ func (s *userService) SendVerificationEmail(ctx context.Context, userID uuid.UUI
 		SessionID:             sessionID.String(),
 		RoleName:              user.Role.Name,
 		VerificationAttemptID: attemptID.String(),
+		TokenType:             domain.TokenTypeEmailVerification,
 	}
 
 	// 4. Create verification token (1 jam)
@@ -359,7 +376,7 @@ func (s *userService) SendVerificationEmail(ctx context.Context, userID uuid.UUI
 
 func (s *userService) VerifyEmail(ctx context.Context, token string) error {
 	// 1. Validasi token (dapatkan seluruh payload)
-	payload, err := s.tokenSvc.ValidateToken(token)
+	payload, err := s.tokenSvc.ValidateToken(token, domain.TokenTypeEmailVerification)
 	if err != nil {
 		// Token tidak valid atau kedaluwarsa
 		return fmt.Errorf("token invalid or expired: %w", err)
@@ -378,7 +395,7 @@ func (s *userService) VerifyEmail(ctx context.Context, token string) error {
 	}
 
 	// 2. Cek apakah link/attempt ini sudah pernah digunakan (di-blacklist)
-	isBlacklisted, err := s.blacklistSvc.IsSessionBlacklisted(ctx, attemptID) // <-- Gunakan attemptID
+	isBlacklisted, err := s.blacklistSvc.IsSessionBlacklisted(ctx, attemptID)
 	if err != nil {
 		applogger.ErrorLogger.Printf("VerifyEmail: Error checking blacklist for attempt %s: %v", attemptID, err)
 		return errors.New("internal server error checking token status")
@@ -412,7 +429,7 @@ func (s *userService) VerifyEmail(ctx context.Context, token string) error {
 
 	// 5. Blacklist attempt ID ini agar tidak bisa dipakai lagi
 	blacklistDuration := 1*time.Hour + 5*time.Minute
-	if err := s.blacklistSvc.BlacklistSession(ctx, attemptID, blacklistDuration); err != nil { // <-- Gunakan attemptID
+	if err := s.blacklistSvc.BlacklistSession(ctx, attemptID, blacklistDuration); err != nil {
 		applogger.ErrorLogger.Printf("VerifyEmail: WARNING - Failed to blacklist verification attempt %s after successful verification for user %s: %v", attemptID, userID, err)
 	} else {
 		applogger.ErrorLogger.Printf("VerifyEmail: INFO - Successfully blacklisted verification attempt %s for user %s", attemptID, userID)
@@ -454,7 +471,7 @@ func (s *userService) SendPasswordResetEmail(ctx context.Context, email string) 
 		Email:     user.Email,
 		SessionID: resetSessionID.String(),
 		RoleName:  user.Role.Name,
-		// Tidak perlu VerificationAttemptID
+		TokenType: domain.TokenTypePasswordReset,
 	}
 
 	// 3. Buat token reset password (15 menit)
@@ -490,7 +507,7 @@ func (s *userService) SendPasswordResetEmail(ctx context.Context, email string) 
 
 func (s *userService) ResetPassword(ctx context.Context, req *domain.ResetPasswordRequest) error {
 	// 1. Validasi token reset (dapatkan payload)
-	payload, err := s.tokenSvc.ValidateToken(req.Token)
+	payload, err := s.tokenSvc.ValidateToken(req.Token, domain.TokenTypePasswordReset)
 	if err != nil {
 		return fmt.Errorf("invalid or expired token: %w", err)
 	}
@@ -535,7 +552,7 @@ func (s *userService) ResetPassword(ctx context.Context, req *domain.ResetPasswo
 
 func (s *userService) RefreshToken(ctx context.Context, req *domain.RefreshTokenRequest) (*domain.TokenResponse, error) {
 	// 1. Validasi refresh token
-	payload, err := s.tokenSvc.ValidateToken(req.RefreshToken)
+	payload, err := s.tokenSvc.ValidateToken(req.RefreshToken, domain.TokenTypeRefresh)
 	if err != nil {
 		return nil, fmt.Errorf("invalid or expired refresh token: %w", err)
 	}
@@ -561,23 +578,31 @@ func (s *userService) RefreshToken(ctx context.Context, req *domain.RefreshToken
 	}
 
 	// 4. Buat PasetoPayload baru dari domain
-	newPayload := domain.PasetoPayload{
+	newPayloadAccess := domain.PasetoPayload{
 		UserID:    payload.UserID,
 		Email:     payload.Email,
 		SessionID: payload.SessionID,
 		RoleName:  payload.RoleName,
+		TokenType: domain.TokenTypeAccess,
+	}
+	newPayloadRefresh := domain.PasetoPayload{
+		UserID:    payload.UserID,
+		Email:     payload.Email,
+		SessionID: payload.SessionID,
+		RoleName:  payload.RoleName,
+		TokenType: domain.TokenTypeRefresh,
 	}
 
 	// 5. Buat Access Token baru
 	accessTTL := time.Duration(s.cfg.Security.AccessTokenTTLMin) * time.Minute
-	accessToken, err := s.tokenSvc.CreateToken(newPayload, accessTTL) // Panggil CreateToken baru
+	accessToken, err := s.tokenSvc.CreateToken(newPayloadAccess, accessTTL)
 	if err != nil {
 		return nil, errors.New("failed to create new access token")
 	}
 
 	// 6. Buat Refresh Token baru
 	refreshTTL := time.Duration(s.cfg.Security.RefreshTokenTTLMin) * time.Minute
-	refreshToken, err := s.tokenSvc.CreateToken(newPayload, refreshTTL) // Panggil CreateToken baru
+	refreshToken, err := s.tokenSvc.CreateToken(newPayloadRefresh, refreshTTL)
 	if err != nil {
 		return nil, errors.New("failed to create new refresh token")
 	}
@@ -850,10 +875,11 @@ func (s *userService) RequestAccountDeletion(ctx context.Context, userID uuid.UU
 		Email:     user.Email,
 		SessionID: deletionSessionID.String(),
 		RoleName:  user.Role.Name,
+		TokenType: domain.TokenTypeAccountDeletion,
 	}
 
 	// 3. Buat token konfirmasi (5 menit)
-	deletionToken, err := s.tokenSvc.CreateToken(deletionPayload, 5*time.Minute) // <-- Panggil CreateToken baru
+	deletionToken, err := s.tokenSvc.CreateToken(deletionPayload, 5*time.Minute)
 	if err != nil {
 		applogger.ErrorLogger.Printf("RequestAccountDeletion: Failed to create deletion token for %s: %v", userID, err)
 		return errors.New("failed to create confirmation token")
@@ -903,10 +929,9 @@ func (s *userService) ConfirmAccountDeletion(ctx context.Context, userID uuid.UU
 	}
 
 	// 3. Validasi Token Konfirmasi (dapatkan payload)
-	payload, err := s.tokenSvc.ValidateToken(req.ConfirmationToken)
+	payload, err := s.tokenSvc.ValidateToken(req.ConfirmationToken, domain.TokenTypeAccountDeletion)
 	if err != nil {
-		// Cth: "token has expired" atau "invalid token"
-		return err
+		return err // Error sudah termasuk "invalid token type"
 	}
 
 	// Ekstrak tokenUserID dari payload

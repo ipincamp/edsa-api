@@ -4,13 +4,23 @@ import (
 	"time"
 )
 
+// Konstanta Tipe Token
+const (
+	TokenTypeAccess            = "access"         // Token akses
+	TokenTypeRefresh           = "refresh"        // Token refresh
+	TokenTypeEmailVerification = "email_verify"   // Token verifikasi email
+	TokenTypePasswordReset     = "password_reset" // Token reset password
+	TokenTypeAccountDeletion   = "account_delete" // Token konfirmasi hapus akun
+)
+
 // PasetoPayload adalah struktur data yang disimpan dalam token
 type PasetoPayload struct {
 	UserID                string    `json:"user_id"`
 	Email                 string    `json:"email"`
 	SessionID             string    `json:"session_id"`
 	RoleName              string    `json:"role_name"`
-	VerificationAttemptID string    `json:"verification_attempt_id,omitempty"` // ID unik untuk link verifikasi
+	TokenType             string    `json:"token_type"`
+	VerificationAttemptID string    `json:"verification_attempt_id,omitempty"`
 	IssuedAt              time.Time `json:"iat"`
 	ExpiresAt             time.Time `json:"exp"`
 }

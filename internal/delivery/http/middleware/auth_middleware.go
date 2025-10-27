@@ -5,6 +5,7 @@ import (
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/google/uuid"
+	"github.com/ipincamp/go-edsa-api/internal/domain"
 	"github.com/ipincamp/go-edsa-api/internal/pkg/applogger"
 	"github.com/ipincamp/go-edsa-api/internal/pkg/utils"
 	"github.com/ipincamp/go-edsa-api/internal/usecase"
@@ -25,7 +26,7 @@ func AuthMiddleware(tokenSvc usecase.TokenService, blacklistSvc usecase.SessionB
 		tokenString := parts[1]
 
 		// 1. Validasi token dan dapatkan payload
-		payload, err := tokenSvc.ValidateToken(tokenString)
+		payload, err := tokenSvc.ValidateToken(tokenString, domain.TokenTypeAccess)
 		if err != nil {
 			// Sertakan detail error dari ValidateToken
 			return utils.SendSimpleError(c, fiber.StatusUnauthorized, "Invalid or expired token", err.Error())

@@ -157,8 +157,8 @@ type PasswordService interface {
 
 // TokenService mendefinisikan kontrak untuk pembuatan & validasi token
 type TokenService interface {
-	CreateToken(payload domain.PasetoPayload, duration time.Duration) (string, error) // <- Gunakan domain.PasetoPayload
-	ValidateToken(tokenString string) (payload domain.PasetoPayload, err error)       // <- Gunakan domain.PasetoPayload
+	CreateToken(payload domain.PasetoPayload, duration time.Duration) (string, error)
+	ValidateToken(tokenString string, expectedType string) (payload domain.PasetoPayload, err error)
 }
 
 // AdminService mendefinisikan logika bisnis untuk fitur admin

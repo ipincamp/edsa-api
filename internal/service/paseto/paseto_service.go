@@ -54,6 +54,7 @@ func (s *pasetoService) CreateToken(payload domain.PasetoPayload, duration time.
 	jsonToken.Set("eml", payload.Email)
 	jsonToken.Set("sid", payload.SessionID)
 	jsonToken.Set("rol", payload.RoleName)
+	jsonToken.Set("typ", payload.TokenType)
 	if payload.VerificationAttemptID != "" {
 		jsonToken.Set("vid", payload.VerificationAttemptID)
 	}
@@ -62,7 +63,7 @@ func (s *pasetoService) CreateToken(payload domain.PasetoPayload, duration time.
 	return s.paseto.Encrypt(s.symmetricKey, jsonToken, nil)
 }
 
-func (s *pasetoService) ValidateToken(tokenString string) (payload domain.PasetoPayload, err error) {
+func (s *pasetoService) ValidateToken(tokenString string, expectedType string) (payload domain.PasetoPayload, err error) {
 	var jsonToken paseto.JSONToken
 	// Inisialisasi payload kosong
 	payload = domain.PasetoPayload{}
@@ -81,6 +82,15 @@ func (s *pasetoService) ValidateToken(tokenString string) (payload domain.Paseto
 	}
 
 	// Ekstrak data dari custom claims
+	err = jsonToken.Get("typ", &payload.TokenType)
+	if err != nil || payload.TokenType == "" {
+		err = errors.New("invalid token: missing token type")
+		return
+	}
+	if payload.TokenType != expectedType {
+		err = fmt.Errorf("invalid token type: expected '%s' but got '%s'", expectedType, payload.TokenType)
+		return
+	}
 	err = jsonToken.Get("uid", &payload.UserID)
 	if err != nil || payload.UserID == "" {
 		err = errors.New("invalid user ID in token")
@@ -110,7 +120,7 @@ func (s *pasetoService) ValidateToken(tokenString string) (payload domain.Paseto
 	payload.IssuedAt = jsonToken.IssuedAt
 	payload.ExpiresAt = jsonToken.Expiration
 
-	// Parsing UUID
+	// Validasi format UUID
 	_, errUid := uuid.Parse(payload.UserID)
 	_, errSid := uuid.Parse(payload.SessionID)
 	if errUid != nil || errSid != nil {
