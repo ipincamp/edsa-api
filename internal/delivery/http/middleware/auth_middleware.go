@@ -4,6 +4,7 @@ import (
 	"strings"
 
 	"github.com/gofiber/fiber/v2"
+	"github.com/google/uuid"
 	"github.com/ipincamp/go-edsa-api/internal/pkg/applogger"
 	"github.com/ipincamp/go-edsa-api/internal/pkg/utils"
 	"github.com/ipincamp/go-edsa-api/internal/usecase"
@@ -23,14 +24,28 @@ func AuthMiddleware(tokenSvc usecase.TokenService, blacklistSvc usecase.SessionB
 
 		tokenString := parts[1]
 
-		// 1. Validasi token DULU untuk dapat userID, sessionID, dan email
-		userID, sessionID, userEmail, err := tokenSvc.ValidateToken(tokenString)
+		// 1. Validasi token dan dapatkan payload
+		payload, err := tokenSvc.ValidateToken(tokenString)
 		if err != nil {
 			// Sertakan detail error dari ValidateToken
 			return utils.SendSimpleError(c, fiber.StatusUnauthorized, "Invalid or expired token", err.Error())
 		}
 
-		// 2. Cek apakah SESSION-nya di-blacklist
+		// --- Ekstrak data dari payload ---
+		userID, err := uuid.Parse(payload.UserID)
+		if err != nil {
+			applogger.ErrorLogger.Printf("AuthMiddleware: Invalid UserID format in token: %s", payload.UserID)
+			return utils.SendSimpleError(c, fiber.StatusUnauthorized, "Invalid token data", "Malformed user identifier")
+		}
+
+		sessionID, err := uuid.Parse(payload.SessionID)
+		if err != nil {
+			applogger.ErrorLogger.Printf("AuthMiddleware: Invalid SessionID format in token: %s", payload.SessionID)
+			return utils.SendSimpleError(c, fiber.StatusUnauthorized, "Invalid token data", "Malformed session identifier")
+		}
+		userEmail := payload.Email // Ambil email dari payload
+
+		// 2. Cek apakah SESSION-nya (sessionID dari payload) di-blacklist
 		isBlacklisted, err := blacklistSvc.IsSessionBlacklisted(c.Context(), sessionID)
 		if err != nil {
 			// Log error internal ini
@@ -41,7 +56,7 @@ func AuthMiddleware(tokenSvc usecase.TokenService, blacklistSvc usecase.SessionB
 			return utils.SendSimpleError(c, fiber.StatusUnauthorized, "Session expired", "This session has been logged out")
 		}
 
-		// Simpan user ID, session ID, dan email di context
+		// Simpan user ID (UUID), session ID (UUID), dan email (string) di context
 		c.Locals("userID", userID)
 		c.Locals("sessionID", sessionID)
 		c.Locals("userEmail", userEmail)

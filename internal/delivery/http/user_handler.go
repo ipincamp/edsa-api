@@ -336,7 +336,16 @@ func (h *UserHandler) ResendVerification(c *fiber.Ctx) error {
 		return utils.SendSimpleError(c, fiber.StatusUnauthorized, "Invalid token", "Invalid user ID in token")
 	}
 
-	err := h.userService.SendVerificationEmail(c.Context(), userID)
+	// --- Get sessionID from context ---
+	sessionID, ok := c.Locals("sessionID").(uuid.UUID)
+	if !ok || sessionID == uuid.Nil {
+		// Seharusnya sessionID selalu ada jika AuthMiddleware berhasil
+		applogger.ErrorLogger.Printf("ResendVerification Handler: sessionID not found in context for userID %s", userID)
+		return utils.SendSimpleError(c, fiber.StatusUnauthorized, "Invalid session", "Session identifier missing")
+	}
+
+	// Panggil service dengan userID dan sessionID
+	err := h.userService.SendVerificationEmail(c.Context(), userID, sessionID)
 	if err != nil {
 		// Handle specific errors
 		if err.Error() == "email already verified" {
@@ -378,10 +387,7 @@ func (h *UserHandler) VerifyEmailDirect(c *fiber.Ctx) error {
 	if errMsg == "email already verified" {
 		return c.Status(fiber.StatusBadRequest).SendString("Email already verified.")
 	}
-	// Gabungkan kondisi token tidak valid (kadaluwarsa, sudah dipakai, user tidak ada)
-	if strings.Contains(errMsg, "token invalid or expired") ||
-		errMsg == "token already used" ||
-		errMsg == "user associated with token not found" {
+	if strings.Contains(errMsg, "token invalid") || strings.Contains(errMsg, "token has expired") || errMsg == "token already used" || strings.Contains(errMsg, "not found") {
 		return c.Status(fiber.StatusBadRequest).SendString("Token is no longer valid.")
 	}
 

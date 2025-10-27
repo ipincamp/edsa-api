@@ -95,6 +95,7 @@ func (s *userService) toUserResponse(user *domain.User) *domain.UserResponse {
 	}
 }
 
+// --- Auth Services --
 func (s *userService) Register(ctx context.Context, req *domain.RegisterRequest) (*domain.AuthResponse, error) {
 	// 1. Cek apakah email sudah ada
 	existingUser, err := s.userRepo.FindByEmail(ctx, req.Email)
@@ -167,18 +168,26 @@ func (s *userService) Register(ctx context.Context, req *domain.RegisterRequest)
 	// 6. Buat Session ID baru
 	sessionID := uuid.New()
 
-	// 7. Buat Access Token
+	// 7. Buat PasetoPayload dari domain
+	payload := domain.PasetoPayload{
+		UserID:    user.ID.String(),
+		Email:     user.Email,
+		SessionID: sessionID.String(),
+		RoleName:  user.Role.Name,
+	}
+
+	// 8. Buat Access Token
 	accessTTL := time.Duration(s.cfg.Security.AccessTokenTTLMin) * time.Minute
-	accessToken, err := s.tokenSvc.CreateToken(user, sessionID, accessTTL)
+	accessToken, err := s.tokenSvc.CreateToken(payload, accessTTL)
 	if err != nil {
 		applogger.ErrorLogger.Printf("Register: failed to create access token for %s: %v", user.Email, err)
 		// Sebaiknya tidak mengembalikan error internal ke user
 		return nil, errors.New("failed to generate session token")
 	}
 
-	// 8. Buat Refresh Token
+	// 9. Buat Refresh Token
 	refreshTTL := time.Duration(s.cfg.Security.RefreshTokenTTLMin) * time.Minute
-	refreshToken, err := s.tokenSvc.CreateToken(user, sessionID, refreshTTL)
+	refreshToken, err := s.tokenSvc.CreateToken(payload, refreshTTL)
 	if err != nil {
 		applogger.ErrorLogger.Printf("Register: failed to create refresh token for %s: %v", user.Email, err)
 		// Sebaiknya tidak mengembalikan error internal ke user
@@ -201,7 +210,7 @@ func (s *userService) Register(ctx context.Context, req *domain.RegisterRequest)
 	userResponse := s.toUserResponse(user)
 
 	return &domain.AuthResponse{
-		User: *userResponse, // Gunakan hasil dari toUserResponse
+		User: *userResponse,
 		Token: domain.TokenResponse{
 			AccessToken:  accessToken,
 			RefreshToken: refreshToken,
@@ -244,23 +253,31 @@ func (s *userService) Login(ctx context.Context, req *domain.LoginRequest) (*dom
 		Details:   detailsLogin, // Gunakan details baru
 	})
 
-	// 5. Buat Access Token
+	// 5. Buat PasetoPayload dari domain
+	payload := domain.PasetoPayload{
+		UserID:    user.ID.String(),
+		Email:     user.Email,
+		SessionID: sessionID.String(),
+		RoleName:  user.Role.Name,
+	}
+
+	// 6. Buat Access Token
 	accessTTL := time.Duration(s.cfg.Security.AccessTokenTTLMin) * time.Minute
-	accessToken, err := s.tokenSvc.CreateToken(user, sessionID, accessTTL)
+	accessToken, err := s.tokenSvc.CreateToken(payload, accessTTL)
 	if err != nil {
 		applogger.ErrorLogger.Printf("Login: failed to create access token for %s: %v", user.Email, err)
 		return nil, errors.New("failed to create access token")
 	}
 
-	// 6. Buat Refresh Token
+	// 7. Buat Refresh Token
 	refreshTTL := time.Duration(s.cfg.Security.RefreshTokenTTLMin) * time.Minute
-	refreshToken, err := s.tokenSvc.CreateToken(user, sessionID, refreshTTL)
+	refreshToken, err := s.tokenSvc.CreateToken(payload, refreshTTL)
 	if err != nil {
 		applogger.ErrorLogger.Printf("Login: failed to create refresh token for %s: %v", user.Email, err)
 		return nil, errors.New("failed to create refresh token")
 	}
 
-	// 7. Kembalikan respons
+	// 8. Kembalikan respons
 	return &domain.AuthResponse{
 		User: *s.toUserResponse(user),
 		Token: domain.TokenResponse{
@@ -270,7 +287,7 @@ func (s *userService) Login(ctx context.Context, req *domain.LoginRequest) (*dom
 	}, nil
 }
 
-func (s *userService) SendVerificationEmail(ctx context.Context, userID uuid.UUID) error {
+func (s *userService) SendVerificationEmail(ctx context.Context, userID uuid.UUID, sessionID uuid.UUID) error {
 	// 1. Find user by ID
 	user, err := s.userRepo.FindByID(ctx, userID)
 	if err != nil {
@@ -285,16 +302,26 @@ func (s *userService) SendVerificationEmail(ctx context.Context, userID uuid.UUI
 		return errors.New("email already verified")
 	}
 
-	verificationSessionID := uuid.New() // ID baru khusus untuk flow verifikasi ini
+	// 2. Generate Verification Attempt ID (ID unik untuk link ini)
+	attemptID := uuid.New()
 
-	// 2. Create verification token (using verificationSessionID)
-	verificationToken, err := s.tokenSvc.CreateToken(user, verificationSessionID, 1*time.Hour)
+	// 3. Buat PasetoPayload untuk token verifikasi dari domain
+	verificationPayload := domain.PasetoPayload{
+		UserID:                user.ID.String(),
+		Email:                 user.Email,
+		SessionID:             sessionID.String(),
+		RoleName:              user.Role.Name,
+		VerificationAttemptID: attemptID.String(),
+	}
+
+	// 4. Create verification token (1 jam)
+	verificationToken, err := s.tokenSvc.CreateToken(verificationPayload, 1*time.Hour)
 	if err != nil {
 		applogger.ErrorLogger.Printf("SendVerificationEmail: Failed to create verification token for %s: %v", user.Email, err)
 		return errors.New("failed to create verification token")
 	}
 
-	// 3. Create verification link
+	// 5. Create verification link
 	backendBaseURL := s.cfg.Storage.StoragePublicBaseURL
 	verificationLink := fmt.Sprintf("%s/auth/verify-email?token=%s", backendBaseURL, verificationToken)
 
@@ -315,11 +342,11 @@ func (s *userService) SendVerificationEmail(ctx context.Context, userID uuid.UUI
 		return errors.New("failed to send verification email")
 	}
 
-	// Log aktivitas resend verification email
+	// 7. Log aktivitas resend verification email
 	s.logger.Log(ctx, domain.ActivityLog{
 		UserID:    user.ID,
 		Action:    domain.ActionResendVerificationEmail,
-		SessionID: verificationSessionID,
+		SessionID: sessionID,
 		Details: func() json.RawMessage {
 			detailMap := map[string]interface{}{"email": user.Email}
 			jsonData, _ := json.Marshal(detailMap)
@@ -331,27 +358,36 @@ func (s *userService) SendVerificationEmail(ctx context.Context, userID uuid.UUI
 }
 
 func (s *userService) VerifyEmail(ctx context.Context, token string) error {
-	// 1. Validasi token (dapatkan userID, sessionID verifikasi, email)
-	userID, verificationSessionID, _, err := s.tokenSvc.ValidateToken(token)
+	// 1. Validasi token (dapatkan seluruh payload)
+	payload, err := s.tokenSvc.ValidateToken(token)
 	if err != nil {
-		// Token tidak valid atau kedaluwarsa -> anggap tidak valid
-		// Gunakan error spesifik yang bisa dikenali handler
+		// Token tidak valid atau kedaluwarsa
 		return fmt.Errorf("token invalid or expired: %w", err)
 	}
 
-	// 2. Cek apakah sesi verifikasi ini sudah pernah digunakan (di-blacklist)
-	isBlacklisted, err := s.blacklistSvc.IsSessionBlacklisted(ctx, verificationSessionID)
+	// Parse UUIDs dari payload
+	userID, _ := uuid.Parse(payload.UserID)
+	sessionID, _ := uuid.Parse(payload.SessionID) // Session ID utama pengguna
+	attemptIDStr := payload.VerificationAttemptID
+	if attemptIDStr == "" {
+		return errors.New("invalid verification token: missing attempt ID")
+	}
+	attemptID, err := uuid.Parse(attemptIDStr)
 	if err != nil {
-		// Error saat cek blacklist -> error internal
-		applogger.ErrorLogger.Printf("VerifyEmail: Error checking blacklist for session %s: %v", verificationSessionID, err)
+		return errors.New("invalid verification token: invalid attempt ID format")
+	}
+
+	// 2. Cek apakah link/attempt ini sudah pernah digunakan (di-blacklist)
+	isBlacklisted, err := s.blacklistSvc.IsSessionBlacklisted(ctx, attemptID) // <-- Gunakan attemptID
+	if err != nil {
+		applogger.ErrorLogger.Printf("VerifyEmail: Error checking blacklist for attempt %s: %v", attemptID, err)
 		return errors.New("internal server error checking token status")
 	}
 	if isBlacklisted {
-		// Token sudah pernah dipakai
-		return errors.New("token already used") // Error spesifik
+		return errors.New("token already used")
 	}
 
-	// 3. Cari user
+	// 3. Cari user (gunakan userID dari payload)
 	user, err := s.userRepo.FindByID(ctx, userID)
 	if err != nil {
 		applogger.ErrorLogger.Printf("VerifyEmail: DB error finding user %s: %v", userID, err)
@@ -369,30 +405,24 @@ func (s *userService) VerifyEmail(ctx context.Context, token string) error {
 	// 4. Update status verifikasi
 	now := time.Now()
 	user.EmailVerifiedAt = &now
-
 	if err := s.userRepo.Update(ctx, user); err != nil {
 		applogger.ErrorLogger.Printf("VerifyEmail: Failed to update user %s: %v", userID, err)
 		return errors.New("failed to update verification status")
 	}
 
-	// 5. Blacklist sesi verifikasi ini agar tidak bisa dipakai lagi
-	// Gunakan durasi yang cukup lama, misal TTL token + buffer, atau TTL refresh token
-	blacklistDuration := 1*time.Hour + 5*time.Minute // TTL token (1 jam) + buffer 5 menit
-	// Atau bisa juga pakai TTL refresh token jika lebih lama:
-	// blacklistDuration := time.Duration(s.cfg.Security.RefreshTokenTTLMin) * time.Minute
-	if err := s.blacklistSvc.BlacklistSession(ctx, verificationSessionID, blacklistDuration); err != nil {
-		// Gagal blacklist adalah masalah, log tapi JANGAN gagalkan verifikasi yang sudah berhasil di DB
-		applogger.ErrorLogger.Printf("VerifyEmail: WARNING - Failed to blacklist verification session %s after successful verification for user %s: %v", verificationSessionID, userID, err)
+	// 5. Blacklist attempt ID ini agar tidak bisa dipakai lagi
+	blacklistDuration := 1*time.Hour + 5*time.Minute
+	if err := s.blacklistSvc.BlacklistSession(ctx, attemptID, blacklistDuration); err != nil { // <-- Gunakan attemptID
+		applogger.ErrorLogger.Printf("VerifyEmail: WARNING - Failed to blacklist verification attempt %s after successful verification for user %s: %v", attemptID, userID, err)
 	} else {
-		applogger.ErrorLogger.Printf("VerifyEmail: INFO - Successfully blacklisted verification session %s for user %s", verificationSessionID, userID) // Optional Info Log
+		applogger.ErrorLogger.Printf("VerifyEmail: INFO - Successfully blacklisted verification attempt %s for user %s", attemptID, userID)
 	}
 
 	// 6. Log aktivitas verifikasi email
 	s.logger.Log(ctx, domain.ActivityLog{
-		UserID:    user.ID,
+		UserID:    userID,
 		Action:    domain.ActionVerifyEmail,
-		SessionID: uuid.Nil,
-		// Format Details yang lebih aman menggunakan json.Marshal
+		SessionID: sessionID,
 		Details: func() json.RawMessage {
 			detailMap := map[string]interface{}{"email": user.Email}
 			jsonData, _ := json.Marshal(detailMap)
@@ -416,18 +446,29 @@ func (s *userService) SendPasswordResetEmail(ctx context.Context, email string) 
 		return nil // Kembalikan nil agar attacker tidak tahu email mana yang terdaftar/aktif
 	}
 
-	// 2. Buat token reset password (misalnya, berlaku 15 menit)
-	resetToken, err := s.tokenSvc.CreateToken(user, uuid.New(), 15*time.Minute) // Sesi ID tidak relevan
+	// 2. Buat PasetoPayload untuk reset token
+	// SessionID tidak terlalu relevan di sini, bisa buat baru atau gunakan yang acak
+	resetSessionID := uuid.New()
+	resetPayload := domain.PasetoPayload{
+		UserID:    user.ID.String(),
+		Email:     user.Email,
+		SessionID: resetSessionID.String(),
+		RoleName:  user.Role.Name,
+		// Tidak perlu VerificationAttemptID
+	}
+
+	// 3. Buat token reset password (15 menit)
+	resetToken, err := s.tokenSvc.CreateToken(resetPayload, 15*time.Minute)
 	if err != nil {
 		applogger.ErrorLogger.Printf("SendPasswordResetEmail: Failed to create reset token for %s: %v", email, err)
 		return errors.New("failed to create reset token")
 	}
 
-	// 3. Buat link reset (sesuaikan dengan rute frontend Anda)
+	// 4. Buat link reset
 	frontendURL := s.cfg.App.FrontendURL
 	resetLink := fmt.Sprintf("%s/reset-password?token=%s", frontendURL, resetToken)
 
-	// 4. Kirim email
+	// 5. Kirim email
 	subject := "Reset Password Akun EDSA Anda"
 	body := fmt.Sprintf(
 		"Halo %s,<br><br>"+
@@ -448,10 +489,18 @@ func (s *userService) SendPasswordResetEmail(ctx context.Context, email string) 
 }
 
 func (s *userService) ResetPassword(ctx context.Context, req *domain.ResetPasswordRequest) error {
-	// 1. Validasi token reset
-	userID, _, _, err := s.tokenSvc.ValidateToken(req.Token)
+	// 1. Validasi token reset (dapatkan payload)
+	payload, err := s.tokenSvc.ValidateToken(req.Token)
 	if err != nil {
 		return fmt.Errorf("invalid or expired token: %w", err)
+	}
+
+	// Ekstrak userID dari payload
+	userID, err := uuid.Parse(payload.UserID)
+	if err != nil {
+		// Seharusnya tidak terjadi jika CreateToken benar, tapi handle defensively
+		applogger.ErrorLogger.Printf("ResetPassword: Invalid UserID format in token payload: %s", payload.UserID)
+		return errors.New("invalid user data in token")
 	}
 
 	// 2. Cari user
@@ -486,12 +535,16 @@ func (s *userService) ResetPassword(ctx context.Context, req *domain.ResetPasswo
 
 func (s *userService) RefreshToken(ctx context.Context, req *domain.RefreshTokenRequest) (*domain.TokenResponse, error) {
 	// 1. Validasi refresh token
-	userID, sessionID, _, err := s.tokenSvc.ValidateToken(req.RefreshToken)
+	payload, err := s.tokenSvc.ValidateToken(req.RefreshToken)
 	if err != nil {
 		return nil, fmt.Errorf("invalid or expired refresh token: %w", err)
 	}
 
-	// 2. Cek apakah sesi sudah di-blacklist (logout)
+	// Parse UUIDs
+	userID, _ := uuid.Parse(payload.UserID)
+	sessionID, _ := uuid.Parse(payload.SessionID)
+
+	// 2. Cek apakah sesi sudah di-blacklist
 	isBlacklisted, err := s.blacklistSvc.IsSessionBlacklisted(ctx, sessionID)
 	if err != nil {
 		return nil, errors.New("session check error")
@@ -507,21 +560,29 @@ func (s *userService) RefreshToken(ctx context.Context, req *domain.RefreshToken
 		return nil, errors.New("user not found for this token")
 	}
 
-	// 4. Buat Access Token baru
+	// 4. Buat PasetoPayload baru dari domain
+	newPayload := domain.PasetoPayload{
+		UserID:    payload.UserID,
+		Email:     payload.Email,
+		SessionID: payload.SessionID,
+		RoleName:  payload.RoleName,
+	}
+
+	// 5. Buat Access Token baru
 	accessTTL := time.Duration(s.cfg.Security.AccessTokenTTLMin) * time.Minute
-	accessToken, err := s.tokenSvc.CreateToken(user, sessionID, accessTTL)
+	accessToken, err := s.tokenSvc.CreateToken(newPayload, accessTTL) // Panggil CreateToken baru
 	if err != nil {
 		return nil, errors.New("failed to create new access token")
 	}
 
-	// 5. Buat Refresh Token baru
+	// 6. Buat Refresh Token baru
 	refreshTTL := time.Duration(s.cfg.Security.RefreshTokenTTLMin) * time.Minute
-	refreshToken, err := s.tokenSvc.CreateToken(user, sessionID, refreshTTL)
+	refreshToken, err := s.tokenSvc.CreateToken(newPayload, refreshTTL) // Panggil CreateToken baru
 	if err != nil {
 		return nil, errors.New("failed to create new refresh token")
 	}
 
-	// 6. Kembalikan token baru
+	// 7. Kembalikan token baru
 	return &domain.TokenResponse{
 		AccessToken:  accessToken,
 		RefreshToken: refreshToken,
@@ -775,26 +836,35 @@ func (s *userService) DeleteUser(ctx context.Context, userID uuid.UUID, sessionI
 }
 
 func (s *userService) RequestAccountDeletion(ctx context.Context, userID uuid.UUID) error {
-	// 1. Ambil data user (terutama email)
+	// 1. Ambil data user
 	user, err := s.userRepo.FindByID(ctx, userID)
 	if err != nil || user == nil {
 		return errors.New("user not found")
 	}
 
-	// 2. Buat token konfirmasi (Paseto) yang berlaku 5 menit
-	// Kita bisa gunakan sessionID acak karena tidak relevan untuk flow ini
-	deletionToken, err := s.tokenSvc.CreateToken(user, uuid.New(), 5*time.Minute)
+	// 2. Buat PasetoPayload untuk token konfirmasi
+	// SessionID tidak terlalu relevan di sini, buat acak
+	deletionSessionID := uuid.New()
+	deletionPayload := domain.PasetoPayload{
+		UserID:    user.ID.String(),
+		Email:     user.Email,
+		SessionID: deletionSessionID.String(),
+		RoleName:  user.Role.Name,
+	}
+
+	// 3. Buat token konfirmasi (5 menit)
+	deletionToken, err := s.tokenSvc.CreateToken(deletionPayload, 5*time.Minute) // <-- Panggil CreateToken baru
 	if err != nil {
 		applogger.ErrorLogger.Printf("RequestAccountDeletion: Failed to create deletion token for %s: %v", userID, err)
 		return errors.New("failed to create confirmation token")
 	}
 
-	// 3. Buat link konfirmasi
+	// 4. Buat link konfirmasi
 	// Cth: http://localhost:3000/confirm-delete?token=...
 	frontendURL := s.cfg.App.FrontendURL
 	confirmationLink := fmt.Sprintf("%s/confirm-delete?token=%s", frontendURL, deletionToken)
 
-	// 4. Buat body email
+	// 5. Buat body email
 	subject := "Konfirmasi Penghapusan Akun EDSA"
 	body := fmt.Sprintf(
 		"Halo %s,<br><br>"+
@@ -806,7 +876,7 @@ func (s *userService) RequestAccountDeletion(ctx context.Context, userID uuid.UU
 		user.Name, confirmationLink,
 	)
 
-	// 5. Kirim email
+	// 6. Kirim email
 	if err := s.emailSvc.SendEmail(ctx, user.Email, subject, body); err != nil {
 		applogger.ErrorLogger.Printf("RequestAccountDeletion: Failed to send email to %s: %v", user.Email, err)
 		return errors.New("failed to send confirmation email")
@@ -832,11 +902,18 @@ func (s *userService) ConfirmAccountDeletion(ctx context.Context, userID uuid.UU
 		return errors.New("invalid current password")
 	}
 
-	// 3. Validasi Token Konfirmasi
-	tokenUserID, _, _, err := s.tokenSvc.ValidateToken(req.ConfirmationToken)
+	// 3. Validasi Token Konfirmasi (dapatkan payload)
+	payload, err := s.tokenSvc.ValidateToken(req.ConfirmationToken)
 	if err != nil {
 		// Cth: "token has expired" atau "invalid token"
 		return err
+	}
+
+	// Ekstrak tokenUserID dari payload
+	tokenUserID, err := uuid.Parse(payload.UserID)
+	if err != nil {
+		applogger.ErrorLogger.Printf("ConfirmAccountDeletion: Invalid UserID format in token payload: %s", payload.UserID)
+		return errors.New("invalid user data in token")
 	}
 
 	// 4. Pastikan token tersebut milik pengguna yang sedang login
@@ -848,19 +925,19 @@ func (s *userService) ConfirmAccountDeletion(ctx context.Context, userID uuid.UU
 	// Gabungkan reason dan email
 	detailsDelete, _ := json.Marshal(map[string]interface{}{
 		"reason": req.DeletionReason,
-		"email":  user.Email, // Ambil dari user object
+		"email":  user.Email,
 	})
 	s.logger.Log(ctx, domain.ActivityLog{
 		UserID:    userID,
 		Action:    domain.ActionDeleteAccount,
 		SessionID: uuid.New(),
-		Details:   detailsDelete, // Gunakan details baru
+		Details:   detailsDelete,
 	})
 
 	// 6. Lakukan Soft Delete
 	if err := s.userRepo.Delete(ctx, userID); err != nil {
 		applogger.ErrorLogger.Printf("ConfirmAccountDeletion: Failed to soft delete user %s from DB: %v", userID, err)
-		return errors.New("failed to deactivate account") // Ubah pesan error jika perlu
+		return errors.New("failed to deactivate account")
 	}
 
 	// 7. Blacklist sesi ini agar token tidak bisa dipakai lagi (Opsional tapi direkomendasikan)

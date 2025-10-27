@@ -17,14 +17,6 @@ type pasetoService struct {
 	paseto       *paseto.V2
 }
 
-// Kustom Paseto payload
-type PasetoPayload struct {
-	UserID    string `json:"user_id"`
-	Email     string `json:"email"`
-	SessionID string `json:"session_id"`
-	RoleName  string `json:"role_name"`
-}
-
 func NewPasetoService(symmetricKeyBase64 string) (usecase.TokenService, error) {
 	if len(symmetricKeyBase64) == 0 {
 		return nil, errors.New("PASETO_SYMMETRIC_KEY is not set")
@@ -45,70 +37,86 @@ func NewPasetoService(symmetricKeyBase64 string) (usecase.TokenService, error) {
 	}, nil
 }
 
-func (s *pasetoService) CreateToken(user *domain.User, sessionID uuid.UUID, duration time.Duration) (string, error) {
-	payload := PasetoPayload{
-		UserID:    user.ID.String(),
-		Email:     user.Email,
-		SessionID: sessionID.String(),
-		RoleName:  user.Role.Name,
-	}
-
+func (s *pasetoService) CreateToken(payload domain.PasetoPayload, duration time.Duration) (string, error) {
 	// Atur waktu terbit dan kedaluwarsa
 	now := time.Now()
 	exp := now.Add(duration)
+
+	payload.IssuedAt = now
+	payload.ExpiresAt = exp
 
 	jsonToken := paseto.JSONToken{
 		IssuedAt:   now,
 		Expiration: exp,
 	}
-	// Menambahkan payload kustom
-	jsonToken.Set("data", payload)
+	// Menambahkan seluruh payload kustom
+	jsonToken.Set("uid", payload.UserID)
+	jsonToken.Set("eml", payload.Email)
+	jsonToken.Set("sid", payload.SessionID)
+	jsonToken.Set("rol", payload.RoleName)
+	if payload.VerificationAttemptID != "" {
+		jsonToken.Set("vid", payload.VerificationAttemptID)
+	}
 
 	// Encrypt (Symmetric)
 	return s.paseto.Encrypt(s.symmetricKey, jsonToken, nil)
 }
 
-func (s *pasetoService) ValidateToken(tokenString string) (uuid.UUID, uuid.UUID, string, error) { // Tambahkan string return
+func (s *pasetoService) ValidateToken(tokenString string) (payload domain.PasetoPayload, err error) {
 	var jsonToken paseto.JSONToken
-	var payload PasetoPayload
+	// Inisialisasi payload kosong
+	payload = domain.PasetoPayload{}
 
 	// Decrypt (Symmetric)
-	err := s.paseto.Decrypt(tokenString, s.symmetricKey, &jsonToken, nil)
+	err = s.paseto.Decrypt(tokenString, s.symmetricKey, &jsonToken, nil)
 	if err != nil {
-		// Kembalikan email kosong jika token tidak valid
-		return uuid.Nil, uuid.Nil, "", errors.New("invalid token")
+		err = errors.New("invalid token")
+		return
 	}
 
-	// Validasi expiration
-	if err := jsonToken.Validate(); err != nil {
-		// Kembalikan email kosong jika token kedaluwarsa
-		return uuid.Nil, uuid.Nil, "", fmt.Errorf("token has expired: %w", err)
+	// Validasi expiration standard
+	if err = jsonToken.Validate(); err != nil {
+		err = fmt.Errorf("token has expired: %w", err)
+		return
 	}
 
-	// Ekstrak payload kustom
-	if err := jsonToken.Get("data", &payload); err != nil {
-		// Kembalikan email kosong jika payload error
-		return uuid.Nil, uuid.Nil, "", fmt.Errorf("failed to get payload from token: %w", err)
+	// Ekstrak data dari custom claims
+	err = jsonToken.Get("uid", &payload.UserID)
+	if err != nil || payload.UserID == "" {
+		err = errors.New("invalid user ID in token")
+		return
+	}
+	err = jsonToken.Get("eml", &payload.Email)
+	if err != nil || payload.Email == "" {
+		err = errors.New("invalid email in token")
+		return
+	}
+	err = jsonToken.Get("sid", &payload.SessionID)
+	if err != nil || payload.SessionID == "" {
+		// Handle token lama yang mungkin tidak punya sid, generate baru jika perlu?
+		// Atau anggap error jika sid wajib ada. Kita anggap wajib.
+		err = errors.New("invalid session ID in token")
+		return
+	}
+	err = jsonToken.Get("rol", &payload.RoleName)
+	if err != nil || payload.RoleName == "" {
+		err = errors.New("invalid role name in token")
+		return
+	}
+	// Ekstrak attempt ID (opsional)
+	_ = jsonToken.Get("vid", &payload.VerificationAttemptID)
+
+	// Isi IssuedAt dan ExpiresAt dari jsonToken
+	payload.IssuedAt = jsonToken.IssuedAt
+	payload.ExpiresAt = jsonToken.Expiration
+
+	// Parsing UUID
+	_, errUid := uuid.Parse(payload.UserID)
+	_, errSid := uuid.Parse(payload.SessionID)
+	if errUid != nil || errSid != nil {
+		err = errors.New("invalid UUID format in token payload")
+		return
 	}
 
-	userID, err := uuid.Parse(payload.UserID)
-	if err != nil {
-		// Kembalikan email kosong jika userID error
-		return uuid.Nil, uuid.Nil, "", errors.New("invalid user ID format in token payload")
-	}
-
-	sessionID, err := uuid.Parse(payload.SessionID)
-	if err != nil {
-		// Jika token lama (sebelum update ini) tidak memiliki sessionID, buatkan yang baru
-		sessionID = uuid.New()
-	}
-
-	// Pastikan email ada di payload
-	if payload.Email == "" {
-		// Kembalikan email kosong jika email tidak ada (seharusnya tidak terjadi jika CreateToken benar)
-		return uuid.Nil, uuid.Nil, "", errors.New("email not found in token payload")
-	}
-
-	// Kembalikan userID, sessionID, dan email
-	return userID, sessionID, payload.Email, nil
+	return payload, nil
 }

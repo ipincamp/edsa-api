@@ -135,7 +135,7 @@ type GroupBookSettingRepository interface {
 type UserService interface {
 	Register(ctx context.Context, req *domain.RegisterRequest) (*domain.AuthResponse, error)
 	Login(ctx context.Context, req *domain.LoginRequest) (*domain.AuthResponse, error)
-	SendVerificationEmail(ctx context.Context, userID uuid.UUID) error
+	SendVerificationEmail(ctx context.Context, userID uuid.UUID, sessionID uuid.UUID) error
 	VerifyEmail(ctx context.Context, token string) error
 	SendPasswordResetEmail(ctx context.Context, email string) error
 	ResetPassword(ctx context.Context, req *domain.ResetPasswordRequest) error
@@ -157,8 +157,8 @@ type PasswordService interface {
 
 // TokenService mendefinisikan kontrak untuk pembuatan & validasi token
 type TokenService interface {
-	CreateToken(user *domain.User, sessionID uuid.UUID, duration time.Duration) (string, error)
-	ValidateToken(tokenString string) (userID uuid.UUID, sessionID uuid.UUID, email string, err error)
+	CreateToken(payload domain.PasetoPayload, duration time.Duration) (string, error) // <- Gunakan domain.PasetoPayload
+	ValidateToken(tokenString string) (payload domain.PasetoPayload, err error)       // <- Gunakan domain.PasetoPayload
 }
 
 // AdminService mendefinisikan logika bisnis untuk fitur admin
