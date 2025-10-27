@@ -140,7 +140,7 @@ type UserService interface {
 	SendPasswordResetEmail(ctx context.Context, email string) error
 	ResetPassword(ctx context.Context, req *domain.ResetPasswordRequest) error
 	GetUserByID(ctx context.Context, id uuid.UUID) (*domain.UserResponse, error)
-	RefreshToken(ctx context.Context, req *domain.RefreshTokenRequest) (*domain.TokenResponse, error)
+	RefreshToken(ctx context.Context, refreshToken string) (*domain.TokenResponse, error)
 	Logout(ctx context.Context, userID uuid.UUID, sessionID uuid.UUID, email string) error
 	ChangePassword(ctx context.Context, userID uuid.UUID, req *domain.ChangePasswordRequest) error
 	UpdateUserDetails(ctx context.Context, userID uuid.UUID, req *domain.UpdateDetailsRequest) (*domain.UserResponse, error)

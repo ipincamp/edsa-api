@@ -76,18 +76,21 @@ func (h *UserHandler) Login(c *fiber.Ctx) error {
 }
 
 func (h *UserHandler) RefreshToken(c *fiber.Ctx) error {
-	var req domain.RefreshTokenRequest
+	// Ambil token dari header Authorization
+	authHeader := c.Get("Authorization")
+	if authHeader == "" {
+		return utils.SendSimpleError(c, fiber.StatusUnauthorized, "Invalid token", "Missing Authorization Header")
+	}
 
-	// Parse & Validasi
-	if err := c.BodyParser(&req); err != nil {
-		return utils.SendSimpleError(c, fiber.StatusBadRequest, "Invalid request body", err.Error())
+	parts := strings.Split(authHeader, " ")
+	if len(parts) != 2 || parts[0] != "Bearer" {
+		return utils.SendSimpleError(c, fiber.StatusUnauthorized, "Invalid token", "Invalid Authorization Header format")
 	}
-	if errs := h.validate.ValidateStruct(req); len(errs) > 0 {
-		return utils.SendValidationErrors(c, errs)
-	}
+
+	refreshToken := parts[1]
 
 	// Panggil Usecase
-	tokenResponse, err := h.userService.RefreshToken(c.Context(), &req)
+	tokenResponse, err := h.userService.RefreshToken(c.Context(), refreshToken)
 	if err != nil {
 		return utils.SendSimpleError(c, fiber.StatusUnauthorized, err.Error(), err.Error())
 	}

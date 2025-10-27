@@ -39,11 +39,6 @@ type LoginRequest struct {
 	Password string `json:"password" validate:"required"`
 }
 
-// RefreshTokenRequest adalah DTO for token refresh.
-type RefreshTokenRequest struct {
-	RefreshToken string `json:"refresh_token" validate:"required"`
-}
-
 // ChangePasswordRequest adalah DTO untuk mengubah password.
 type ChangePasswordRequest struct {
 	CurrentPassword string `json:"current_password" validate:"required"`

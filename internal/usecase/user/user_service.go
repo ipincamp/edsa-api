@@ -550,9 +550,9 @@ func (s *userService) ResetPassword(ctx context.Context, req *domain.ResetPasswo
 	return nil
 }
 
-func (s *userService) RefreshToken(ctx context.Context, req *domain.RefreshTokenRequest) (*domain.TokenResponse, error) {
+func (s *userService) RefreshToken(ctx context.Context, refreshToken string) (*domain.TokenResponse, error) {
 	// 1. Validasi refresh token
-	payload, err := s.tokenSvc.ValidateToken(req.RefreshToken, domain.TokenTypeRefresh)
+	payload, err := s.tokenSvc.ValidateToken(refreshToken, domain.TokenTypeRefresh)
 	if err != nil {
 		return nil, fmt.Errorf("invalid or expired refresh token: %w", err)
 	}
@@ -602,7 +602,7 @@ func (s *userService) RefreshToken(ctx context.Context, req *domain.RefreshToken
 
 	// 6. Buat Refresh Token baru
 	refreshTTL := time.Duration(s.cfg.Security.RefreshTokenTTLMin) * time.Minute
-	refreshToken, err := s.tokenSvc.CreateToken(newPayloadRefresh, refreshTTL)
+	newRefreshToken, err := s.tokenSvc.CreateToken(newPayloadRefresh, refreshTTL)
 	if err != nil {
 		return nil, errors.New("failed to create new refresh token")
 	}
@@ -610,7 +610,7 @@ func (s *userService) RefreshToken(ctx context.Context, req *domain.RefreshToken
 	// 7. Kembalikan token baru
 	return &domain.TokenResponse{
 		AccessToken:  accessToken,
-		RefreshToken: refreshToken,
+		RefreshToken: newRefreshToken,
 	}, nil
 }
 
